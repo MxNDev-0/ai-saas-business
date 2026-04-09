@@ -3,4 +3,29 @@ body {
   background: #0f172a;
   color: white;
   text-align: center;
+  padding: 20px;
+}
+
+section {
+  margin: 20px auto;
+  padding: 15px;
+  border: 1px solid #333;
+  width: 80%;
+  border-radius: 10px;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  width: 200px;
+}
+
+button {
+  padding: 10px 15px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+#dashboard {
+  display: none;
 }
