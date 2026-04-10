@@ -14,51 +14,53 @@ body {
   padding:20px;
 }
 
-/* HERO */
+/* HEADER */
 .hero {
+  background:#1c2541;
+  padding:20px;
+  border-radius:12px;
   max-width:520px;
   margin:auto;
-  padding:20px;
-  background:#1c2541;
-  border-radius:14px;
 }
 
 .logo {
-  font-size:20px;
+  width:70px;
+  height:70px;
+  margin:auto;
+  background:gold;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-weight:bold;
-  color:gold;
+  color:black;
+  font-size:20px;
 }
 
 .hero h2 {
-  font-size:28px;
-  background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+  margin-top:10px;
+  background: linear-gradient(to right, gold, white);
   -webkit-background-clip: text;
   color: transparent;
 }
 
+/* BETA */
 .beta {
+  position:absolute;
+  left:10px;
+  top:10px;
   background:gold;
   color:black;
-  padding:3px 8px;
+  padding:4px 8px;
   border-radius:6px;
-  font-size:12px;
-}
-
-/* INPUTS */
-input {
-  padding:10px;
-  margin:6px;
-  border-radius:6px;
-  border:none;
-  width:80%;
 }
 
 /* BUTTONS */
 button {
   padding:12px;
   margin:8px;
-  border-radius:6px;
   border:none;
+  border-radius:6px;
   background:gold;
   color:black;
   font-weight:bold;
@@ -74,18 +76,6 @@ button {
   margin:15px auto;
   border-radius:10px;
   max-width:520px;
-}
-
-/* POPUP */
-.popup {
-  display:none;
-  position:fixed;
-  top:40%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:red;
-  padding:15px;
-  border-radius:8px;
 }
 
 /* MODAL */
@@ -104,36 +94,63 @@ button {
   margin:10% auto;
 }
 
+/* INPUT */
+input, textarea {
+  width:90%;
+  padding:10px;
+  margin:6px;
+  border-radius:6px;
+  border:none;
+}
+
+/* POPUP */
+.popup {
+  display:none;
+  position:fixed;
+  top:40%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:red;
+  padding:15px;
+  border-radius:8px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- HERO -->
+<div class="beta">BETA</div>
+
 <div class="hero">
-  <div class="logo">💠 MXM</div>
-  <span class="beta">BETA</span>
+  <div class="logo">MXM</div>
   <h2>MXM Crypto Empire</h2>
+
+  <button onclick="openRegister()">Register</button>
+  <button onclick="openLogin()">Login</button>
 </div>
 
-<!-- AUTH -->
-<div id="auth">
-
+<!-- REGISTER MODAL -->
+<div class="modal" id="registerModal">
+<div class="modal-content">
 <h3>Register</h3>
-<input id="firstName" placeholder="First Name"><br>
-<input id="lastName" placeholder="Last Name"><br>
-<input id="email" placeholder="Email"><br>
-<input id="password" type="password" placeholder="Password"><br>
-<input id="confirmPassword" type="password" placeholder="Confirm Password"><br>
+<input id="regEmail" placeholder="Email">
+<input id="regPassword" type="password" placeholder="Password">
+<input id="regConfirm" type="password" placeholder="Confirm Password">
+<button onclick="register()">Create Account</button>
+<button onclick="closeModal('registerModal')">Close</button>
+</div>
+</div>
 
-<button onclick="register()">Register</button>
-
+<!-- LOGIN MODAL -->
+<div class="modal" id="loginModal">
+<div class="modal-content">
 <h3>Login</h3>
-<input id="loginEmail" placeholder="Email"><br>
-<input id="loginPassword" type="password" placeholder="Password"><br>
-
+<input id="loginEmail" placeholder="Email">
+<input id="loginPassword" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
-
+<button onclick="resetPassword()">Forgot Password</button>
+<button onclick="closeModal('loginModal')">Close</button>
+</div>
 </div>
 
 <!-- DASHBOARD -->
@@ -142,41 +159,32 @@ button {
 <h2>Dashboard</h2>
 
 <div class="card">
-<h3>💰 Free Earning Platform</h3>
-<button onclick="openModal('earn')">Start</button>
+<h3>Free Earning Platform</h3>
+<button onclick="openLink('earn')">Open</button>
 </div>
 
 <div class="card">
-<h3>💱 FixedFloat Exchange</h3>
-<button onclick="openModal('float')">Open</button>
+<h3>FixedFloat Exchange</h3>
+<button onclick="openLink('float')">Open</button>
 </div>
 
 <div class="card">
-<h3>📩 Contact Admin</h3>
-<textarea id="message"></textarea><br>
+<h3>Upload Proof Images</h3>
+<input type="file" id="imgUpload">
+<button onclick="uploadImage()">Upload</button>
+<div id="gallery"></div>
+</div>
+
+<div class="card">
+<h3>Contact Admin</h3>
+<textarea id="message"></textarea>
 <button onclick="sendMessage()">Send</button>
 </div>
 
-<div class="card">
-<h3>🔒 Premium</h3>
-<button onclick="premium()">Open</button>
-</div>
-
-<button onclick="logout()" style="background:red;color:white;">Logout</button>
+<button onclick="logout()">Logout</button>
 
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-<div class="modal-content">
-<h3 id="modalTitle"></h3>
-<p id="modalText"></p>
-<button onclick="goLink()">Continue</button>
-<button onclick="closeModal()">Cancel</button>
-</div>
-</div>
-
-<!-- POPUP -->
 <div id="popup" class="popup"></div>
 
 <script type="module" src="app.js"></script>
