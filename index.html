@@ -14,19 +14,10 @@ body {
   padding:20px;
 }
 
-/* HERO */
 .hero {
-  max-width:520px;
-  margin:auto;
-  padding:25px;
   background:#1c2541;
-  border-radius:14px;
-}
-
-/* AUTH */
-.authBox {
-  max-width:520px;
-  margin:20px auto;
+  padding:20px;
+  border-radius:12px;
 }
 
 input, button {
@@ -36,86 +27,24 @@ input, button {
   border:none;
 }
 
-.loginBtn {
-  background:#2196f3;
-  color:white;
-  width:90%;
-}
+.loginBtn { background:#2196f3; color:white; width:90%; }
+.signupBtn { background:#00c853; color:black; width:90%; }
 
-.signupBtn {
-  background:#00c853;
-  color:black;
-  width:90%;
-}
-
-/* DASHBOARD */
 #dashboard { display:none; }
 
 .card {
   background:#1c2541;
-  padding:18px;
+  padding:15px;
   margin:15px auto;
-  border-radius:12px;
-  max-width:520px;
+  border-radius:10px;
+  max-width:500px;
 }
 
 .pay-btn {
   background:green;
   color:white;
-  padding:12px;
+  padding:10px;
   border-radius:6px;
-}
-
-/* MODALS */
-.modal {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.75);
-}
-
-.modal-content {
-  position:absolute;
-  top:8%;
-  left:50%;
-  transform:translateX(-50%);
-  width:90%;
-  max-width:420px;
-  background:#1c2541;
-  padding:18px;
-  border-radius:12px;
-  max-height:75vh;
-  overflow-y:auto;
-}
-
-.close {
-  position:absolute;
-  right:10px;
-  cursor:pointer;
-}
-
-/* WARNING */
-.warning {
-  background:#b71c1c;
-  padding:10px;
-  border-radius:8px;
-  margin-top:10px;
-}
-
-/* PRICE */
-.priceBox {
-  background:#00c853;
-  color:black;
-  padding:10px;
-  border-radius:8px;
-  font-weight:bold;
-}
-
-/* FOOTER */
-footer {
-  margin-top:30px;
-  font-size:12px;
-  opacity:0.6;
 }
 </style>
 </head>
@@ -124,62 +53,10 @@ footer {
 
 <div class="hero">
 <h2>AI SaaS Business</h2>
-<p>AI-powered crypto tools</p>
+<p>Crypto AI Dashboard</p>
 </div>
 
 <!-- AUTH -->
-<div id="auth" class="authBox">
-
+<div id="auth">
 <input id="email" placeholder="Email"><br>
-<input id="password" type="password" placeholder="Password"><br>
-
-<label>
-<input type="checkbox" id="rememberMe"> Remember Me
-</label><br>
-
-<p id="captchaQ"></p>
-<input id="captchaA" placeholder="Answer captcha"><br>
-
-<button class="loginBtn" onclick="login()">Login</button><br>
-<button class="signupBtn" onclick="signup()">Create Account</button>
-
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard">
-
-<h2>Dashboard</h2>
-<p>You are logged in 👋</p>
-
-<div class="card">
-<h3>Crypto Tool</h3>
-<button class="pay-btn" onclick="openExchange()">Open FixedFloat</button>
-</div>
-
-<div class="card">
-<h3>Trading Proof</h3>
-<img src="https://via.placeholder.com/400x180"
-style="filter:blur(6px);width:100%;border-radius:10px;">
-</div>
-
-<div class="card">
-<h3>Premium Access</h3>
-<p>$15.66</p>
-<button class="pay-btn" onclick="openPremium()">Upgrade</button>
-</div>
-
-<div class="card">
-<button onclick="logout()">Logout</button>
-</div>
-
-</div>
-
-<!-- EXCHANGE MODAL -->
-<div class="modal" id="exchangeModal">
-<div class="modal-content">
-<span class="close" onclick="closeExchange()">✖</span>
-<h3>FixedFloat Exchange</h3>
-
-<p>Fast crypto swaps with automation.</p>
-
-<div class="
+<input id
