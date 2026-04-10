@@ -7,200 +7,268 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #0b132b;
-  color: white;
-  padding: 20px;
+  font-family: Arial;
+  background:#0b132b;
+  color:white;
+  text-align:center;
+  padding:20px;
 }
 
-/* AUTH INPUTS */
+/* ===== HERO HEADER ===== */
+.hero {
+  max-width:520px;
+  margin:0 auto 20px auto;
+  padding:25px;
+  background:#1c2541;
+  border-radius:14px;
+  text-align:center;
+}
+
+.hero h1 {
+  margin:0;
+  font-size:26px;
+}
+
+.beta {
+  display:inline-block;
+  background:#00c853;
+  color:black;
+  font-weight:bold;
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:6px;
+  margin-left:8px;
+}
+
+.hero p {
+  opacity:0.8;
+  margin-top:10px;
+}
+
+/* ===== AUTH BUTTONS ===== */
 input, button {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 5px;
-  border: none;
+  padding:10px;
+  margin:6px;
+  border-radius:6px;
+  border:none;
 }
 
-button { cursor: pointer; }
+.authBox {
+  max-width:520px;
+  margin:0 auto;
+}
 
+.loginBtn {
+  background:#2196f3;
+  color:white;
+  width:45%;
+}
+
+.signupBtn {
+  background:#00c853;
+  color:black;
+  width:45%;
+}
+
+.authRow {
+  display:flex;
+  justify-content:space-between;
+}
+
+/* ===== DASHBOARD ===== */
 #dashboard { display:none; margin-top:20px; }
 
-/* MAIN CARDS */
 .card {
-  margin: 15px auto;
-  padding: 18px;
-  background: #1c2541;
-  border-radius: 12px;
-  max-width: 500px;
+  background:#1c2541;
+  padding:18px;
+  margin:15px auto;
+  border-radius:12px;
+  max-width:520px;
 }
 
-/* BUTTON */
 .pay-btn {
-  background: green;
-  color: white;
-  padding: 12px 18px;
-  border-radius: 6px;
-  text-decoration: none;
-  display: inline-block;
-  margin-top: 10px;
+  background:green;
+  color:white;
+  padding:12px 18px;
+  border-radius:6px;
+  margin-top:10px;
+  display:inline-block;
 }
 
-/* MODAL BACKDROP */
+/* ===== MODAL ===== */
 .modal {
   display:none;
   position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
+  inset:0;
   background:rgba(0,0,0,0.75);
-  padding: 20px;
 }
 
-/* MODAL BOX (SCROLLABLE + CENTERED) */
 .modal-content {
-  background:#1c2541;
-  padding:25px;
-  width:90%;
-  max-width:450px;
-  margin: 40px auto;
-  border-radius:12px;
+  position:absolute;
+  top:8%;
+  left:50%;
+  transform:translateX(-50%) scale(0.92);
+  width:88%;
+  max-width:420px;
 
-  /* IMPORTANT FOR SCROLL */
-  max-height:85vh;
+  background:#1c2541;
+  border-radius:14px;
+  padding:18px;
+
+  max-height:78vh;
   overflow-y:auto;
 
-  /* nicer look */
   text-align:left;
   line-height:1.5;
+
+  border-left:3px solid #00c853;
+  border-right:3px solid #00c853;
 }
 
-/* SCROLLBAR (RIGHT SIDE VISIBLE STYLE) */
+/* SCROLLBAR */
 .modal-content::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
-
 .modal-content::-webkit-scrollbar-thumb {
-  background: #00c853;
-  border-radius: 10px;
+  background:#00c853;
+  border-radius:20px;
+}
+.modal-content::-webkit-scrollbar-track {
+  background:#0b132b;
 }
 
-.modal-content::-webkit-scrollbar-track {
-  background: #0b132b;
+/* CLOSE */
+.close {
+  position:absolute;
+  top:10px;
+  right:12px;
+  font-size:20px;
+  cursor:pointer;
+}
+
+/* WARNING */
+.warning {
+  background:#b71c1c;
+  padding:10px;
+  border-radius:8px;
+  margin-top:10px;
+  font-size:13px;
+}
+
+/* PRICE BOX */
+.priceBox {
+  background:#00c853;
+  color:black;
+  padding:12px;
+  border-radius:10px;
+  font-weight:bold;
+  text-align:center;
+  margin:10px 0;
+}
+
+/* FOOTER */
+footer {
+  margin-top:30px;
+  font-size:12px;
+  opacity:0.6;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🚀 AI SaaS Business</h1>
-
-<!-- AUTH -->
-<div id="auth">
-  <h2>Login / Signup</h2>
-  <input id="email" placeholder="Email"><br>
-  <input id="password" type="password" placeholder="Password"><br>
-
-  <button onclick="login()">Login</button>
-  <button onclick="signup()">Sign Up</button>
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <h1>AI SaaS Business <span class="beta">BETA</span></h1>
+  <p>AI-powered crypto dashboard for trading insights & automation tools</p>
 </div>
 
-<!-- DASHBOARD -->
+<!-- ===== AUTH ===== -->
+<div class="authBox" id="auth">
+
+  <h2>Access Platform</h2>
+
+  <input placeholder="Email"><br>
+  <input type="password" placeholder="Password"><br>
+
+  <div class="authRow">
+    <button class="loginBtn" onclick="login()">Login</button>
+    <button class="signupBtn" onclick="signup()">Sign Up</button>
+  </div>
+
+</div>
+
+<!-- ===== DASHBOARD ===== -->
 <div id="dashboard">
 
 <h2>Dashboard</h2>
 <p>You are logged in 👋</p>
 
-<!-- EXCHANGE -->
 <div class="card">
 <h3>Crypto Exchange</h3>
-
-<button class="pay-btn" onclick="openExchange()">
-Open FixedFloat Exchange
-</button>
+<button class="pay-btn" onclick="openExchange()">Open FixedFloat Exchange</button>
 </div>
 
-<!-- PROOF -->
 <div class="card">
-<h3>Trading Proof (Premium Locked)</h3>
-<img src="https://via.placeholder.com/400x180" style="filter:blur(6px);width:100%;border-radius:10px;">
+<h3>Trading Proof</h3>
+<img src="https://via.placeholder.com/400x180"
+style="filter:blur(6px);width:100%;border-radius:10px;">
 </div>
 
-<!-- PREMIUM -->
 <div class="card">
-<h3>💳 Premium Access</h3>
-
+<h3>Premium Access</h3>
 <p><b>Price:</b> $15.66</p>
-
-<button class="pay-btn" onclick="openPremium()">
-Upgrade Now
-</button>
+<button class="pay-btn" onclick="openPremium()">Upgrade Now</button>
 </div>
 
 </div>
 
-<!-- FIXEDFLOAT MODAL -->
+<!-- ===== EXCHANGE MODAL ===== -->
 <div class="modal" id="exchangeModal">
 <div class="modal-content">
+
+<span class="close" onclick="closeExchange()">✖</span>
 
 <h2>💱 FixedFloat Exchange</h2>
 
 <p>
-FixedFloat is a non-custodial instant cryptocurrency exchange platform that allows users to swap digital assets without holding funds on the platform.
+Instant crypto swaps with automated execution and optional tracking system.
 </p>
 
-<h3>📌 Key Features</h3>
-<ul>
-<li>✔ Instant crypto swaps</li>
-<li>✔ No mandatory registration (optional tracking only)</li>
-<li>✔ Supports multiple cryptocurrencies</li>
-<li>✔ Automated exchange system</li>
-</ul>
+<div class="warning">
+⚠ Verify wallet addresses carefully. Transactions are irreversible.
+</div>
 
-<h3>⚠ Important Notice</h3>
-<p>
-Always verify wallet addresses before sending crypto. Transactions are irreversible once confirmed on the blockchain.
-</p>
-
-<button class="pay-btn" onclick="goExchange()">
-Continue → Open Exchange
-</button>
+<button class="pay-btn" onclick="goExchange()">Continue</button>
 
 </div>
 </div>
 
-<!-- PREMIUM MODAL -->
+<!-- ===== PREMIUM MODAL ===== -->
 <div class="modal" id="premiumModal">
 <div class="modal-content">
 
+<span class="close" onclick="closePremium()">✖</span>
+
 <h2>💳 Premium Upgrade</h2>
 
-<p><b>Price:</b> $15.66</p>
+<div class="priceBox">$15.66</div>
 
-<p>
-Your payment will be processed securely via NOWPayments. The final crypto amount (USDT/TRX) is automatically calculated based on real-time exchange rates and network fees.
-</p>
-
-<h3>🔥 What you will get after upgrade</h3>
-
+<h3>What you get</h3>
 <ul>
-<li>✔ Access to advanced AI tools</li>
-<li>✔ Exclusive crypto trading insights</li>
-<li>✔ Full trading breakdown & strategies</li>
-<li>✔ Premium locked content access</li>
-<li>✔ Future updates & new features first</li>
+<li>✔ AI trading tools</li>
+<li>✔ Strategy insights</li>
+<li>✔ Premium content</li>
+<li>✔ Early updates</li>
 </ul>
 
-<h3>⚠ Important Notice</h3>
-<ul>
-<li>✔ Payments are irreversible after confirmation</li>
-<li>✔ Ensure wallet address is correct before sending funds</li>
-</ul>
+<p>Payment processed via NOWPayments (crypto auto-calculated).</p>
 
-<button class="pay-btn" onclick="payNow()">
-Continue to Payment
-</button>
+<div class="warning">
+⚠ Payments are non-refundable after confirmation
+</div>
+
+<button class="pay-btn" onclick="payNow()">Continue to Payment</button>
 
 <br><br>
 
@@ -211,27 +279,23 @@ Cancel
 </div>
 </div>
 
+<!-- ===== SCRIPTS ===== -->
 <script>
 function login(){
   document.getElementById("auth").style.display="none";
   document.getElementById("dashboard").style.display="block";
 }
 
-function signup(){
-  login();
-}
+function signup(){ login(); }
 
-/* EXCHANGE */
 function openExchange(){
   document.getElementById("exchangeModal").style.display="block";
 }
 
-function goExchange(){
-  window.open("https://ff.io/?ref=s1nep47a","_blank");
+function closeExchange(){
   document.getElementById("exchangeModal").style.display="none";
 }
 
-/* PREMIUM */
 function openPremium(){
   document.getElementById("premiumModal").style.display="block";
 }
@@ -240,11 +304,19 @@ function closePremium(){
   document.getElementById("premiumModal").style.display="none";
 }
 
-/* PAYMENT */
+function goExchange(){
+  window.open("https://ff.io/?ref=s1nep47a","_blank");
+}
+
 function payNow(){
   window.open("https://nowpayments.io/payment/?iid=5153003613","_blank");
 }
 </script>
 
+<!-- ===== FOOTER ===== -->
+<footer>
+© 2026 AI SaaS Business. All rights reserved.
+</footer>
+
 </body>
-</html>
+  </html>
