@@ -1,10 +1,13 @@
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+
 function showDashboard() {
   document.getElementById("dashboard").style.display = "block";
-  document.getElementById("authSection").style.display = "none";
+  document.getElementById("auth").style.display = "none";
 }
 
 function signup() {
-  createUserWithEmailAndPassword(auth, email.value, password.value)
+  createUserWithEmailAndPassword(window.auth, email.value, password.value)
     .then(() => {
       alert("Account created");
       showDashboard();
@@ -13,7 +16,7 @@ function signup() {
 }
 
 function login() {
-  signInWithEmailAndPassword(auth, email.value, password.value)
+  signInWithEmailAndPassword(window.auth, email.value, password.value)
     .then(() => {
       alert("Login successful");
       showDashboard();
