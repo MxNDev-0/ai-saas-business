@@ -31,18 +31,17 @@ body{
   color:black;
   padding:3px 8px;
   border-radius:6px;
-  font-size:12px;
 }
 
 /* HERO */
 .hero{
   text-align:center;
-  padding:20px;
+  padding:30px;
 }
 
 .logo{
-  width:70px;
-  height:70px;
+  width:80px;
+  height:80px;
   margin:auto;
   background:gold;
   border-radius:50%;
@@ -51,6 +50,7 @@ body{
   justify-content:center;
   color:black;
   font-weight:bold;
+  font-size:18px;
 }
 
 .hero h1{
@@ -65,14 +65,14 @@ body{
   position:fixed;
   top:0;
   right:0;
-  width:200px;
+  width:220px;
   height:100%;
   background:#1c2541;
   padding:20px;
+  z-index:1000;
 }
 
 #menuPanel button{
-  display:block;
   width:100%;
   margin:10px 0;
 }
@@ -83,21 +83,24 @@ body{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,0.8);
+  z-index:2000;
 }
 
 .modal-box{
   background:#1c2541;
   padding:20px;
-  max-width:300px;
-  margin:80px auto;
+  max-width:320px;
+  margin:100px auto;
   border-radius:10px;
   text-align:center;
 }
 
-input{
+input, textarea{
   width:90%;
   padding:10px;
-  margin:5px;
+  margin:6px;
+  border-radius:6px;
+  border:none;
 }
 
 /* DASHBOARD */
@@ -139,17 +142,15 @@ button{
   <div class="beta">BETA</div>
 </div>
 
-<div class="hero">
+<!-- HERO -->
+<div class="hero" id="landing">
   <div class="logo">MXM</div>
   <h1>MXM Crypto Empire</h1>
   <p>Discover legit platforms to earn online</p>
 </div>
 
 <!-- MENU -->
-<div id="menuPanel">
-  <button onclick="openLogin()">Login</button>
-  <button onclick="openSignup()">Sign Up</button>
-</div>
+<div id="menuPanel"></div>
 
 <!-- LOGIN MODAL -->
 <div class="modal" id="loginModal">
@@ -177,49 +178,33 @@ button{
 <!-- DASHBOARD -->
 <div id="dashboard">
 
-  <!-- NAV -->
   <button onclick="showSection('home')">Home</button>
   <button onclick="showSection('about')">About</button>
   <button onclick="showSection('faq')">FAQ</button>
   <button onclick="showSection('support')">Support</button>
   <button onclick="showSection('settings')">Settings</button>
 
-  <!-- HOME -->
   <div id="home" class="section active">
     <h3>Platforms</h3>
     <button onclick="window.open('https://forfans.me/chichiguy','_blank')">Free Earning</button>
     <button onclick="window.open('https://ff.io/?ref=s1nep47a','_blank')">FixedFloat</button>
   </div>
 
-  <!-- ABOUT -->
   <div id="about" class="section">
-    <p>This platform helps users discover legit earning platforms online.</p>
+    <p>This platform shares legit platforms. Not financial advice.</p>
   </div>
 
-  <!-- FAQ -->
   <div id="faq" class="section">
-    <p>1. Is this free? → Yes</p>
-    <p>2. Do you guarantee profit? → No</p>
-    <p>3. Are platforms safe? → Research first</p>
-    <p>4. Do I need investment? → Some yes, some no</p>
-    <p>5. Is this financial advice? → No</p>
-    <p>6. Can I lose money? → Yes</p>
-    <p>7. Is this automated? → No</p>
-    <p>8. Who owns platforms? → Not us</p>
-    <p>9. Can beginners use it? → Yes</p>
-    <p>10. Support available? → Yes</p>
+    <p>Basic FAQ here...</p>
   </div>
 
-  <!-- SUPPORT -->
   <div id="support" class="section">
-    <textarea id="supportMsg" placeholder="Type message"></textarea><br>
+    <textarea id="supportMsg"></textarea><br>
     <button onclick="sendMessage()">Send</button>
   </div>
 
-  <!-- SETTINGS -->
   <div id="settings" class="section">
-    <input placeholder="Username"><br>
-    <button>Save</button>
+    <input placeholder="Username">
   </div>
 
   <button class="logout" onclick="logout()">Logout</button>
@@ -230,8 +215,24 @@ button{
 
 <script>
 function toggleMenu(){
-  let m=document.getElementById("menuPanel");
-  m.style.display = m.style.display==="block"?"none":"block";
+  let menu=document.getElementById("menuPanel");
+
+  if(window.isLoggedIn){
+    menu.innerHTML = `
+      <button onclick="showSection('home')">Home</button>
+      <button onclick="showSection('about')">About</button>
+      <button onclick="showSection('faq')">FAQ</button>
+      <button onclick="showSection('support')">Support</button>
+      <button onclick="logout()">Logout</button>
+    `;
+  } else {
+    menu.innerHTML = `
+      <button onclick="openLogin()">Login</button>
+      <button onclick="openSignup()">Sign Up</button>
+    `;
+  }
+
+  menu.style.display = menu.style.display==="block"?"none":"block";
 }
 
 function openLogin(){
