@@ -4,26 +4,21 @@
   <title>MXM Live Chat</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
   <h2>Live Chat 💬</h2>
-  <button onclick="location.href='dashboard.html'">Back</button>
+  <button onclick="location.href='dashboard.html'">⬅ Back</button>
 </div>
 
-<div id="chatBox" style="
-  height: 70vh;
-  overflow-y: auto;
-  padding: 10px;
-  background:#1c2541;
-  margin: 10px;
-  border-radius: 10px;
-"></div>
+<!-- CHAT AREA -->
+<div id="chatBox" class="chat-box"></div>
 
-<div class="chat-input" style="display:flex; padding:10px;">
-  <input id="msg" placeholder="Type message..." style="flex:1; padding:10px;">
-  <button onclick="sendMsg()" style="margin-left:10px;">Send</button>
+<!-- INPUT -->
+<div class="chat-input">
+  <input id="msg" placeholder="Type message...">
+  <button onclick="sendMsg()">Send</button>
 </div>
 
 <script type="module" src="chat.js"></script>
