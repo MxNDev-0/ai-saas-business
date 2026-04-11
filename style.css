@@ -106,3 +106,13 @@ button {
   background: orange;
   margin-top: 5px;
 }
+.locked {
+  filter: blur(5px);
+  user-select: none;
+}
+
+.unlock-btn {
+  background: gold;
+  color: black;
+  font-weight: bold;
+}
