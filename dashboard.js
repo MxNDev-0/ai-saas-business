@@ -13,7 +13,8 @@ import {
   increment,
   arrayUnion,
   setDoc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const ADMIN_EMAIL = "nc.maxiboro@gmail.com";
@@ -46,23 +47,18 @@ window.logout = () => signOut(auth);
 window.goHome = () => loadPosts();
 window.goProfile = () => alert("Profile coming soon");
 
-// ================= 💰 PREMIUM (FIXED) =================
+// ================= PREMIUM =================
 window.goPremium = async function () {
   try {
     const user = auth.currentUser;
-
     if (!user) return alert("Login first");
 
     alert("Creating payment...");
 
     const res = await fetch(`${BACKEND_URL}/create-payment`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        userId: user.uid
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.uid })
     });
 
     const data = await res.json();
@@ -76,19 +72,42 @@ window.goPremium = async function () {
 
   } catch (err) {
     console.error(err);
-    alert("Error connecting to server ❌");
+    alert("Server error ❌");
   }
 };
 
 // ================= ADMIN =================
 window.goAdmin = async function () {
-  if (auth.currentUser.email !== ADMIN_EMAIL) {
+  if (!auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) {
     alert("Not admin ❌");
     return;
   }
 
   document.getElementById("adminPanel").style.display = "block";
   loadUsers();
+};
+
+// ================= NOTIFICATIONS =================
+onSnapshot(collection(db, "notifications"), (snapshot) => {
+  snapshot.docChanges().forEach(change => {
+    if (change.type === "added") {
+      alert("🔔 " + change.doc.data().message);
+    }
+  });
+});
+
+// ================= ADMIN SEND NOTIFICATION =================
+window.sendNotification = async function () {
+  const message = prompt("Enter notification message:");
+
+  if (!message) return;
+
+  await addDoc(collection(db, "notifications"), {
+    message,
+    time: Date.now()
+  });
+
+  alert("Sent ✅");
 };
 
 // ================= CREATE POST =================
@@ -139,9 +158,7 @@ async function loadPosts() {
         </p>
 
         ${locked ? `
-          <button class="unlock-btn" onclick="goPremium()">
-            Unlock Premium 💎
-          </button>
+          <button onclick="goPremium()">Unlock Premium 💎</button>
         ` : `
           <a href="${post.link}" target="_blank" onclick="trackClick('${id}')">
             Visit Link
@@ -162,13 +179,15 @@ async function loadPosts() {
 
 // ================= ACTIONS =================
 window.trackClick = async (id) => {
-  const ref = doc(db, "posts", id);
-  await updateDoc(ref, { clicks: increment(1) });
+  await updateDoc(doc(db, "posts", id), {
+    clicks: increment(1)
+  });
 };
 
 window.likePost = async (id) => {
-  const ref = doc(db, "posts", id);
-  await updateDoc(ref, { likes: increment(1) });
+  await updateDoc(doc(db, "posts", id), {
+    likes: increment(1)
+  });
   loadPosts();
 };
 
@@ -176,9 +195,7 @@ window.addComment = async (id) => {
   const input = document.getElementById(`comment-${id}`);
   const text = input.value;
 
-  const ref = doc(db, "posts", id);
-
-  await updateDoc(ref, {
+  await updateDoc(doc(db, "posts", id), {
     comments: arrayUnion({
       user: auth.currentUser.email,
       text
@@ -189,7 +206,7 @@ window.addComment = async (id) => {
   loadPosts();
 };
 
-// ================= ADMIN USERS =================
+// ================= USERS =================
 async function loadUsers() {
   const usersList = document.getElementById("usersList");
   usersList.innerHTML = "";
@@ -214,9 +231,7 @@ async function loadUsers() {
 }
 
 window.togglePremium = async function (id, status) {
-  const ref = doc(db, "users", id);
-
-  await updateDoc(ref, {
+  await updateDoc(doc(db, "users", id), {
     premium: !status
   });
 
