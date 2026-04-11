@@ -87,17 +87,22 @@ window.goAdmin = async function () {
   loadUsers();
 };
 
-// ================= NOTIFICATIONS =================
+// ================= 🔔 NOTIFICATIONS (REAL-TIME) =================
 onSnapshot(collection(db, "notifications"), (snapshot) => {
   snapshot.docChanges().forEach(change => {
     if (change.type === "added") {
-      alert("🔔 " + change.doc.data().message);
+      const data = change.doc.data();
+
+      // Prevent showing old messages on first load
+      if (data.time && Date.now() - data.time < 5000) {
+        alert("🔔 " + data.message);
+      }
     }
   });
 });
 
-// ================= ADMIN SEND NOTIFICATION =================
-window.sendNotification = async function () {
+// ================= 🔔 ADMIN SEND NOTIFICATION =================
+window.sendNotificationPrompt = async function () {
   const message = prompt("Enter notification message:");
 
   if (!message) return;
@@ -107,7 +112,7 @@ window.sendNotification = async function () {
     time: Date.now()
   });
 
-  alert("Sent ✅");
+  alert("Notification sent ✅");
 };
 
 // ================= CREATE POST =================
