@@ -1,13 +1,7 @@
+// Import Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  setPersistence,
-  browserLocalPersistence,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAu8BaL9NV6NU_oKSy-pxh89TuVrovZzaE",
@@ -18,16 +12,8 @@ const firebaseConfig = {
   appId: "1:568523173235:web:b714d052976268f1e72906"
 };
 
+// Initialize
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
-// 🔥 FIX: stay logged in after refresh
-setPersistence(auth, browserLocalPersistence);
-
-export {
-  auth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-};
+export const auth = getAuth(app);
+export const db = getFirestore(app);
