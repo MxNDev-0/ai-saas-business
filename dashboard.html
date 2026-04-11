@@ -11,14 +11,29 @@
   <h2 class="logo">MXM Crypto Empire <span class="beta">BETA</span></h2>
 
   <div class="nav-links">
-    <span>Home</span>
-    <span>Profile</span>
+    <button onclick="goHome()">Home</button>
+    <button onclick="goProfile()">Profile</button>
     <button onclick="logout()">Logout</button>
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 <div class="container">
+
+  <!-- ANALYTICS -->
+  <div class="analytics">
+    <h3>📊 Analytics Dashboard</h3>
+    <p>Total Posts: <span id="totalPosts">0</span></p>
+    <p>Total Clicks: <span id="totalClicks">0</span></p>
+    <p>Total Likes: <span id="totalLikes">0</span></p>
+    <p>Top Post: <span id="topPost">None</span></p>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="adminPanel" style="display:none;">
+    <h3>Admin Panel 👑</h3>
+    <p>You are the admin</p>
+  </div>
 
   <!-- POST BOX -->
   <div class="post-box">
@@ -27,13 +42,7 @@
     <button onclick="createPost()">Post</button>
   </div>
 
-  <!-- ADMIN PANEL -->
-  <div id="adminPanel" style="display:none;">
-    <h3>Admin Panel 👑</h3>
-    <p>You are the admin</p>
-  </div>
-
-  <!-- FEED -->
+  <!-- POSTS -->
   <div id="posts"></div>
 
 </div>
