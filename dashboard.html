@@ -4,24 +4,18 @@
   <title>MXM Crypto Empire</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <!-- NAVBAR -->
 <div class="navbar">
-  <h2 class="logo">
-    MXM Crypto Empire <span class="beta">BETA</span>
-  </h2>
+  <h2 class="logo">MXM Crypto Empire <span class="beta">BETA</span></h2>
 
   <div class="nav-links">
     <button onclick="goHome()">Home</button>
     <button onclick="goProfile()">Profile</button>
     <button onclick="goAdmin()">Admin</button>
     <button onclick="goPremium()">Unlock Premium 💎</button>
-
-    <!-- ✅ UPDATED BUTTON -->
-    <button onclick="location.href='users.html'">Messages 💬</button>
-
+    <button onclick="location.href='chat.html'">Live Chat 💬</button>
     <button onclick="logout()">Logout</button>
   </div>
 </div>
@@ -41,8 +35,7 @@
   <div id="adminPanel" style="display:none;">
     <h3>👑 Admin Dashboard</h3>
 
-    <!-- 🔔 IMPROVED BUTTON -->
-    <button onclick="sendNotificationPrompt()">Send Notification 🔔</button>
+    <button onclick="sendNotification()">Send Notification 🔔</button>
 
     <div id="usersList"></div>
   </div>
@@ -61,4 +54,4 @@
 
 <script type="module" src="dashboard.js"></script>
 </body>
-</html>
+                                         </html>
