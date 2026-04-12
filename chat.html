@@ -15,27 +15,19 @@
   </div>
 </div>
 
-<div class="container" style="display:flex; gap:10px;">
+<div class="container chat-container">
 
-  <!-- USERS LIST -->
-  <div style="width:30%; background:#1c2541; padding:10px; border-radius:10px;">
-    <h4>Users</h4>
-    <div id="usersList"></div>
-  </div>
+  <!-- USERS -->
+  <div class="users-list" id="usersList"></div>
 
-  <!-- CHAT AREA -->
-  <div style="width:70%;">
-    
-    <div id="chatHeader">Select a user</div>
+  <!-- CHAT -->
+  <div id="chatHeader">Select a user</div>
 
-    <div id="chatBox" style="height:350px; overflow-y:auto; background:#1c2541; padding:10px; border-radius:10px;">
-    </div>
+  <div id="chatBox" class="chat-box"></div>
 
-    <div style="margin-top:10px;">
-      <input id="messageInput" placeholder="Type message...">
-      <button onclick="sendMessage()">Send</button>
-    </div>
-
+  <div class="chat-input">
+    <input id="messageInput" placeholder="Type message...">
+    <button onclick="sendMessage()">Send</button>
   </div>
 
 </div>
