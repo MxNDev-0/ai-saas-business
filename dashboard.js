@@ -19,17 +19,22 @@ const ADMIN_EMAIL = "nc.maxiboro@gmail.com";
 const postsDiv = document.getElementById("posts");
 
 let currentUserData = null;
-let authChecked = false; // ✅ PREVENT LOOP
 
-// ================= AUTH =================
+// 🔥 IMPORTANT: ONLY RUN ONCE
+let authLoaded = false;
+
 onAuthStateChanged(auth, async (user) => {
 
-  // 🔴 STOP LOOP
-  if (authChecked) return;
-  authChecked = true;
+  if (authLoaded) return;
+  authLoaded = true;
 
+  // ⛔ DO NOT redirect instantly
   if (!user) {
-    window.location.href = "index.html";
+    setTimeout(() => {
+      if (!auth.currentUser) {
+        window.location.href = "index.html";
+      }
+    }, 500); // give firebase time
     return;
   }
 
@@ -49,21 +54,22 @@ onAuthStateChanged(auth, async (user) => {
   loadPosts();
 });
 
-// ================= NAV =================
+// LOGOUT FIX
 window.logout = async () => {
   await signOut(auth);
-  window.location.href = "index.html"; // ✅ force redirect
+  window.location.href = "index.html";
 };
 
+// NAV
 window.goHome = () => loadPosts();
 window.goProfile = () => window.location.href = "profile.html";
 
-// ================= SUPPORT =================
+// SUPPORT
 window.support = () => {
   window.open("https://nowpayments.io/payment/?iid=5153003613");
 };
 
-// ================= CREATE POST =================
+// CREATE POST
 window.createPost = async function () {
   const user = auth.currentUser;
   const text = document.getElementById("postText").value;
@@ -74,7 +80,6 @@ window.createPost = async function () {
   const now = Date.now();
   const isAdmin = user.email === ADMIN_EMAIL;
 
-  // LIMIT USERS ONLY
   if (!isAdmin) {
     if (now - currentUserData.lastPost < 86400000) {
       return alert("You can only post once per day");
@@ -104,7 +109,7 @@ window.createPost = async function () {
   loadPosts();
 };
 
-// ================= LOAD POSTS =================
+// LOAD POSTS
 async function loadPosts() {
   const snapshot = await getDocs(collection(db, "posts"));
   postsDiv.innerHTML = "";
