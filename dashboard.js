@@ -19,9 +19,15 @@ const ADMIN_EMAIL = "nc.maxiboro@gmail.com";
 const postsDiv = document.getElementById("posts");
 
 let currentUserData = null;
+let authChecked = false; // ✅ PREVENT LOOP
 
-// AUTH
+// ================= AUTH =================
 onAuthStateChanged(auth, async (user) => {
+
+  // 🔴 STOP LOOP
+  if (authChecked) return;
+  authChecked = true;
+
   if (!user) {
     window.location.href = "index.html";
     return;
@@ -43,17 +49,21 @@ onAuthStateChanged(auth, async (user) => {
   loadPosts();
 });
 
-// NAV
-window.logout = () => signOut(auth);
+// ================= NAV =================
+window.logout = async () => {
+  await signOut(auth);
+  window.location.href = "index.html"; // ✅ force redirect
+};
+
 window.goHome = () => loadPosts();
 window.goProfile = () => window.location.href = "profile.html";
 
-// SUPPORT
+// ================= SUPPORT =================
 window.support = () => {
   window.open("https://nowpayments.io/payment/?iid=5153003613");
 };
 
-// CREATE POST
+// ================= CREATE POST =================
 window.createPost = async function () {
   const user = auth.currentUser;
   const text = document.getElementById("postText").value;
@@ -62,7 +72,6 @@ window.createPost = async function () {
   if (!text) return alert("Write something");
 
   const now = Date.now();
-
   const isAdmin = user.email === ADMIN_EMAIL;
 
   // LIMIT USERS ONLY
@@ -95,7 +104,7 @@ window.createPost = async function () {
   loadPosts();
 };
 
-// LOAD POSTS
+// ================= LOAD POSTS =================
 async function loadPosts() {
   const snapshot = await getDocs(collection(db, "posts"));
   postsDiv.innerHTML = "";
