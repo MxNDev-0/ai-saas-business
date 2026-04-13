@@ -2,13 +2,10 @@ import { auth } from "./firebase.js";
 
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged
+  signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const message = document.getElementById("message");
-
-let authReady = false;
 
 // SIGNUP
 window.signup = async function () {
@@ -18,6 +15,7 @@ window.signup = async function () {
   try {
     await createUserWithEmailAndPassword(auth, email, password);
     message.innerText = "Account created!";
+    window.location.href = "dashboard.html"; // ✅ manual redirect
   } catch (err) {
     message.innerText = err.message;
   }
@@ -31,17 +29,8 @@ window.login = async function () {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     message.innerText = "Login successful!";
+    window.location.href = "dashboard.html"; // ✅ manual redirect
   } catch (err) {
     message.innerText = err.message;
   }
 };
-
-// 🔥 FIXED AUTH CHECK
-onAuthStateChanged(auth, (user) => {
-  if (authReady) return;
-  authReady = true;
-
-  if (user) {
-    window.location.href = "dashboard.html";
-  }
-});
