@@ -10,9 +10,10 @@ import {
   updateDoc,
   query,
   orderBy,
-  getDocs,
-  writeBatch
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+let deleting = false;
 
 /* ================= WALLET ================= */
 window.updateWallet = async () => {
@@ -71,7 +72,7 @@ window.toggleBan = async (uid, status) => {
   alert(status ? "User banned ❌" : "User unbanned ✅");
 };
 
-/* ================= POSTS ================= */
+/* ================= POSTS LIST ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
   if (!box) return;
@@ -93,25 +94,91 @@ function loadPosts() {
   });
 }
 
+/* ================= DELETE SINGLE POST ================= */
 window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
+  if (!confirm("Delete this post?")) return;
+
+  try {
+    await deleteDoc(doc(db, "posts", id));
+    alert("Post deleted ✅");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete ❌");
+  }
 };
 
-/* ================= CLEAR ALL POSTS ================= */
+/* ================= DELETE ALL POSTS (ROBUST) ================= */
 window.clearAllPosts = async () => {
-  const ok = confirm("Delete ALL posts? This cannot be undone.");
+  if (deleting) return;
+
+  const ok = confirm("⚠️ Delete ALL posts permanently?");
   if (!ok) return;
 
+  deleting = true;
+
+  try {
+    const snap = await getDocs(collection(db, "posts"));
+
+    if (snap.empty) {
+      alert("No posts found");
+      deleting = false;
+      return;
+    }
+
+    let count = 0;
+
+    for (const d of snap.docs) {
+      await deleteDoc(doc(db, "posts", d.id));
+      count++;
+    }
+
+    alert(`Deleted ${count} posts ✅`);
+  } catch (err) {
+    console.error(err);
+    alert("Error deleting posts ❌");
+  }
+
+  deleting = false;
+};
+
+/* ================= DELETE BY USER ================= */
+window.deleteUserPosts = async (emailPrefix) => {
+  if (!confirm(`Delete ALL posts from ${emailPrefix}?`)) return;
+
   const snap = await getDocs(collection(db, "posts"));
-  const batch = writeBatch(db);
 
-  snap.forEach(d => {
-    batch.delete(d.ref);
-  });
+  let count = 0;
 
-  await batch.commit();
+  for (const d of snap.docs) {
+    const data = d.data();
 
-  alert("All posts deleted ✅");
+    if (data.user === emailPrefix) {
+      await deleteDoc(doc(db, "posts", d.id));
+      count++;
+    }
+  }
+
+  alert(`Deleted ${count} posts from ${emailPrefix} ✅`);
+};
+
+/* ================= CLEAN OLD POSTS ================= */
+window.cleanOldPosts = async (days = 7) => {
+  const limit = Date.now() - days * 24 * 60 * 60 * 1000;
+
+  const snap = await getDocs(collection(db, "posts"));
+
+  let count = 0;
+
+  for (const d of snap.docs) {
+    const data = d.data();
+
+    if (data.time < limit) {
+      await deleteDoc(doc(db, "posts", d.id));
+      count++;
+    }
+  }
+
+  alert(`Cleaned ${count} old posts 🧹`);
 };
 
 /* ================= UPGRADES ================= */
@@ -147,28 +214,6 @@ window.approveUpgrade = async (uid) => {
   });
 
   alert("User upgraded ✅");
-};
-
-/* ================= APPROVE ALL ================= */
-window.approveAllUpgrades = async () => {
-  const snap = await getDocs(collection(db, "upgradeRequests"));
-  const batch = writeBatch(db);
-
-  snap.forEach(d => {
-    const data = d.data();
-
-    batch.update(doc(db, "users", data.uid), {
-      premium: true
-    });
-
-    batch.update(d.ref, {
-      status: "approved"
-    });
-  });
-
-  await batch.commit();
-
-  alert("All upgrades approved 🚀");
 };
 
 /* ================= INIT ================= */
