@@ -7,54 +7,61 @@ import {
 import {
   collection,
   addDoc,
+  onSnapshot,
   query,
-  orderBy,
-  onSnapshot
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-let currentUser = null;
+let user = null;
 
-/* AUTH */
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    location.href = "index.html";
-    return;
-  }
+onAuthStateChanged(auth, (u) => {
+  if (!u) location.href = "index.html";
+  user = u;
 
-  currentUser = user;
-
-  loadMyPosts();
+  loadPosts();
 });
 
-/* CREATE POST */
+/* ✅ PROFILE POST FIXED */
 window.createPost = async () => {
-  const text = document.getElementById("postText").value.trim();
+  const input = document.getElementById("postInput");
+  const text = input.value.trim();
 
   if (!text) return;
 
   await addDoc(collection(db, "posts"), {
     text,
-    userId: currentUser.uid,
+    user: user.email.split("@")[0],
     time: Date.now()
   });
 
-  document.getElementById("postText").value = "";
+  input.value = "";
 };
 
-/* LOAD ONLY MY POSTS */
-function loadMyPosts() {
+function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
   onSnapshot(q, (snap) => {
-    const box = document.getElementById("myPosts");
+    const box = document.getElementById("profilePosts");
     box.innerHTML = "";
 
-    snap.forEach(d => {
-      const p = d.data();
+    snap.forEach(doc => {
+      const p = doc.data();
 
-      if (p.userId === currentUser.uid) {
-        box.innerHTML += `<div class="post">${p.text}</div>`;
+      if (p.user === user.email.split("@")[0]) {
+        box.innerHTML += `
+          <div style="margin:6px 0;">
+            <div style="color:#fff;">${p.text}</div>
+          </div>
+        `;
       }
     });
   });
 }
+
+/* MENU */
+window.toggleMenu = () => {
+  const m = document.getElementById("menu");
+  m.style.display = (m.style.display === "block") ? "none" : "block";
+};
+
+window.goDashboard = () => location.href = "dashboard.html";
