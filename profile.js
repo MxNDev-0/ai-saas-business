@@ -23,7 +23,7 @@ onAuthStateChanged(auth, (u) => {
   loadPosts();
 });
 
-/* ================= CREATE POST ================= */
+/* ================= CREATE POST (UNCHANGED) ================= */
 window.createPost = async () => {
   const input = document.getElementById("postInput");
   const text = input.value.trim();
@@ -40,7 +40,7 @@ window.createPost = async () => {
   input.value = "";
 };
 
-/* ================= LOAD POSTS (FIXED) ================= */
+/* ================= LOAD POSTS (UI ONLY IMPROVED) ================= */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
@@ -57,19 +57,19 @@ function loadPosts() {
       const isPrivate = p.visibility === "private";
 
       box.innerHTML += `
-        <div style="margin:10px 0;padding:10px;background:#1c2541;border-radius:8px;">
+        <div class="post">
 
-          <div style="color:#fff;margin-bottom:6px;">
-            ${p.text}
+          <div>${p.text}</div>
+
+          <div style="margin-top:6px;">
+            <span class="${isPrivate ? "tag-private" : "tag-public"}">
+              ${isPrivate ? "🔒 Private" : "🌍 Public"}
+            </span>
           </div>
 
-          <small style="color:${isPrivate ? "orange" : "lime"}">
-            ${isPrivate ? "🔒 Private" : "🌍 Public"}
-          </small>
-
-          <div style="margin-top:8px;display:flex;gap:6px;">
-            <button onclick="setPublic('${id}')" style="width:auto;">Public</button>
-            <button onclick="setPrivate('${id}')" style="width:auto;">Private</button>
+          <div class="controls">
+            <button onclick="setPublic('${id}')">Public</button>
+            <button onclick="setPrivate('${id}')">Private</button>
           </div>
 
         </div>
@@ -78,7 +78,7 @@ function loadPosts() {
   });
 }
 
-/* ================= TOGGLE ================= */
+/* ================= TOGGLE (UNCHANGED LOGIC) ================= */
 window.setPublic = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "public"
@@ -91,7 +91,7 @@ window.setPrivate = async (id) => {
   });
 };
 
-/* ================= MENU ================= */
+/* MENU (UNCHANGED) */
 window.toggleMenu = () => {
   const m = document.getElementById("menu");
   m.style.display = m.style.display === "block" ? "none" : "block";
