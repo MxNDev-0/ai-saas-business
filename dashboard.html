@@ -11,52 +11,45 @@
 <!-- NAVBAR -->
 <div class="navbar">
   <button onclick="toggleMenu()">☰</button>
-  <h3>MXM Dashboard</h3>
+  <h3 style="margin:0 auto;">MXM Dashboard</h3>
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- HAMBURGER MENU -->
+<!-- MENU -->
 <div id="menu" class="menu">
   <button onclick="goHome()">Home</button>
   <button onclick="goProfile()">Profile</button>
   <button onclick="goAdmin()">Admin</button>
   <button onclick="upgrade()">Upgrade 🚀</button>
   <button onclick="support()">Support 💰</button>
+  <button onclick="location.href='faq.html'">FAQ</button>
+  <button onclick="location.href='about.html'">About</button>
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
-  <!-- ONLINE USERS -->
+  <!-- USERS -->
   <div class="card">
-    <h4>🟢 Online Users</h4>
+    <h4>🟢 Users</h4>
     <div id="onlineUsers"></div>
   </div>
 
-  <!-- GENERAL CHAT -->
+  <!-- MERGED CHAT + POSTS -->
   <div class="card">
-    <h4>💬 General Chat</h4>
+    <h4>💬 Community Feed</h4>
 
-    <div id="chatBox" class="chatBox"></div>
+    <div id="chatBox" style="
+      height:220px;
+      overflow-y:auto;
+      background:#0b132b;
+      padding:10px;
+      border-radius:8px;
+    "></div>
 
     <div class="row">
-      <input id="chatInput" placeholder="Message...">
-      <button onclick="sendMessage()">Send</button>
+      <input id="chatInput" placeholder="Write something..." style="max-width:70%;">
+      <button style="width:auto;padding:6px 10px;" onclick="sendMessage()">Post</button>
     </div>
-  </div>
-
-  <!-- CREATE POST (NOW FULLY INCLUDED) -->
-  <div class="card">
-    <h4>📝 Create Post</h4>
-
-    <textarea id="postText" placeholder="Write something..."></textarea>
-    <button onclick="createPost()">Post</button>
-  </div>
-
-  <!-- GLOBAL POSTS -->
-  <div class="card">
-    <h4>📝 Global Posts</h4>
-    <div id="posts"></div>
   </div>
 
 </div>
