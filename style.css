@@ -1,3 +1,4 @@
+/* ================= GLOBAL ================= */
 body {
   margin: 0;
   font-family: Arial;
@@ -5,7 +6,46 @@ body {
   color: white;
 }
 
-/* NAVBAR */
+/* ================= LOGIN ================= */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.center-box {
+  width: 90%;
+  max-width: 320px;
+  background: #1c2541;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: #5bc0be;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* ================= NAVBAR ================= */
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -14,7 +54,7 @@ body {
   padding: 10px;
 }
 
-/* ✅ SMALL BUTTONS */
+/* SMALL BUTTONS */
 .navbar button {
   width: auto;
   padding: 5px 8px;
@@ -22,9 +62,10 @@ body {
   border-radius: 5px;
   background: #5bc0be;
   border: none;
+  cursor: pointer;
 }
 
-/* MENU */
+/* ================= MENU ================= */
 .menu {
   display: none;
   position: absolute;
@@ -36,7 +77,6 @@ body {
   width: 160px;
 }
 
-/* KEEP DESIGN, JUST SMALLER */
 .menu button {
   width: 100%;
   margin: 5px 0;
@@ -44,7 +84,7 @@ body {
   font-size: 13px;
 }
 
-/* DASHBOARD TITLE BADGE */
+/* ================= DASHBOARD TITLE ================= */
 .title-box {
   text-align: center;
   margin: 10px 0;
@@ -62,7 +102,7 @@ body {
   font-size: 12px;
 }
 
-/* CARD */
+/* ================= CARD ================= */
 .card {
   background: #1c2541;
   padding: 12px;
@@ -70,7 +110,7 @@ body {
   border-radius: 10px;
 }
 
-/* CHAT BOX */
+/* ================= CHAT ================= */
 #chatBox {
   height: 220px;
   overflow-y: auto;
@@ -79,7 +119,6 @@ body {
   border-radius: 8px;
 }
 
-/* INPUT ROW */
 .row {
   display: flex;
   gap: 6px;
@@ -91,6 +130,7 @@ body {
   padding: 8px;
   border-radius: 5px;
   border: none;
+  box-sizing: border-box;
 }
 
 .row button {
@@ -98,4 +138,5 @@ body {
   border-radius: 5px;
   background: #5bc0be;
   border: none;
+  cursor: pointer;
 }
