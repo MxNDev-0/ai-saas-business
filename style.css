@@ -1,3 +1,4 @@
+/* ================= GLOBAL ================= */
 body {
   margin: 0;
   font-family: Arial;
@@ -5,7 +6,57 @@ body {
   color: white;
 }
 
-/* NAVBAR */
+/* ================= LOGIN ================= */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.center-box {
+  width: 90%;
+  max-width: 320px;
+  background: #1c2541;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.gold-badge {
+  display: inline-block;
+  margin: 10px 0;
+  padding: 4px 8px;
+  background: gold;
+  color: black;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* ================= INPUTS ================= */
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: none;
+  box-sizing: border-box;
+}
+
+/* ================= BUTTONS ================= */
+button {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: #5bc0be;
+  color: black;
+  cursor: pointer;
+}
+
+/* ================= NAVBAR ================= */
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -14,88 +65,63 @@ body {
   padding: 10px;
 }
 
-/* ✅ SMALL BUTTONS */
-.navbar button {
-  width: auto;
-  padding: 5px 8px;
-  font-size: 13px;
-  border-radius: 5px;
-  background: #5bc0be;
-  border: none;
+.logo {
+  font-size: 16px;
 }
 
-/* MENU */
-.menu {
-  display: none;
-  position: absolute;
-  top: 50px;
-  left: 10px;
-  background: #2a2a2a;
+/* ================= CONTAINER ================= */
+.container {
+  max-width: 600px;
+  margin: auto;
   padding: 10px;
+}
+
+/* ================= CARD ================= */
+.card {
+  background: #1c2541;
+  padding: 15px;
   border-radius: 10px;
-  width: 160px;
-}
-
-/* KEEP DESIGN, JUST SMALLER */
-.menu button {
-  width: 100%;
-  margin: 5px 0;
-  padding: 6px;
-  font-size: 13px;
-}
-
-/* DASHBOARD TITLE BADGE */
-.title-box {
-  text-align: center;
   margin: 10px 0;
 }
 
-.title-box h2 {
-  margin: 0;
-}
-
-.badge {
-  background: gold;
-  color: black;
-  padding: 3px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
-/* CARD */
-.card {
-  background: #1c2541;
-  padding: 12px;
-  margin: 10px;
-  border-radius: 10px;
-}
-
-/* CHAT BOX */
-#chatBox {
-  height: 220px;
+/* ================= CHAT ================= */
+.chatBox {
+  height: 250px;
   overflow-y: auto;
   background: #0b132b;
   padding: 10px;
   border-radius: 8px;
+  margin-bottom: 10px;
 }
 
-/* INPUT ROW */
 .row {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
 }
 
 .row input {
-  width: 70%;
-  padding: 8px;
-  border-radius: 5px;
-  border: none;
+  flex: 1;
 }
 
-.row button {
-  padding: 6px 10px;
-  border-radius: 5px;
-  background: #5bc0be;
-  border: none;
+/* ================= POSTS ================= */
+.post {
+  background: #1c2541;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+
+/* ================= USERS ================= */
+#onlineUsers {
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* ================= FOOTER ================= */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  background: #1c2541;
+  margin-top: 20px;
 }
