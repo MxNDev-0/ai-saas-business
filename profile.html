@@ -4,6 +4,83 @@
   <title>Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: #0b132b;
+      color: white;
+      margin: 0;
+      font-family: Arial;
+    }
+
+    .navbar {
+      background: #1c2541;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .container {
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: #1c2541;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #0b132b;
+      color: white;
+      resize: none;
+      height: 80px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #5bc0be;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    .post {
+      background: #0b132b;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .tag-public {
+      color: lime;
+      font-size: 12px;
+    }
+
+    .tag-private {
+      color: orange;
+      font-size: 12px;
+    }
+  </style>
 </head>
 
 <body>
@@ -18,10 +95,9 @@
   <div class="card">
     <h4>Create Post</h4>
 
-    <!-- FIXED ID (IMPORTANT) -->
     <textarea id="postInput" placeholder="Write something..."></textarea>
 
-    <div style="display:flex;justify-content:flex-end;">
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;">
       <button onclick="createPost()" style="width:auto;">Post</button>
     </div>
   </div>
@@ -30,7 +106,6 @@
   <div class="card">
     <h4>My Field</h4>
 
-    <!-- FIXED ID -->
     <div id="myPosts"></div>
   </div>
 
