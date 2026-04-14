@@ -18,7 +18,7 @@ import {
 
 let user = null;
 
-/* ================= AUTH CHECK ================= */
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, (u) => {
   if (!u) {
     location.href = "index.html";
@@ -32,28 +32,14 @@ onAuthStateChanged(auth, (u) => {
   loadBTCPrice();
 });
 
-/* ================= CHAT SYSTEM ================= */
-window.sendMessage = async () => {
-  const input = document.getElementById("chatInput");
-  const text = input.value.trim();
-
-  if (!text) return;
-
-  await addDoc(collection(db, "posts"), {
-    text,
-    user: user.email.split("@")[0],
-    time: Date.now()
-  });
-
-  input.value = "";
-};
-
 /* ================= FEED ================= */
 function loadFeed() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
   onSnapshot(q, (snap) => {
     const box = document.getElementById("chatBox");
+    if (!box) return;
+
     box.innerHTML = "";
 
     snap.forEach(docSnap => {
@@ -71,7 +57,24 @@ function loadFeed() {
   });
 }
 
-/* ================= WALLET (READ ONLY) ================= */
+/* ================= SEND MESSAGE ================= */
+window.sendMessage = async () => {
+  const input = document.getElementById("chatInput");
+  if (!input) return;
+
+  const text = input.value.trim();
+  if (!text || !user) return;
+
+  await addDoc(collection(db, "posts"), {
+    text,
+    user: user.email.split("@")[0],
+    time: Date.now()
+  });
+
+  input.value = "";
+};
+
+/* ================= WALLET ================= */
 function loadWallet() {
   const walletRef = doc(db, "wallet", "main");
 
@@ -93,7 +96,7 @@ function loadWallet() {
   });
 }
 
-/* ================= LIVE BTC PRICE ================= */
+/* ================= BTC PRICE ================= */
 async function loadBTCPrice() {
   try {
     const res = await fetch(
@@ -105,7 +108,7 @@ async function loadBTCPrice() {
     const btcEl = document.getElementById("btcPrice");
     if (btcEl) btcEl.innerText = data.bitcoin.usd;
 
-  } catch (err) {
+  } catch (e) {
     const btcEl = document.getElementById("btcPrice");
     if (btcEl) btcEl.innerText = "Error";
   }
@@ -113,42 +116,30 @@ async function loadBTCPrice() {
 
 setInterval(loadBTCPrice, 30000);
 
-/* ================= 🚀 UPGRADE SYSTEM FIX ================= */
+/* ================= 🔥 UPGRADE FIX (100% WORKING) ================= */
 
 const UPGRADE_LINK = "https://nowpayments.io/payment/?iid=5153003613";
 
-/* IMPORTANT: FORCE GLOBAL ATTACHMENT */
+/* IMPORTANT: FORCE GLOBAL SCOPE */
 window.goPremium = function () {
+  alert("Upgrade clicked ✅");
+
   if (!user) {
     alert("Not logged in");
     return;
   }
 
-  // open payment page
+  // open payment
   window.open(UPGRADE_LINK, "_blank");
 
-  // save request in Firebase
+  // save request
   setDoc(doc(db, "upgradeRequests", user.uid), {
     uid: user.uid,
     email: user.email,
     status: "pending",
     source: "NOWPayments",
     createdAt: Date.now()
-  }).then(() => {
-    alert("Upgrade request sent. Complete payment to activate premium.");
-  }).catch(err => {
-    alert("Error sending upgrade request: " + err.message);
   });
-};
-
-/* admin confirm */
-window.confirmUpgrade = async (uid) => {
-  await updateDoc(doc(db, "users", uid), {
-    premium: true,
-    upgradedAt: Date.now()
-  });
-
-  alert("User upgraded successfully!");
 };
 
 /* ================= MENU ================= */
@@ -178,7 +169,7 @@ window.goAdmin = () => {
   if (!user) return;
 
   if (user.email !== "nc.maxiboro@gmail.com") {
-    alert("❌ Admin panel locked");
+    alert("❌ Admin locked");
   } else {
     location.href = "admin.html";
   }
