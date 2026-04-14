@@ -192,3 +192,22 @@ button {
 .earn-card button:hover {
   background: #16a34a;
 }
+
+/* ================= ADDED: EARN BUTTON STYLE (NEW) ================= */
+.earn-btn {
+  display: inline-block;
+  padding: 12px 18px;
+  background: #22c55e;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 15px;
+  transition: 0.3s ease;
+}
+
+.earn-btn:hover {
+  background: #16a34a;
+  transform: scale(1.03);
+}
