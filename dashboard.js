@@ -9,28 +9,20 @@ import {
   collection,
   addDoc,
   getDocs,
-  updateDoc,
   doc,
+  getDoc,
   setDoc,
-  getDoc
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const ADMIN_EMAIL = "nc.maxiboro@gmail.com";
-
-const postsDiv = document.getElementById("posts");
-const loader = document.getElementById("loader");
 
 let currentUser = null;
 let currentUserData = null;
 
-// ================= AUTH (FIXED PROPERLY) =================
+// AUTH
 onAuthStateChanged(auth, async (user) => {
-  loader.style.display = "none";
+  document.getElementById("loader").style.display = "none";
 
-  if (!user) {
-    window.location.replace("index.html");
-    return;
-  }
+  if (!user) return window.location.href = "index.html";
 
   currentUser = user;
 
@@ -40,15 +32,11 @@ onAuthStateChanged(auth, async (user) => {
   if (!snap.exists()) {
     await setDoc(ref, {
       email: user.email,
-      premium: false,
-      lastPost: 0
+      lastPost: 0,
+      premium: false
     });
 
-    currentUserData = {
-      email: user.email,
-      premium: false,
-      lastPost: 0
-    };
+    currentUserData = { lastPost: 0, premium: false };
   } else {
     currentUserData = snap.data();
   }
@@ -56,98 +44,80 @@ onAuthStateChanged(auth, async (user) => {
   loadPosts();
 });
 
-// ================= NAV =================
-function goHome() {
-  loadPosts();
-}
+// NAVIGATION
+window.goHome = () => loadPosts();
 
-function goProfile() {
+window.goProfile = () => {
   window.location.href = "profile.html";
-}
+};
 
-function goAdmin() {
-  if (!currentUser || currentUser.email !== ADMIN_EMAIL) {
-    alert("Not admin");
-    return;
-  }
-  document.getElementById("adminPanel").style.display = "block";
-}
+window.goUpgrade = () => {
+  alert("Redirecting to upgrade...");
+  window.location.href = "https://nowpayments.io/payment/?iid=5153003613";
+};
 
-function support() {
-  window.open("https://nowpayments.io/payment/?iid=5153003613");
-}
+window.goSupport = () => {
+  window.location.href = "support.html";
+};
 
-async function logout() {
+window.goChat = () => {
+  window.location.href = "chat.html";
+};
+
+window.logout = async () => {
   await signOut(auth);
-  window.location.replace("index.html");
-}
+  window.location.href = "index.html";
+};
 
-// expose to HTML
-window.goHome = goHome;
-window.goProfile = goProfile;
-window.goAdmin = goAdmin;
-window.support = support;
-window.logout = logout;
-
-// ================= CREATE POST =================
-async function createPost() {
-  if (!currentUser) return;
-
+// POST
+window.createPost = async () => {
   const text = document.getElementById("postText").value;
-  const link = document.getElementById("postLink").value;
 
   if (!text) return alert("Write something");
 
   const now = Date.now();
-  const isAdmin = currentUser.email === ADMIN_EMAIL;
 
-  if (!isAdmin) {
-    if (now - currentUserData.lastPost < 86400000) {
-      return alert("You can only post once per day");
-    }
-
-    if (link) {
-      return alert("Links only available in Version 2");
-    }
+  if (now - currentUserData.lastPost < 86400000) {
+    return alert("Only 1 post per day");
   }
 
   await addDoc(collection(db, "posts"), {
     text,
-    link: isAdmin ? link : "",
     user: currentUser.email,
     time: now
   });
 
-  if (!isAdmin) {
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      lastPost: now
-    });
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    lastPost: now
+  });
 
-    currentUserData.lastPost = now;
-  }
+  currentUserData.lastPost = now;
 
   document.getElementById("postText").value = "";
-  document.getElementById("postLink").value = "";
 
   loadPosts();
-}
+};
 
-window.createPost = createPost;
-
-// ================= LOAD POSTS =================
+// LOAD POSTS
 async function loadPosts() {
   const snapshot = await getDocs(collection(db, "posts"));
+  const postsDiv = document.getElementById("posts");
+
   postsDiv.innerHTML = "";
 
-  snapshot.forEach(docSnap => {
-    const post = docSnap.data();
+  snapshot.forEach(doc => {
+    const post = doc.data();
 
     postsDiv.innerHTML += `
       <div class="post">
         <h4>${post.user}</h4>
         <p>${post.text}</p>
-        ${post.link ? `<a href="${post.link}" target="_blank">Visit 🔗</a>` : ""}
       </div>
     `;
   });
 }
+
+// CLIP BUTTON (v2 lock)
+window.openUpload = () => {
+  alert("Image upload available in Version 2");
+};
