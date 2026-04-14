@@ -19,18 +19,16 @@
 </div>
 
 <!-- HAMBURGER MENU -->
-<div id="menu" style="display:none; background:#1c2541; padding:10px;">
+<div id="menu" style="display:none;" class="menu">
 
   <p id="userEmail"></p>
 
-  <button onclick="goProfile()">👤 Profile</button>
-  <button onclick="goUpgrade()">🚀 Upgrade</button>
-  <button onclick="goSupport()">💰 Support</button>
-  <button onclick="goFAQ()">❓ FAQ</button>
-  <button onclick="openSupport()">📩 Contact Support</button>
-
-  <button onclick="openMySection()">🔒 My Section</button>
-
+  <button onclick="goProfile()">Profile</button>
+  <button onclick="goUpgrade()">Upgrade</button>
+  <button onclick="goSupport()">Support</button>
+  <button onclick="goFAQ()">FAQ</button>
+  <button onclick="openSupport()">Contact Support</button>
+  <button onclick="openMySection()">My Section</button>
   <button onclick="setUsername()">Set Username</button>
   <button onclick="changePassword()">Change Password</button>
 
@@ -38,27 +36,34 @@
 
 <div class="container">
 
-  <!-- ONLINE USERS (GLOBAL MONITOR) -->
+  <!-- ONLINE USERS -->
   <div class="post-box">
-    <h3>🟢 Online Users</h3>
+    <h4>🟢 Online Users</h4>
     <div id="onlineUsers"></div>
   </div>
 
   <!-- GENERAL CHAT -->
   <div class="post-box">
-    <h3>General Chat</h3>
+    <h4>💬 General Chat</h4>
 
     <div id="chatBox" class="chat-box"></div>
 
-    <div style="display:flex; gap:5px;">
+    <div class="chat-input">
       <input id="chatInput" placeholder="Type message...">
       <button onclick="sendMessage()">Send</button>
     </div>
 
   </div>
 
+  <!-- GLOBAL POSTS -->
+  <div class="post-box">
+    <h4>📝 Global Posts</h4>
+    <div id="posts"></div>
+  </div>
+
 </div>
 
 <script type="module" src="dashboard.js"></script>
+
 </body>
 </html>
