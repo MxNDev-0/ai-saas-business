@@ -12,13 +12,15 @@ import {
   query,
   orderBy,
   doc,
-  setDoc
+  setDoc,
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
 
 /* ================= AUTH ================= */
-onAuthStateChanged(auth, (u) => {
+onAuthStateChanged(auth, async (u) => {
   if (!u) {
     location.href = "index.html";
     return;
@@ -26,11 +28,72 @@ onAuthStateChanged(auth, (u) => {
 
   user = u;
 
+  setupPresence(); // 🔥 NEW
   loadFeed();
   loadWallet();
-  loadCryptoPrices(); // ✅ FIXED: run immediately
-  loadOnlineUsers();  // ✅ FIXED: USERS NOW WORK
+  loadCryptoPrices();
+  loadOnlineUsers(); // 🔥 NEW
 });
+
+/* ================= PRESENCE SYSTEM (FIXED) ================= */
+async function setupPresence() {
+  if (!user) return;
+
+  const ref = doc(db, "onlineUsers", user.uid);
+
+  // mark online
+  await setDoc(ref, {
+    uid: user.uid,
+    email: user.email,
+    online: true,
+    lastSeen: Date.now()
+  });
+
+  // mark offline on disconnect / close
+  window.addEventListener("beforeunload", async () => {
+    try {
+      await updateDoc(ref, {
+        online: false,
+        lastSeen: Date.now()
+      });
+    } catch (e) {}
+  });
+}
+
+/* ================= ONLINE USERS (REAL TIME FIX) ================= */
+function loadOnlineUsers() {
+  const box = document.getElementById("onlineUsers");
+  if (!box) return;
+
+  const q = query(collection(db, "onlineUsers"), orderBy("lastSeen", "desc"));
+
+  onSnapshot(q, (snap) => {
+    let count = 0;
+    box.innerHTML = "";
+
+    snap.forEach(docSnap => {
+      const u = docSnap.data();
+
+      // only show active users (last 60 seconds)
+      const isOnline = Date.now() - u.lastSeen < 60000;
+
+      if (isOnline) count++;
+
+      box.innerHTML += `
+        <div style="padding:6px;margin:5px 0;background:#1c2541;border-radius:6px;">
+          <b>${u.email}</b>
+          <span style="float:right;color:${isOnline ? "lime" : "gray"};">
+            ${isOnline ? "Online 🟢" : "Offline ⚪"}
+          </span>
+        </div>
+      `;
+    });
+
+    // show count on top
+    box.innerHTML =
+      `<p><b>Online Users: ${count}</b></p>` + box.innerHTML;
+  });
+}
 
 /* ================= FEED ================= */
 function loadFeed() {
@@ -57,7 +120,7 @@ function loadFeed() {
   });
 }
 
-/* ================= SEND MESSAGE ================= */
+/* ================= CHAT ================= */
 window.sendMessage = async () => {
   const input = document.getElementById("chatInput");
   if (!input || !user) return;
@@ -96,7 +159,7 @@ function loadWallet() {
   });
 }
 
-/* ================= CRYPTO (FIXED) ================= */
+/* ================= CRYPTO PRICES (FIXED) ================= */
 async function loadCryptoPrices() {
   const el = document.getElementById("btcPrice");
   if (!el) return;
@@ -109,55 +172,23 @@ async function loadCryptoPrices() {
     const data = await res.json();
 
     el.innerText =
-      "BTC: $" + data.bitcoin.usd +
-      " | ETH: $" + data.ethereum.usd +
-      " | BNB: $" + data.binancecoin.usd +
-      " | USDT: $" + data.tether.usd;
+      "BTC: $" + (data.bitcoin?.usd ?? 0) +
+      " | ETH: $" + (data.ethereum?.usd ?? 0) +
+      " | BNB: $" + (data.binancecoin?.usd ?? 0) +
+      " | USDT: $" + (data.tether?.usd ?? 0);
 
   } catch (err) {
     el.innerText = "Crypto prices unavailable";
   }
 }
 
-/* refresh every 30s */
 setInterval(loadCryptoPrices, 30000);
 
-/* ================= USERS ONLINE (FIXED) ================= */
-function loadOnlineUsers() {
-  const box = document.getElementById("onlineUsers");
-  if (!box) return;
-
-  const q = query(collection(db, "onlineUsers"));
-
-  onSnapshot(q, (snap) => {
-    box.innerHTML = "";
-
-    let count = 0;
-
-    snap.forEach(docSnap => {
-      const u = docSnap.data();
-
-      count++;
-
-      box.innerHTML += `
-        <div style="padding:5px; margin:3px 0; background:#1c2541; border-radius:5px;">
-          🟢 ${u.email || "Unknown"}
-        </div>
-      `;
-    });
-
-    box.innerHTML = `<b>Online Users: ${count}</b><br><br>` + box.innerHTML;
-  });
-}
-
-/* ================= UPGRADE (WORKING) ================= */
+/* ================= UPGRADE ================= */
 const UPGRADE_LINK = "https://nowpayments.io/payment/?iid=5153003613";
 
 function handleUpgrade() {
-  if (!user) {
-    alert("Not logged in");
-    return;
-  }
+  if (!user) return alert("Login required");
 
   window.open(UPGRADE_LINK, "_blank");
 
@@ -170,6 +201,7 @@ function handleUpgrade() {
 }
 
 window.goPremium = handleUpgrade;
+window.upgrade = handleUpgrade;
 
 /* ================= MENU ================= */
 window.toggleMenu = () => {
@@ -205,6 +237,7 @@ window.goAdmin = () => {
 };
 
 /* ================= LOGOUT ================= */
-window.logout = () => {
-  signOut(auth).then(() => location.href = "index.html");
+window.logout = async () => {
+  await signOut(auth);
+  location.href = "index.html";
 };
