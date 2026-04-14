@@ -9,20 +9,26 @@ import {
 import {
   collection,
   addDoc,
+  getDocs,
   onSnapshot,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const ADMIN_EMAIL = "nc.maxiboro@gmail.com";
 
-let currentUser;
-let username = null;
+let currentUser = null;
+let username = "";
 
-// AUTH
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return location.href = "index.html";
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
   currentUser = user;
 
@@ -35,44 +41,48 @@ onAuthStateChanged(auth, async (user) => {
     await setDoc(ref, { username: "" });
   }
 
-  username = (await getDoc(ref)).data().username;
+  username = (await getDoc(ref)).data().username || "";
 
   loadChat();
   loadOnlineUsers();
+  loadPosts();
 });
 
-// MENU TOGGLE
-window.toggleMenu = () => {
+/* ================= MENU ================= */
+window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "none" ? "block" : "none";
 };
 
-// NAVIGATION
-window.goProfile = () => location.href = "profile.html";
+/* ================= NAV ================= */
+window.goProfile = () => window.location.href = "profile.html";
 
-window.goUpgrade = () =>
-  location.href = "https://nowpayments.io/payment/?iid=5153003613";
+window.goUpgrade = () => {
+  window.location.href = "https://nowpayments.io/payment/?iid=5153003613";
+};
 
-window.goSupport = () =>
-  location.href = "support.html";
+window.goSupport = () => {
+  window.location.href = "support.html";
+};
 
-window.goFAQ = () =>
-  location.href = "faq.html";
+window.goFAQ = () => {
+  window.location.href = "faq.html";
+};
 
-window.openSupport = () =>
-  alert("Contact support: support@mxmcrypto.com");
+window.openSupport = () => {
+  alert("Contact: support@mxmcrypto.com");
+};
 
 window.openMySection = () => {
   if (currentUser.email !== ADMIN_EMAIL) {
-    alert("❌ You are not authorized to access this section.");
+    alert("❌ Not authorized");
     return;
   }
-
   alert("👑 Welcome Admin Office");
 };
 
-// SET USERNAME
-window.setUsername = async () => {
+/* ================= USERNAME ================= */
+window.setUsername = async function () {
   const name = prompt("Enter username:");
   if (!name) return;
 
@@ -84,23 +94,21 @@ window.setUsername = async () => {
   alert("Username saved");
 };
 
-// CHANGE PASSWORD
-window.changePassword = async () => {
+/* ================= PASSWORD ================= */
+window.changePassword = async function () {
   const pass = prompt("New password:");
+  if (!pass) return;
+
   await updatePassword(currentUser, pass);
   alert("Password updated");
 };
 
-// CHAT FIX (REAL TIME)
-window.sendMessage = async () => {
+/* ================= CHAT FIX (REAL TIME) ================= */
+window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
-  const text = input.value;
+  const text = input.value.trim();
 
-  if (!username) {
-    alert("Set username first");
-    return;
-  }
-
+  if (!username) return alert("Set username first");
   if (!text) return;
 
   await addDoc(collection(db, "generalChat"), {
@@ -112,9 +120,14 @@ window.sendMessage = async () => {
   input.value = "";
 };
 
-// REAL TIME CHAT LISTENER (FIXED)
+/* REAL TIME CHAT */
 function loadChat() {
-  onSnapshot(collection(db, "generalChat"), (snap) => {
+  const q = query(
+    collection(db, "generalChat"),
+    orderBy("time")
+  );
+
+  onSnapshot(q, (snap) => {
     const box = document.getElementById("chatBox");
     box.innerHTML = "";
 
@@ -122,15 +135,17 @@ function loadChat() {
       const m = doc.data();
 
       box.innerHTML += `
-        <div style="margin:5px;">
+        <div class="chat-msg">
           <b>${m.name}</b>: ${m.text}
         </div>
       `;
     });
+
+    box.scrollTop = box.scrollHeight;
   });
 }
 
-// ONLINE USERS
+/* ================= ONLINE USERS ================= */
 function loadOnlineUsers() {
   onSnapshot(collection(db, "users"), (snap) => {
     const box = document.getElementById("onlineUsers");
@@ -138,16 +153,48 @@ function loadOnlineUsers() {
 
     snap.forEach(doc => {
       const u = doc.data();
-
       if (u.username) {
-        box.innerHTML += `<div>🟢 ${u.username}</div>`;
+        box.innerHTML += `<div class="user-small">🟢 ${u.username}</div>`;
       }
     });
   });
 }
 
-// LOGOUT
-window.logout = async () => {
+/* ================= POSTS ================= */
+window.createPost = async function () {
+  const text = document.getElementById("postText")?.value;
+
+  if (!text) return;
+
+  const isAdmin = currentUser.email === ADMIN_EMAIL;
+
+  await addDoc(collection(db, "posts"), {
+    text,
+    user: username || "user",
+    time: Date.now()
+  });
+};
+
+function loadPosts() {
+  onSnapshot(collection(db, "posts"), (snap) => {
+    const box = document.getElementById("posts");
+    box.innerHTML = "";
+
+    snap.forEach(doc => {
+      const p = doc.data();
+
+      box.innerHTML += `
+        <div class="post">
+          <b>${p.user}</b>
+          <p>${p.text}</p>
+        </div>
+      `;
+    });
+  });
+}
+
+/* ================= LOGOUT ================= */
+window.logout = async function () {
   await signOut(auth);
-  location.href = "index.html";
+  window.location.href = "index.html";
 };
