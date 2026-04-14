@@ -13,8 +13,7 @@ import {
   orderBy,
   doc,
   setDoc,
-  updateDoc,
-  deleteDoc
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
@@ -28,74 +27,12 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  setupPresence(); // 🔥 NEW
   loadFeed();
   loadWallet();
   loadCryptoPrices();
-  loadOnlineUsers(); // 🔥 NEW
 });
 
-/* ================= PRESENCE SYSTEM (FIXED) ================= */
-async function setupPresence() {
-  if (!user) return;
-
-  const ref = doc(db, "onlineUsers", user.uid);
-
-  // mark online
-  await setDoc(ref, {
-    uid: user.uid,
-    email: user.email,
-    online: true,
-    lastSeen: Date.now()
-  });
-
-  // mark offline on disconnect / close
-  window.addEventListener("beforeunload", async () => {
-    try {
-      await updateDoc(ref, {
-        online: false,
-        lastSeen: Date.now()
-      });
-    } catch (e) {}
-  });
-}
-
-/* ================= ONLINE USERS (REAL TIME FIX) ================= */
-function loadOnlineUsers() {
-  const box = document.getElementById("onlineUsers");
-  if (!box) return;
-
-  const q = query(collection(db, "onlineUsers"), orderBy("lastSeen", "desc"));
-
-  onSnapshot(q, (snap) => {
-    let count = 0;
-    box.innerHTML = "";
-
-    snap.forEach(docSnap => {
-      const u = docSnap.data();
-
-      // only show active users (last 60 seconds)
-      const isOnline = Date.now() - u.lastSeen < 60000;
-
-      if (isOnline) count++;
-
-      box.innerHTML += `
-        <div style="padding:6px;margin:5px 0;background:#1c2541;border-radius:6px;">
-          <b>${u.email}</b>
-          <span style="float:right;color:${isOnline ? "lime" : "gray"};">
-            ${isOnline ? "Online 🟢" : "Offline ⚪"}
-          </span>
-        </div>
-      `;
-    });
-
-    // show count on top
-    box.innerHTML =
-      `<p><b>Online Users: ${count}</b></p>` + box.innerHTML;
-  });
-}
-
-/* ================= FEED ================= */
+/* ================= FEED (FIXED PRIVATE FILTER) ================= */
 function loadFeed() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
@@ -107,6 +44,9 @@ function loadFeed() {
 
     snap.forEach(docSnap => {
       const m = docSnap.data();
+
+      // ❌ HIDE PRIVATE POSTS FROM DASHBOARD
+      if (m.visibility === "private") return;
 
       box.innerHTML += `
         <div style="margin:6px 0;">
@@ -120,7 +60,7 @@ function loadFeed() {
   });
 }
 
-/* ================= CHAT ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async () => {
   const input = document.getElementById("chatInput");
   if (!input || !user) return;
@@ -131,6 +71,7 @@ window.sendMessage = async () => {
   await addDoc(collection(db, "posts"), {
     text,
     user: user.email.split("@")[0],
+    visibility: "public",
     time: Date.now()
   });
 
@@ -159,7 +100,7 @@ function loadWallet() {
   });
 }
 
-/* ================= CRYPTO PRICES (FIXED) ================= */
+/* ================= CRYPTO PRICES ================= */
 async function loadCryptoPrices() {
   const el = document.getElementById("btcPrice");
   if (!el) return;
@@ -178,7 +119,7 @@ async function loadCryptoPrices() {
       " | USDT: $" + (data.tether?.usd ?? 0);
 
   } catch (err) {
-    el.innerText = "Crypto prices unavailable";
+    el.innerText = "Crypto unavailable";
   }
 }
 
