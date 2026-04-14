@@ -11,7 +11,9 @@ import {
   onSnapshot,
   query,
   orderBy,
-  doc
+  doc,
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
@@ -109,6 +111,43 @@ async function loadBTCPrice() {
 
 /* refresh BTC every 30 seconds */
 setInterval(loadBTCPrice, 30000);
+
+/* ================= 🚀 UPGRADE SYSTEM (NOWPAYMENTS + FIREBASE) ================= */
+
+const UPGRADE_LINK = "https://nowpayments.io/payment/?iid=5153003613";
+
+/**
+ * Upgrade button handler
+ */
+window.goPremium = async () => {
+  if (!user) return;
+
+  // Open payment page
+  window.open(UPGRADE_LINK, "_blank");
+
+  // Save upgrade request in Firebase
+  await setDoc(doc(db, "upgradeRequests", user.uid), {
+    uid: user.uid,
+    email: user.email,
+    status: "pending",
+    source: "NOWPayments",
+    createdAt: Date.now()
+  });
+
+  alert("Upgrade request sent. Complete payment to activate premium.");
+};
+
+/**
+ * Admin approval (future use)
+ */
+window.confirmUpgrade = async (uid) => {
+  await updateDoc(doc(db, "users", uid), {
+    premium: true,
+    upgradedAt: Date.now()
+  });
+
+  alert("User upgraded successfully!");
+};
 
 /* ================= MENU ================= */
 window.toggleMenu = () => {
