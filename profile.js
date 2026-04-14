@@ -33,14 +33,14 @@ window.createPost = async () => {
   await addDoc(collection(db, "posts"), {
     text,
     user: user.email.split("@")[0],
-    visibility: "public",   // DEFAULT
+    visibility: "public",
     time: Date.now()
   });
 
   input.value = "";
 };
 
-/* ================= LOAD POSTS ================= */
+/* ================= LOAD POSTS (FIXED) ================= */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
@@ -52,37 +52,33 @@ function loadPosts() {
       const p = docSnap.data();
       const id = docSnap.id;
 
-      // ONLY SHOW USER POSTS
-      if (p.user === user.email.split("@")[0]) {
+      if (p.user !== user.email.split("@")[0]) return;
 
-        box.innerHTML += `
-          <div style="margin:10px 0;padding:10px;background:#1c2541;border-radius:8px;">
+      const isPrivate = p.visibility === "private";
 
-            <div style="color:#fff;margin-bottom:6px;">
-              ${p.text}
-            </div>
+      box.innerHTML += `
+        <div style="margin:10px 0;padding:10px;background:#1c2541;border-radius:8px;">
 
-            <small>Visibility: ${p.visibility}</small>
-
-            <div style="margin-top:8px;display:flex;gap:6px;">
-              
-              <button onclick="setPublic('${id}')" style="width:auto;">
-                Public
-              </button>
-
-              <button onclick="setPrivate('${id}')" style="width:auto;">
-                Private
-              </button>
-
-            </div>
+          <div style="color:#fff;margin-bottom:6px;">
+            ${p.text}
           </div>
-        `;
-      }
+
+          <small style="color:${isPrivate ? "orange" : "lime"}">
+            ${isPrivate ? "🔒 Private" : "🌍 Public"}
+          </small>
+
+          <div style="margin-top:8px;display:flex;gap:6px;">
+            <button onclick="setPublic('${id}')" style="width:auto;">Public</button>
+            <button onclick="setPrivate('${id}')" style="width:auto;">Private</button>
+          </div>
+
+        </div>
+      `;
     });
   });
 }
 
-/* ================= TOGGLE VISIBILITY ================= */
+/* ================= TOGGLE ================= */
 window.setPublic = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "public"
@@ -95,10 +91,10 @@ window.setPrivate = async (id) => {
   });
 };
 
-/* MENU */
+/* ================= MENU ================= */
 window.toggleMenu = () => {
   const m = document.getElementById("menu");
-  m.style.display = (m.style.display === "block") ? "none" : "block";
+  m.style.display = m.style.display === "block" ? "none" : "block";
 };
 
 window.goDashboard = () => location.href = "dashboard.html";
