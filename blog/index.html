@@ -1,49 +1,70 @@
-<!-- ONLY ADD THIS INSIDE YOUR SCRIPT (SAFE INJECTION) -->
-
 <script>
+/* ================= MXM ENGINE SAFE LOAD SYSTEM ================= */
+
 async function loadBlogs() {
-  const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-  const data = await res.json();
+  try {
+    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+    const data = await res.json();
 
-  const container = document.getElementById("blogContainer");
-  container.innerHTML = "";
+    const container = document.getElementById("blogContainer");
+    container.innerHTML = "";
 
-  data.forEach(post => {
-    container.innerHTML += `
-      <div class="card">
-        ${post.image ? `<img src="${post.image}">` : ""}
-        <div class="content">
-          <div class="tag">MXM UPDATE</div>
-          <div class="title">${post.title}</div>
-          <div class="text">${post.content}</div>
+    if (!data || !data.length) {
+      container.innerHTML = "<p>No articles yet.</p>";
+      return;
+    }
+
+    data.forEach(post => {
+      container.innerHTML += `
+        <div class="card">
+          ${post.image ? `<img src="${post.image}">` : ""}
+          <div class="content">
+            <div class="tag">MXM UPDATE</div>
+            <div class="title">${post.title}</div>
+            <div class="text">${post.content}</div>
+          </div>
         </div>
-      </div>
-    `;
-  });
+      `;
+    });
 
-  loadAds();
+    // SAFE CALL: ads injected AFTER blogs render
+    loadAds();
+
+  } catch (err) {
+    document.getElementById("blogContainer").innerHTML =
+      "<p>Failed to load articles.</p>";
+  }
 }
 
-/* ADS INJECTION (SAFE ADD-ON) */
+/* ================= MXM ADS SYSTEM (NON-DESTRUCTIVE ADD-ON) ================= */
+
 async function loadAds() {
-  const res = await fetch("https://mxm-backend.onrender.com/ads/list");
-  const ads = await res.json();
+  try {
+    const res = await fetch("https://mxm-backend.onrender.com/ads/list");
+    const ads = await res.json();
 
-  const container = document.getElementById("blogContainer");
+    const container = document.getElementById("blogContainer");
 
-  ads.forEach(ad => {
-    container.innerHTML += `
-      <div class="card" style="border:1px dashed #5bc0be;">
-        <div class="content">
-          <div class="tag">ADVERTISEMENT</div>
-          <div class="title">${ad.title}</div>
-          <div class="text">${ad.text}</div>
-          <button onclick="location.href='${ad.link}'">Open</button>
+    if (!ads || !ads.length) return;
+
+    ads.forEach(ad => {
+      container.innerHTML += `
+        <div class="card" style="border:1px dashed #5bc0be;">
+          <div class="content">
+            <div class="tag">ADVERTISEMENT</div>
+            <div class="title">${ad.title}</div>
+            <div class="text">${ad.text}</div>
+            <button onclick="location.href='${ad.link}'">Open</button>
+          </div>
         </div>
-      </div>
-    `;
-  });
+      `;
+    });
+
+  } catch (err) {
+    console.log("Ads failed to load:", err.message);
+  }
 }
 
+/* INIT */
 loadBlogs();
 </script>
