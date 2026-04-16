@@ -3,7 +3,35 @@
 <head>
   <title>Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="ui-theme.css">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b132b;
+      color: #fff;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    .small-nav-btn {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      background: #5bc0be;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
@@ -16,7 +44,6 @@
 
   <div class="card">
     <h4>Create Post</h4>
-
     <textarea id="postInput" placeholder="Write something..."></textarea>
 
     <div style="display:flex;justify-content:flex-end;margin-top:10px;">
@@ -25,32 +52,16 @@
   </div>
 
   <div class="card">
-    <h4>My Field</h4>
+    <h4>My Posts</h4>
     <div id="myPosts"></div>
   </div>
 
 </div>
 
-<!-- CLEAN SMALL BACK BUTTON (BLOG STYLE) -->
-<div style="
-  position: fixed;
-  bottom: 15px;
-  right: 15px;
-">
-  <button onclick="history.back()" style="
-    background: #5bc0be;
-    color: #000;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-  ">
-    ← Back
-  </button>
-</div>
+<!-- CLEAN NAV BUTTON -->
+<button class="small-nav-btn" onclick="location.href='dashboard.html'">
+  Dashboard
+</button>
 
 <script type="module" src="profile.js"></script>
 </body>
