@@ -15,43 +15,33 @@
   <div style="max-width:600px; margin:auto; text-align:left; line-height:1.6;">
 
     <p>
-      ForFans.me is a digital platform where creators earn money by sharing exclusive content with their audience. It allows users to monetize attention, content, and engagement in a structured way.
+      ForFans.me is a digital platform where creators earn money by sharing exclusive content with their audience.
     </p>
 
     <p>
-      To start earning, you create a profile that acts as your personal brand. Once you build followers, you can post exclusive content that only paying users can access.
+      You create a profile, build followers, and monetize content through paid access.
     </p>
 
     <p>
-      The main income comes from paid content. You upload posts, photos or videos and set a price. Users must pay before accessing them.
+      Income comes from subscriptions, tips, and private content.
     </p>
 
     <p>
-      Subscriptions are another strong income source. Fans pay monthly for access, giving you stable recurring income.
+      Promotion is key—use WhatsApp, TikTok, Telegram, etc.
     </p>
 
     <p>
-      You can also earn from tips, private chats, and custom requests. These often bring higher earnings per user.
-    </p>
-
-    <p>
-      Success depends heavily on promotion. You must drive traffic from platforms like WhatsApp, Facebook, TikTok, and Telegram.
-    </p>
-
-    <p>
-      Treat it like a business. Consistency builds audience trust and long-term income growth.
+      Treat it like a business for long-term income.
     </p>
 
   </div>
 
-  <!-- LOCKED BUTTON -->
   <button onclick="checkPremium()">
     🚀 Continue to ForFans Platform
   </button>
 
 </div>
 
-<!-- ================= PREMIUM LOCK SYSTEM ================= -->
 <script type="module">
 import { auth, db } from "../firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -63,7 +53,7 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
 });
 
-/* ================= PREMIUM CHECK ================= */
+/* ================= UPDATED ACCESS CONTROL ================= */
 window.checkPremium = async () => {
 
   if (!currentUser) {
@@ -76,29 +66,49 @@ window.checkPremium = async () => {
     const ref = doc(db, "users", currentUser.uid);
     const snap = await getDoc(ref);
 
+    const settingsRef = doc(db, "settings", "access");
+    const settingsSnap = await getDoc(settingsRef);
+
+    let locked = true;
+
+    if (settingsSnap.exists()) {
+      locked = settingsSnap.data().forfansLocked;
+    }
+
     const isPremium = snap.exists() && snap.data().premium === true;
+    const isAdmin = snap.exists() && snap.data().role === "admin";
 
-    if (!isPremium) {
-
-      const confirmUpgrade = confirm(
-        "⚠️ PREMIUM ACCESS REQUIRED\n\n" +
-        "This earning guide is locked for premium users only.\n\n" +
-        "Upgrade to unlock full access.\n\n" +
-        "⚠️ Note: Payments are NON-REFUNDABLE and results are NOT guaranteed."
-      );
-
-      if (confirmUpgrade) {
-        location.href = "../dashboard.html";
-      }
-
+    // ✅ ADMIN ALWAYS FREE
+    if (isAdmin) {
+      window.open("https://forfans.me/chichiguy", "_blank");
       return;
     }
 
-    /* ✅ ALLOW ACCESS */
-    window.open("https://forfans.me/chichiguy", "_blank");
+    // ✅ GLOBAL UNLOCK
+    if (!locked) {
+      window.open("https://forfans.me/chichiguy", "_blank");
+      return;
+    }
+
+    // ✅ PREMIUM ACCESS
+    if (isPremium) {
+      window.open("https://forfans.me/chichiguy", "_blank");
+      return;
+    }
+
+    // ❌ BASIC USERS
+    const confirmUpgrade = confirm(
+      "⚠️ PREMIUM ACCESS REQUIRED\n\n" +
+      "Upgrade to unlock this earning guide.\n\n" +
+      "Payments are NON-REFUNDABLE."
+    );
+
+    if (confirmUpgrade) {
+      location.href = "../dashboard.html";
+    }
 
   } catch (err) {
-    alert("Error checking premium status");
+    alert("Error checking access");
     console.error(err);
   }
 };
