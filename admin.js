@@ -1,4 +1,8 @@
-import { db } from "./firebase.js";
+import { auth, db } from "./firebase.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
   doc,
@@ -11,8 +15,40 @@ import {
   query,
   orderBy,
   getDocs,
-  writeBatch
+  writeBatch,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+/* ================= 🔒 ADMIN ACCESS GUARD (FIXED) ================= */
+const ADMIN_UID = null; 
+// ⚠️ OPTIONAL: put your UID here later for absolute lock
+// example: "pmXooqSVxdO53xiCugrqDijR6iI3"
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    location.href = "index.html";
+    return;
+  }
+
+  // fetch user role
+  const snap = await getDoc(doc(db, "users", user.uid));
+
+  const role = snap.exists() ? snap.data().role : "user";
+
+  // 🔥 SAFE ADMIN CHECK (role OR UID)
+  if (
+    (ADMIN_UID && user.uid === ADMIN_UID) ||
+    role === "admin"
+  ) {
+    console.log("Admin access granted");
+  } else {
+    alert("❌ Access denied (Admin only)");
+    location.href = "dashboard.html";
+    return;
+  }
+});
+
 
 /* ================= WALLET ================= */
 window.updateWallet = async () => {
@@ -25,6 +61,7 @@ window.updateWallet = async () => {
 
   alert("Wallet updated!");
 };
+
 
 /* ================= EARNINGS ================= */
 window.addEarning = async () => {
@@ -40,6 +77,7 @@ window.addEarning = async () => {
   alert("Earning added!");
 };
 
+
 /* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("usersList");
@@ -53,13 +91,14 @@ function loadUsers() {
 
       box.innerHTML += `
         <div style="padding:6px;margin:5px;background:#1c2541;border-radius:6px;">
-          <b>${u.email}</b>
+          <b>${u.email || u.username || "user"}</b>
           <button onclick="banUser('${u.uid}')">Ban</button>
         </div>
       `;
     });
   });
 }
+
 
 /* ================= BAN USER ================= */
 window.banUser = async (uid) => {
@@ -75,6 +114,7 @@ window.banUser = async (uid) => {
   }
 };
 
+
 /* ================= POSTS ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
@@ -88,14 +128,15 @@ function loadPosts() {
 
       box.innerHTML += `
         <div style="padding:6px;margin:5px;background:#0b132b;border-radius:6px;">
-          <b>${p.user}</b>
-          <p>${p.text}</p>
+          <b>${p.user || "user"}</b>
+          <p>${p.text || ""}</p>
           <button onclick="deletePost('${d.id}')">Delete</button>
         </div>
       `;
     });
   });
 }
+
 
 /* ================= DELETE SINGLE POST ================= */
 window.deletePost = async (id) => {
@@ -107,7 +148,8 @@ window.deletePost = async (id) => {
   }
 };
 
-/* ================= 🔥 FIXED: CLEAR ALL POSTS (WORKING 100%) ================= */
+
+/* ================= CLEAR ALL POSTS ================= */
 window.clearAllPosts = async () => {
   try {
     const ok = confirm("⚠️ This will permanently delete ALL posts. Continue?");
@@ -136,6 +178,7 @@ window.clearAllPosts = async () => {
   }
 };
 
+
 /* ================= UPGRADE REQUESTS ================= */
 function loadUpgrades() {
   const box = document.getElementById("upgradeList");
@@ -149,7 +192,7 @@ function loadUpgrades() {
 
       box.innerHTML += `
         <div style="padding:6px;margin:5px;background:#1c2541;border-radius:6px;">
-          <b>${u.email}</b>
+          <b>${u.email || "user"}</b>
           <p>Status: ${u.status || "pending"}</p>
           <button onclick="approveUpgrade('${u.uid}')">Approve</button>
         </div>
@@ -158,7 +201,8 @@ function loadUpgrades() {
   });
 }
 
-/* ================= APPROVE UPGRADE (FIXED) ================= */
+
+/* ================= APPROVE UPGRADE ================= */
 window.approveUpgrade = async (uid) => {
   try {
     await updateDoc(doc(db, "users", uid), {
@@ -176,6 +220,7 @@ window.approveUpgrade = async (uid) => {
     alert("Upgrade failed");
   }
 };
+
 
 /* ================= INIT ================= */
 loadUsers();
