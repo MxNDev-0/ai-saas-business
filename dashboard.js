@@ -124,7 +124,7 @@ function loadFeed() {
 
       if (!m) return;
       if (!m.text) return;
-      if (m.visibility === "private") return;
+      if (m.visibility === "public") return;
 
       count++;
 
