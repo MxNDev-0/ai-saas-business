@@ -15,38 +15,22 @@
       color: #fff;
     }
 
-    /* ================= HEADER ================= */
-    .navbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      background: #1c2541;
-      position: sticky;
-      top: 0;
-    }
-
-    .navbar h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-
-    .icon-btn {
-      background: #5bc0be;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    /* ================= CONTAINER ================= */
     .container {
       padding: 15px;
       position: relative;
     }
 
-    /* ================= MENU ================= */
+    .menu-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #5bc0be;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
     .dropdown {
       position: absolute;
       top: 45px;
@@ -65,6 +49,7 @@
       padding: 6px;
       border-radius: 6px;
       border: none;
+      outline: none;
     }
 
     .dropdown button {
@@ -72,20 +57,24 @@
       margin-top: 5px;
       padding: 6px;
       font-size: 12px;
+      border-radius: 6px;
     }
 
-    /* ================= USERNAME ================= */
     .username-box {
       text-align: center;
-      margin: 12px 0;
+      margin-bottom: 15px;
       font-size: 16px;
       color: #5bc0be;
     }
 
-    /* ================= POST BOX ================= */
+    /* =========================
+       🔥 POST UI UPGRADE
+    ========================== */
+
     #postInput {
       width: 100%;
       min-height: 120px;
+      max-height: 180px;
       padding: 12px;
       border-radius: 10px;
       border: none;
@@ -104,84 +93,55 @@
       margin-top: 12px;
     }
 
-    /* ================= POSTS ================= */
+    /* =========================
+       🔥 POST VISIBILITY BUTTONS SMALL
+    ========================== */
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .controls button {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      background: #5bc0be;
+      color: #000;
+    }
+
+    .controls button:hover {
+      opacity: 0.85;
+    }
+
+    /* TAGS */
+    .tag-private,
+    .tag-public {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .tag-private {
+      background: #ef4444;
+    }
+
+    .tag-public {
+      background: #22c55e;
+    }
+
+    /* POST ITEM */
     .post {
       padding: 10px;
       border-radius: 10px;
       background: #0b132b;
       margin-bottom: 10px;
-      position: relative;
     }
 
-    /* AVATAR (UI ONLY) */
-    .avatar {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      background: #5bc0be;
-      display: inline-block;
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-
-    .post-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    /* ================= 3 DOT MENU ================= */
-    .dot-menu {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      cursor: pointer;
-      font-size: 18px;
-      padding: 2px 6px;
-    }
-
-    .visibility-menu {
-      position: absolute;
-      right: 8px;
-      top: 28px;
-      background: #1c2541;
-      border-radius: 8px;
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 5;
-    }
-
-    .visibility-menu button {
-      background: none;
-      border: none;
-      color: white;
-      padding: 8px 10px;
-      text-align: left;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .visibility-menu button:hover {
-      background: #5bc0be;
-      color: #000;
-    }
-
-    /* TAG */
-    .tag-private {
-      font-size: 10px;
-      background: #ef4444;
-      padding: 2px 6px;
-      border-radius: 10px;
-    }
-
-    .tag-public {
-      font-size: 10px;
-      background: #22c55e;
-      padding: 2px 6px;
-      border-radius: 10px;
-    }
-
+    /* BUTTON FIX */
     .small-nav-btn {
       margin-top: 10px;
       padding: 6px 10px;
@@ -195,32 +155,28 @@
 
 <body>
 
-<!-- ================= HEADER ================= -->
 <div class="navbar">
-
-  <button class="icon-btn" onclick="toggleMenu()">☰</button>
-
-  <h3>Profile 👤</h3>
-
-  <button class="icon-btn" onclick="location.href='dashboard.html'">⬅</button>
-
+  <h3 style="margin:auto;">Profile 👤</h3>
 </div>
 
 <div class="container">
+
+  <!-- ☰ MENU BUTTON -->
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
 
   <!-- DROPDOWN MENU -->
   <div id="dropdownMenu" class="dropdown">
     <input id="usernameInput" placeholder="New username">
     <button onclick="updateUsername()">Save Username</button>
+
     <button onclick="resetPassword()">Reset Password</button>
   </div>
 
-  <!-- USERNAME -->
+  <!-- USERNAME DISPLAY -->
   <div class="username-box">
     Username: <span id="usernameDisplay">Loading...</span>
   </div>
 
-  <!-- BACK BUTTON (kept but now optional UI backup) -->
   <button class="small-nav-btn" onclick="location.href='dashboard.html'">
     ⬅ Back
   </button>
@@ -232,7 +188,7 @@
     <textarea id="postInput" placeholder="Write something..."></textarea>
 
     <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-      <button onclick="createPost()" style="padding:6px 10px;border-radius:8px;">
+      <button onclick="createPost()" style="width:auto;padding:6px 10px;border-radius:8px;">
         Post
       </button>
     </div>
