@@ -90,7 +90,6 @@ function loadFeed() {
 
     snap.forEach(docSnap => {
       const m = docSnap.data();
-
       if (!m?.text) return;
 
       box.innerHTML += `
@@ -135,7 +134,12 @@ window.goHome = () => location.href = "dashboard.html";
 window.goProfile = () => location.href = "profile.html";
 
 /* ================= ADMIN ONLY (FIXED UX) ================= */
-window.goAdmin = async () => {
+window.goAdmin = () => {
+  if (!user) {
+    alert("Loading session...");
+    return;
+  }
+
   if (!userData) {
     alert("Loading user data...");
     return;
