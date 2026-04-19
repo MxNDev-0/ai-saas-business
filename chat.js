@@ -13,7 +13,8 @@ import {
   onSnapshot,
   getDocs,
   setDoc,
-  doc
+  doc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let currentChatId = null;
@@ -29,8 +30,8 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
   await setDoc(doc(db, "onlineUsers", user.uid), {
-    email: user.email,
-    online: true,
+    uid: user.uid,
+    username: user.email,
     lastActive: Date.now()
   }, { merge: true });
 
@@ -66,8 +67,8 @@ async function loadUsers() {
 
     usersListDiv.innerHTML += `
       <div class="user-item"
-        onclick="openChat('${uid}', '${user.email}')">
-        ${user.email} 🟢
+        onclick="openChat('${uid}', '${user.username || user.email}')">
+        ${user.username || user.email} 🟢
       </div>
     `;
   });
@@ -97,7 +98,7 @@ window.sendMessage = async function () {
     text,
     sender: currentUser.uid,
     email: currentUser.email,
-    time: Date.now()
+    time: serverTimestamp()
   });
 
   input.value = "";
@@ -115,10 +116,15 @@ function loadMessages() {
   );
 
   unsubscribeMessages = onSnapshot(q, (snapshot) => {
+    console.log("Messages:", snapshot.size);
+
     chatBox.innerHTML = "";
 
     snapshot.forEach(docSnap => {
       const msg = docSnap.data();
+
+      if (!msg || !msg.text) return;
+
       const isMe = msg.sender === currentUser.uid;
 
       chatBox.innerHTML += `
