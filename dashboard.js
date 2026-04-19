@@ -19,15 +19,21 @@ import {
 
 let user = null;
 let userData = null;
+let isAdmin = false;
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
-  if (!u) location.href = "index.html";
+  if (!u) {
+    location.href = "index.html";
+    return;
+  }
 
   user = u;
 
   await ensureUser();
   await loadUser();
+
+  isAdmin = userData?.role === "admin";
 
   loadUsers();
   loadFeed();
@@ -62,6 +68,7 @@ function loadUsers() {
 
     snap.forEach(d => {
       const u = d.data();
+
       box.innerHTML += `
         <div class="user-item">
           <span>${u.username || "user"}</span>
@@ -96,7 +103,7 @@ function loadFeed() {
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
@@ -127,20 +134,22 @@ window.logout = async function () {
 window.goHome = () => location.href = "dashboard.html";
 window.goProfile = () => location.href = "profile.html";
 
-/* 🔒 ADMIN ONLY */
+/* ================= ADMIN ONLY (FIXED UX) ================= */
 window.goAdmin = async () => {
-  const snap = await getDoc(doc(db, "users", user.uid));
-  const data = snap.data();
+  if (!userData) {
+    alert("Loading user data...");
+    return;
+  }
 
-  if (data.role !== "admin") {
-    alert("Admin only access");
+  if (!isAdmin) {
+    alert("❌ Admin only access");
     return;
   }
 
   location.href = "admin.html";
 };
 
-/* REPLACED PREMIUM */
+/* ================= ADS SPACE ================= */
 window.goAdSpace = () => {
   location.href = "ads.html";
 };
@@ -150,7 +159,7 @@ window.goFaq = () => location.href = "faq.html";
 window.goAbout = () => location.href = "about.html";
 window.goBlog = () => location.href = "blog/index.html";
 
-/* NEW FEATURE */
+/* ================= DEVELOPER ================= */
 window.openDeveloper = () => {
   alert("Developer tools coming soon");
 };
