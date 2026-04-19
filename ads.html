@@ -87,26 +87,26 @@
       margin: 10px 0;
     }
 
-    /* ✅ FIXED BACK BUTTON (secondary style, not floating) */
     .back {
       width: 100%;
       padding: 10px;
       margin-top: 6px;
-
       background: transparent;
       color: #5bc0be;
-
       border: 1px solid #5bc0be;
       border-radius: 8px;
-
       font-size: 13px;
       cursor: pointer;
-
       transition: 0.2s ease;
     }
 
     .back:hover {
       background: rgba(91, 192, 190, 0.1);
+    }
+
+    /* ✅ PREVIEW STYLE */
+    .preview-card {
+      border: 1px dashed #5bc0be;
     }
   </style>
 </head>
@@ -156,9 +156,18 @@
       <option value="30">30 Days</option>
     </select>
 
+    <!-- ✅ NEW PREVIEW -->
+    <div class="card preview-card">
+      <h4>🔍 Live Preview</h4>
+      <div class="content">
+        <div class="tag">SPONSORED</div>
+        <div class="title" id="previewTitle">Your Ad Title</div>
+        <div class="text" id="previewText">Your ad description will appear here...</div>
+      </div>
+    </div>
+
     <button onclick="buyAd()">Proceed to Payment 🚀</button>
 
-    <!-- ✅ MOVED HERE -->
     <button class="back" onclick="location.href='dashboard.html'">
       ← Back
     </button>
@@ -184,6 +193,18 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 const API = "https://mxm-backend.onrender.com";
 
+/* ================= PREVIEW LIVE UPDATE ================= */
+document.getElementById("adTitle").addEventListener("input", e => {
+  document.getElementById("previewTitle").innerText =
+    e.target.value || "Your Ad Title";
+});
+
+document.getElementById("adText").addEventListener("input", e => {
+  document.getElementById("previewText").innerText =
+    e.target.value || "Your ad description will appear here...";
+});
+
+/* ================= PRICE ================= */
 function calculatePrice(days) {
   const base = 10;
 
@@ -202,6 +223,7 @@ document.getElementById("adDuration").addEventListener("change", function () {
     `$${price.toFixed(2)} / ${days} Days`;
 });
 
+/* ================= BUY AD ================= */
 window.buyAd = async function () {
   const title = document.getElementById("adTitle").value.trim();
   const text = document.getElementById("adText").value.trim();
