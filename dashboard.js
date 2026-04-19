@@ -64,25 +64,20 @@ async function loadUser() {
 function applyUIRestrictions() {
   if (!userData) return;
 
-  // PREMIUM-ONLY BUTTONS
   const premiumButtons = document.querySelectorAll(".premium-only");
-
   if (!isPremiumAllowed(userData)) {
     premiumButtons.forEach(btn => {
       btn.style.display = "none";
     });
   }
 
-  // ADS SECTION CONTROL
   const adsSection = document.querySelectorAll(".ads-only");
-
   if (!isAllowed("ads", userData)) {
     adsSection.forEach(el => {
       el.style.display = "none";
     });
   }
 
-  // OPTIONAL: ENGINE FEATURE LOCKS
   if (!isAllowed("chat", userData)) {
     const chatBox = document.getElementById("chatBox");
     if (chatBox) chatBox.innerHTML = "<p>Chat disabled</p>";
@@ -148,7 +143,6 @@ window.sendMessage = async function () {
 
   if (!text) return;
 
-  // 🔒 OPTIONAL LIMIT CHECK (future upgrade hook)
   if (!isAllowed("chat", userData)) {
     alert("Chat disabled for your account");
     return;
@@ -183,3 +177,46 @@ window.support = () => alert("Support coming soon");
 window.goFaq = () => location.href = "faq.html";
 window.goAbout = () => location.href = "about.html";
 window.goBlog = () => location.href = "blog/index.html";
+
+
+/* ================= 🔒 CLICK GUARD SYSTEM (INJECTED — NO CORE CHANGES) ================= */
+
+function showToast(msg) {
+  const el = document.createElement("div");
+
+  el.innerText = msg;
+  el.style.position = "fixed";
+  el.style.bottom = "20px";
+  el.style.left = "50%";
+  el.style.transform = "translateX(-50%)";
+  el.style.background = "#1c2541";
+  el.style.color = "#fff";
+  el.style.padding = "10px 14px";
+  el.style.borderRadius = "8px";
+  el.style.zIndex = "99999";
+  el.style.fontSize = "13px";
+
+  document.body.appendChild(el);
+
+  setTimeout(() => el.remove(), 2000);
+}
+
+/* PREMIUM CLICK BLOCK */
+document.addEventListener("click", (e) => {
+  const premiumBtn = e.target.closest(".premium-only");
+
+  if (premiumBtn && !userData?.isPremium) {
+    e.preventDefault();
+    showToast("🔒 Premium only feature");
+  }
+});
+
+/* ADS CLICK BLOCK */
+document.addEventListener("click", (e) => {
+  const ads = e.target.closest(".ads-only");
+
+  if (ads && !isAllowed("ads", userData)) {
+    e.preventDefault();
+    showToast("📢 Ads feature locked");
+  }
+});
