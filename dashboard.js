@@ -37,7 +37,7 @@ onAuthStateChanged(auth, async (u) => {
   loadWallet();
   loadCryptoPrices();
 
-  setupDebugAccess(); // 🔥 NEW
+  setupDebugAccess();
 });
 
 /* ================= USER PROFILE ================= */
@@ -107,14 +107,14 @@ function loadUsers() {
   });
 }
 
-/* ================= FEED (FULLY FIXED) ================= */
+/* ================= FEED ================= */
 function loadFeed() {
   const box = document.getElementById("chatBox");
   if (!box) return;
 
   const q = query(
     collection(db, "posts"),
-    orderBy("time", "desc") // 🔥 FIXED
+    orderBy("time", "desc")
   );
 
   onSnapshot(q, (snap) => {
@@ -133,7 +133,6 @@ function loadFeed() {
 
       const visibility = m.visibility || "public";
 
-      // 🔐 Visibility control
       if (visibility === "admin-only" && userData?.role !== "admin") return;
       if (visibility === "premium" && !userData?.isPremium) return;
 
@@ -158,7 +157,7 @@ function loadFeed() {
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async () => {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
@@ -198,5 +197,25 @@ function setupDebugAccess() {
 
       console.log("✅ Debug Complete");
     };
+  } else {
+    console.log("No debug access");
+  }
+}
 
-  } else
+/* ================= MENU (FIXED) ================= */
+window.toggleMenu = function () {
+  const menu = document.getElementById("menu");
+  if (!menu) return;
+
+  menu.classList.toggle("active");
+};
+
+/* ================= LOGOUT (FIXED) ================= */
+window.logout = async function () {
+  try {
+    await signOut(auth);
+    location.href = "index.html";
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+};
