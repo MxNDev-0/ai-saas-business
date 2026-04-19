@@ -126,6 +126,11 @@ function loadPosts() {
       box.innerHTML += `
         <div class="post">
 
+          <div class="post-header">
+            <div class="avatar"></div>
+            <div>${p.user}</div>
+          </div>
+
           <div>${p.text}</div>
 
           <div style="margin-top:6px;">
@@ -134,9 +139,12 @@ function loadPosts() {
             </span>
           </div>
 
-          <div class="controls">
-            <button onclick="setPublic('${id}')">Public</button>
-            <button onclick="setPrivate('${id}')">Private</button>
+          <!-- 3 DOT MENU -->
+          <div class="dot-menu" onclick="toggleVisibilityMenu('${id}')">⋮</div>
+
+          <div class="visibility-menu" id="menu-${id}">
+            <button onclick="setPublic('${id}')">Make Public</button>
+            <button onclick="setPrivate('${id}')">Make Private</button>
           </div>
 
         </div>
@@ -150,10 +158,22 @@ window.setPublic = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "public"
   });
+
+  document.getElementById("menu-" + id).style.display = "none";
 };
 
 window.setPrivate = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "private"
   });
+
+  document.getElementById("menu-" + id).style.display = "none";
+};
+
+/* ================= NEW (UI SUPPORT ONLY) ================= */
+window.toggleVisibilityMenu = (id) => {
+  const el = document.getElementById("menu-" + id);
+  if (!el) return;
+
+  el.style.display = el.style.display === "flex" ? "none" : "flex";
 };
