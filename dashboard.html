@@ -30,13 +30,16 @@
   <button onclick="goHome()">Home</button>
   <button onclick="goProfile()">Profile</button>
   <button onclick="goAdmin()">Admin</button>
-  <button onclick="goPremium()">Upgrade</button>
-  <button onclick="support()">Support</button>
+  <button onclick="goPremium()">Upgrade 🚀</button>
+  <button onclick="support()">Support 💰</button>
 
-  <!-- 🔥 FIX: ensure missing buttons exist if JS adds them -->
+  <!-- NAV FIXED LINKS -->
   <button onclick="goFaq()">FAQ</button>
   <button onclick="goAbout()">About</button>
   <button onclick="goBlog()">Blog</button>
+
+  <!-- 🔥 PREMIUM SYSTEM READY HOOK (SAFE PLACE FOR NEXT UPGRADE) -->
+  <button class="premium-only" onclick="openDeveloper()">Developer 💻</button>
 </div>
 
 <div class="container">
@@ -61,6 +64,12 @@
       <input id="chatInput" placeholder="Write something...">
       <button onclick="sendMessage()">Post</button>
     </div>
+  </div>
+
+  <!-- 🔥 ADS SYSTEM READY (ENGINE v15 HOOK) -->
+  <div class="card ads-only">
+    <h4>📢 Sponsored</h4>
+    <p>Advertise your business here</p>
   </div>
 
   <div class="card earn-card">
