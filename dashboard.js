@@ -73,7 +73,7 @@ function loadUsers() {
   });
 }
 
-/* ================= FEED ================= */
+/* ================= FEED (FIXED SAFETY) ================= */
 function loadFeed() {
   const box = document.getElementById("chatBox");
   if (!box) return;
@@ -83,14 +83,14 @@ function loadFeed() {
   onSnapshot(q, (snap) => {
     box.innerHTML = "";
 
-    snap.forEach(doc => {
-      const m = doc.data();
+    snap.forEach(docSnap => {
+      const m = docSnap.data();
 
-      if (!m.text) return;
+      if (!m || !m.text) return;
 
       box.innerHTML += `
-        <div class="msg">
-          <b>${m.user}</b><br/>
+        <div class="msg" style="margin:6px 0;padding:6px;background:#0b132b;border-radius:6px;">
+          <b>${m.user || "user"}</b><br/>
           ${m.text}
         </div>
       `;
@@ -98,7 +98,7 @@ function loadFeed() {
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
@@ -116,8 +116,7 @@ window.sendMessage = async function () {
 
 /* ================= MENU ================= */
 window.toggleMenu = function () {
-  const menu = document.getElementById("menu");
-  menu.classList.toggle("active");
+  document.getElementById("menu").classList.toggle("active");
 };
 
 /* ================= LOGOUT ================= */
@@ -126,9 +125,14 @@ window.logout = async function () {
   location.href = "index.html";
 };
 
-/* ================= NAV ================= */
+/* ================= NAVIGATION FIX (MISSING BUTTONS FIXED) ================= */
 window.goHome = () => location.href = "dashboard.html";
 window.goProfile = () => location.href = "profile.html";
 window.goAdmin = () => location.href = "admin.html";
 window.goPremium = () => location.href = "premium.html";
 window.support = () => alert("Support coming soon");
+
+/* 🔥 ADDED MISSING BUTTON FUNCTIONS */
+window.goFaq = () => location.href = "faq.html";
+window.goAbout = () => location.href = "about.html";
+window.goBlog = () => location.href = "blog/index.html";
