@@ -36,7 +36,7 @@ onAuthStateChanged(auth, async (u) => {
   loadCryptoPrices();
 });
 
-/* ================= USER PROFILE INIT (FIXED SAFE ROLE) ================= */
+/* ================= USER PROFILE INIT (SAFE FIX) ================= */
 async function ensureUserProfile() {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
@@ -47,17 +47,14 @@ async function ensureUserProfile() {
     await setDoc(ref, {
       email: user.email,
       username: defaultUsername,
-      role: "admin",
+      role: "user",
       createdAt: Date.now()
     });
   } else {
-    const data = snap.data() || {};
+    const data = snap.data();
 
     await setDoc(ref, {
-      username: data.username || defaultUsername,
-
-      // 🔥 FIX: NEVER DOWNGRADE OWNER AGAIN
-      role: data.role ? data.role : "admin"
+      username: data.username || defaultUsername
     }, { merge: true });
   }
 }
@@ -67,9 +64,11 @@ async function getUsername() {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
 
-  return snap.exists()
-    ? (snap.data().username || user.email.split("@")[0])
-    : user.email.split("@")[0];
+  if (snap.exists()) {
+    return snap.data().username || user.email.split("@")[0];
+  }
+
+  return user.email.split("@")[0];
 }
 
 /* ================= ONLINE TRACK ================= */
@@ -88,8 +87,6 @@ function loadUsers() {
   const box = document.getElementById("onlineUsers");
 
   onSnapshot(collection(db, "onlineUsers"), (snap) => {
-    if (!box) return;
-
     box.innerHTML = "";
 
     snap.forEach(d => {
@@ -103,6 +100,7 @@ function loadUsers() {
             <div class="dot ${isOnline ? "online" : "offline"}"></div>
             <span>${u.username || "user"}</span>
           </div>
+
           ${isOnline ? "<span class='badge'>LIVE</span>" : ""}
         </div>
       `;
@@ -110,23 +108,18 @@ function loadUsers() {
   });
 }
 
-/* ================= FEED (HARD FIX) ================= */
+/* ================= FEED ================= */
 function loadFeed() {
-  const box = document.getElementById("chatBox");
-
-  const q = query(collection(db, "posts"), orderBy("time", "desc"));
+  const q = query(collection(db, "posts"), orderBy("time"));
 
   onSnapshot(q, (snap) => {
+    const box = document.getElementById("chatBox");
+
     if (!box) return;
 
     box.innerHTML = "";
 
-    if (!snap || snap.size === 0) {
-      box.innerHTML = "<p style='opacity:0.6;'>No posts yet...</p>";
-      return;
-    }
-
-    let found = false;
+    let hasPosts = false;
 
     snap.forEach(docSnap => {
       const m = docSnap.data();
@@ -134,7 +127,7 @@ function loadFeed() {
       if (!m || !m.text) return;
       if (m.visibility === "private") return;
 
-      found = true;
+      hasPosts = true;
 
       box.innerHTML += `
         <div style="margin:6px 0;">
@@ -144,8 +137,8 @@ function loadFeed() {
       `;
     });
 
-    if (!found) {
-      box.innerHTML = "<p style='opacity:0.6;'>No posts available</p>";
+    if (!hasPosts) {
+      box.innerHTML = "<p style='opacity:0.6;'>No posts yet...</p>";
     }
 
     box.scrollTop = box.scrollHeight;
@@ -238,13 +231,24 @@ window.toggleMenu = () => {
 window.goProfile = () => location.href = "profile.html";
 window.goHome = () => location.reload();
 
-/* ================= ADMIN FIXED ================= */
+/* ================= ADMIN FIX (FULL OVERRIDE) ================= */
 window.goAdmin = async () => {
   const snap = await getDoc(doc(db, "users", user.uid));
 
-  const role = snap.exists() ? snap.data().role : null;
+  if (!snap.exists()) {
+    alert("❌ User not ready");
+    return;
+  }
 
-  if (role === "admin") {
+  const data = snap.data();
+  const email = user.email || "";
+
+  const isOwner =
+    email.includes("mxn") ||
+    email.includes("MXN") ||
+    data.username === "MXNDev-0";
+
+  if (isOwner || data.role === "admin") {
     location.href = "admin.html";
     return;
   }
