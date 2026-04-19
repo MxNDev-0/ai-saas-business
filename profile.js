@@ -35,17 +35,6 @@ window.toggleMenu = () => {
   m.style.display = m.style.display === "block" ? "none" : "block";
 };
 
-/* TOAST */
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.innerText = msg;
-  t.style.display = "block";
-
-  setTimeout(() => {
-    t.style.display = "none";
-  }, 2500);
-}
-
 /* USERNAME */
 async function loadUsername() {
   const ref = doc(db, "users", user.uid);
@@ -72,15 +61,13 @@ window.updateUsername = async () => {
   }, { merge: true });
 
   document.getElementById("usernameDisplay").innerText = username;
-
   input.value = "";
-  showToast("Username updated");
 };
 
 /* RESET PASSWORD */
 window.resetPassword = async () => {
   await sendPasswordResetEmail(auth, user.email);
-  showToast("Reset email sent");
+  alert("Reset email sent");
 };
 
 /* CREATE POST */
@@ -100,7 +87,7 @@ window.createPost = async () => {
   input.value = "";
 };
 
-/* LOAD POSTS */
+/* POSTS */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
@@ -116,15 +103,13 @@ function loadPosts() {
 
       box.innerHTML += `
         <div class="post">
-
           <div>${p.text}</div>
 
-          <!-- 3 DOT MENU -->
-          <div class="dots" onclick="toggleMenuPost('${id}')">⋮</div>
+          <div class="dots" onclick="togglePostMenu('${id}')">⋮</div>
 
           <div id="menu-${id}" class="post-menu">
-            <button onclick="makePublic('${id}')">Make Public</button>
-            <button onclick="makePrivate('${id}')">Make Private</button>
+            <button onclick="setPublic('${id}')">Make Public</button>
+            <button onclick="setPrivate('${id}')">Make Private</button>
           </div>
 
         </div>
@@ -134,24 +119,22 @@ function loadPosts() {
 }
 
 /* TOGGLE MENU */
-window.toggleMenuPost = (id) => {
-  const m = document.getElementById("menu-" + id);
-  m.style.display = m.style.display === "flex" ? "none" : "flex";
+window.togglePostMenu = (id) => {
+  const el = document.getElementById("menu-" + id);
+  el.style.display = el.style.display === "flex" ? "none" : "flex";
 };
 
-/* VISIBILITY CONTROL */
-window.makePublic = async (id) => {
+/* VISIBILITY */
+window.setPublic = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "public"
   });
-
-  showToast("Your post is now PUBLIC 🌍");
+  alert("Post is now public");
 };
 
-window.makePrivate = async (id) => {
+window.setPrivate = async (id) => {
   await updateDoc(doc(db, "posts", id), {
     visibility: "private"
   });
-
-  showToast("Your post is now PRIVATE 🔒");
+  alert("Post is now private");
 };
