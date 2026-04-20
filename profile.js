@@ -30,17 +30,12 @@ onAuthStateChanged(auth, async (u) => {
   loadPosts();
 });
 
-/* ================= HAMBURGER MENU (FIXED 100%) ================= */
+/* ================= MENU ================= */
 window.toggleMenu = function () {
   const menu = document.getElementById("dropdownMenu");
-
   if (!menu) return;
 
-  if (menu.style.display === "block") {
-    menu.style.display = "none";
-  } else {
-    menu.style.display = "block";
-  }
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
 /* ================= USERNAME ================= */
@@ -48,17 +43,14 @@ async function loadUsername() {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
 
-  const display = document.getElementById("usernameDisplay");
-
-  if (snap.exists() && snap.data().username) {
-    display.innerText = snap.data().username;
-  } else {
-    display.innerText = "Not set";
-  }
+  document.getElementById("usernameDisplay").innerText =
+    snap.exists() && snap.data().username
+      ? snap.data().username
+      : "Not set";
 }
 
 /* ================= UPDATE USERNAME ================= */
-window.updateUsername = async () => {
+window.updateUsername = async function () {
   const input = document.getElementById("usernameInput");
   const username = input.value.trim();
 
@@ -70,8 +62,8 @@ window.updateUsername = async () => {
   input.value = "";
 };
 
-/* ================= PASSWORD RESET ================= */
-window.resetPassword = async () => {
+/* ================= RESET PASSWORD ================= */
+window.resetPassword = async function () {
   if (!user?.email) return;
 
   await sendPasswordResetEmail(auth, user.email);
@@ -79,7 +71,7 @@ window.resetPassword = async () => {
 };
 
 /* ================= CREATE POST ================= */
-window.createPost = async () => {
+window.createPost = async function () {
   const input = document.getElementById("postInput");
   const text = input.value.trim();
 
@@ -95,7 +87,7 @@ window.createPost = async () => {
   input.value = "";
 };
 
-/* ================= LOAD POSTS (FIXED FACEBOOK STYLE MENU) ================= */
+/* ================= LOAD POSTS ================= */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
   const box = document.getElementById("myPosts");
@@ -112,7 +104,7 @@ function loadPosts() {
       const isPrivate = p.visibility === "private";
 
       box.innerHTML += `
-        <div class="post" style="position:relative;">
+        <div class="post">
 
           <div class="post-header">
             <div class="avatar"></div>
@@ -123,18 +115,17 @@ function loadPosts() {
             ${p.text}
           </div>
 
-          <!-- TOP RIGHT 3 DOTS (FIXED) -->
-          <div onclick="toggleMenu_${id}()" style="
+          <!-- 3 DOT BUTTON -->
+          <div onclick="window.togglePostMenu('${id}')" style="
             position:absolute;
             top:8px;
             right:10px;
             font-size:20px;
             cursor:pointer;
-            user-select:none;
           ">⋯</div>
 
           <!-- DROPDOWN -->
-          <div id="menu_${id}" style="
+          <div id="menu-${id}" style="
             display:none;
             position:absolute;
             top:30px;
@@ -146,11 +137,11 @@ function loadPosts() {
             min-width:140px;
           ">
 
-            <button onclick="editPost('${id}')" style="width:100%;padding:8px;background:none;border:none;color:white;text-align:left;">✏️ Edit</button>
+            <button onclick="window.editPost('${id}')">✏️ Edit</button>
 
-            <button onclick="deletePost('${id}')" style="width:100%;padding:8px;background:none;border:none;color:white;text-align:left;">🗑 Delete</button>
+            <button onclick="window.deletePost('${id}')">🗑 Delete</button>
 
-            <button onclick="toggleVisibility('${id}','${p.visibility}')" style="width:100%;padding:8px;background:none;border:none;color:white;text-align:left;">
+            <button onclick="window.toggleVisibility('${id}','${p.visibility}')">
               ${isPrivate ? "🔓 Make Public" : "🔒 Make Private"}
             </button>
 
@@ -162,29 +153,22 @@ function loadPosts() {
   });
 }
 
-/* ================= MENU TOGGLE (DYNAMIC SAFE) ================= */
-window.toggleMenu = window.toggleMenu; // keep safe
+/* ================= TOGGLE MENU ================= */
+window.togglePostMenu = function (id) {
+  const menu = document.getElementById("menu-" + id);
+  if (!menu) return;
 
-/* dynamic toggle generator */
-window.toggleMenuFactory = function (id) {
-  return function () {
-    const m = document.getElementById("menu_" + id);
-    if (!m) return;
+  const isOpen = menu.style.display === "block";
 
-    m.style.display = m.style.display === "block" ? "none" : "block";
-  };
-};
+  document.querySelectorAll('[id^="menu-"]').forEach(m => {
+    m.style.display = "none";
+  });
 
-/* attach dynamic toggles */
-window.toggleMenu_ = function (id) {
-  const m = document.getElementById("menu_" + id);
-  if (!m) return;
-
-  m.style.display = m.style.display === "block" ? "none" : "block";
+  menu.style.display = isOpen ? "none" : "block";
 };
 
 /* ================= EDIT ================= */
-window.editPost = async (id) => {
+window.editPost = async function (id) {
   const newText = prompt("Edit post:");
   if (!newText) return;
 
@@ -194,12 +178,12 @@ window.editPost = async (id) => {
 };
 
 /* ================= DELETE ================= */
-window.deletePost = async (id) => {
+window.deletePost = async function (id) {
   await deleteDoc(doc(db, "posts", id));
 };
 
-/* ================= TOGGLE PRIVATE/PUBLIC ================= */
-window.toggleVisibility = async (id, current) => {
+/* ================= TOGGLE ================= */
+window.toggleVisibility = async function (id, current) {
   const newState = current === "private" ? "public" : "private";
 
   await updateDoc(doc(db, "posts", id), {
