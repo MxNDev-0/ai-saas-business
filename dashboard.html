@@ -35,19 +35,11 @@
 
     #chatBox {
       scroll-behavior: smooth;
-      max-height: 250px;
+      max-height: 300px;
       overflow-y: auto;
       padding: 10px;
       background: #0b132b;
       border-radius: 8px;
-    }
-
-    .msg {
-      margin-bottom: 8px;
-      padding: 6px;
-      background: #1c2541;
-      border-radius: 6px;
-      font-size: 13px;
     }
 
     .row {
@@ -73,9 +65,8 @@
       cursor: pointer;
     }
 
-    /* ADS BOX */
-    #adsBox {
-      margin-top: 10px;
+    .msgBox {
+      margin: 8px 0;
     }
   </style>
 </head>
@@ -88,23 +79,17 @@
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- MENU (REORDERED LOGICALLY) -->
+<!-- MENU -->
 <div id="menu" class="menu">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="goProfile()">👤 Profile</button>
-
-  <button onclick="goAdSpace()">🚀 Buy Ad Space</button>
-
-  <button onclick="goBlog()">📰 Blog</button>
-  <button onclick="goFaq()">❓ FAQ</button>
-  <button onclick="goAbout()">ℹ️ About</button>
-
-  <button onclick="support()">💰 Support</button>
-
-  <button onclick="openDeveloper()">💻 Developer</button>
-
-  <!-- ADMIN LAST (SECURE + CLEAN) -->
-  <button onclick="goAdmin()">🔐 Admin</button>
+  <button onclick="goHome()">Home</button>
+  <button onclick="goProfile()">Profile</button>
+  <button onclick="goAdSpace()">Buy Ad Space 🚀</button>
+  <button onclick="goBlog()">Blog</button>
+  <button onclick="goFaq()">FAQ</button>
+  <button onclick="goAbout()">About</button>
+  <button onclick="support()">Support</button>
+  <button onclick="openDeveloper()">Developer</button>
+  <button onclick="goAdmin()">Admin</button>
 </div>
 
 <div class="container">
@@ -120,29 +105,16 @@
     <p id="walletUpdated">-</p>
   </div>
 
-  <!-- CHAT SYSTEM -->
+  <!-- CHAT V10 -->
   <div class="card">
-    <h4>💬 Community Chat</h4>
+    <h4>💬 Community Chat V10</h4>
 
     <div id="chatBox"></div>
-
-    <!-- ADS SEPARATED -->
-    <div id="adsBox"></div>
 
     <div class="row">
       <input id="chatInput" placeholder="Write something...">
       <button onclick="sendMessage()">Post</button>
     </div>
-  </div>
-
-  <div class="card ads-only">
-    <h4>📢 Sponsored Space</h4>
-    <p>Buy this space to promote your business</p>
-  </div>
-
-  <div class="card earn-card">
-    <h4>💰 Earn</h4>
-    <button onclick="location.href='earn/index.html'">Open Earn</button>
   </div>
 
 </div>
