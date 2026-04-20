@@ -46,7 +46,6 @@ input {
 }
 
 /* ================= BUTTONS ================= */
-/* FIX: prevent conflict with ui-theme.css */
 button {
   width: auto;
   display: block;
@@ -76,21 +75,53 @@ button {
   font-size: 13px;
 }
 
-/* ================= MENU ================= */
+/* ================= MENU (FIXED V2) ================= */
 .menu {
   display: none;
   position: absolute;
-  top: 50px;
+  top: 55px;
   left: 10px;
-  background: #2a2a2a;
-  padding: 10px;
-  border-radius: 10px;
-  width: 160px;
+
+  width: 200px;
+  background: #1c2541;
+
+  padding: 8px;
+  border-radius: 12px;
+
+  flex-direction: column;
+  gap: 4px;
+
   z-index: 9999;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border: 1px solid rgba(91, 192, 190, 0.15);
 }
 
 .menu.active {
-  display: block;
+  display: flex;
+}
+
+.menu button {
+  width: 100%;
+  text-align: left;
+
+  padding: 10px;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #fff;
+
+  border: none;
+  font-size: 13px;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.menu button:hover {
+  background: rgba(91, 192, 190, 0.12);
+  color: #5bc0be;
+  transform: translateX(2px);
 }
 
 /* ================= CARD ================= */
@@ -186,4 +217,25 @@ button {
 
 .earn-card button:hover {
   background: #16a34a;
+}
+
+/* ================= AD + CHAT FIX ================= */
+#chatBox {
+  margin-bottom: 10px;
+}
+
+#adsBox {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(91, 192, 190, 0.15);
+}
+
+/* ================= GLOBAL BUTTON FIX ================= */
+.card button {
+  width: auto;
+  max-width: 100%;
+}
+
+.row button {
+  width: auto;
 }
