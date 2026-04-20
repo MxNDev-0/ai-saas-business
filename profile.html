@@ -167,9 +167,25 @@
 </div>
 
 <!-- PROFILE HEADER -->
-<div class="profile-header">
-  <div class="avatar" onclick="changeAvatar()"></div>
-  <div class="username" id="usernameDisplay">Loading...</div>
+<div class="profile-header" style="display:flex;align-items:center;justify-content:space-between;">
+  
+  <!-- LEFT SIDE -->
+  <div style="display:flex;align-items:center;">
+    <div class="avatar" onclick="changeAvatar()"></div>
+    <div class="username" id="usernameDisplay">Loading...</div>
+  </div>
+
+  <!-- RIGHT SIDE (3 DOTS FIXED POSITION) -->
+  <div style="position:relative;">
+    <div class="dots" onclick="togglePostMenu(this)">⋯</div>
+
+    <!-- MENU (ONLY MENU CONTENT - NO BUTTONS OUTSIDE) -->
+    <div class="menu-box">
+      <button onclick="editPost()">Edit</button>
+      <button onclick="deletePost()">Delete</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- FRIEND ICONS ONLY -->
