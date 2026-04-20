@@ -26,11 +26,11 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  loadUsername();
   loadPosts();
+  loadUsername();
 });
 
-/* ================= MENU ================= */
+/* ================= MENU (FIXED) ================= */
 window.toggleMenu = function () {
   const menu = document.getElementById("dropdownMenu");
   if (!menu) return;
@@ -40,17 +40,18 @@ window.toggleMenu = function () {
 
 /* ================= USERNAME ================= */
 async function loadUsername() {
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
+  const snap = await getDoc(doc(db, "users", user.uid));
+  const el = document.getElementById("usernameDisplay");
 
-  document.getElementById("usernameDisplay").innerText =
-    snap.exists() && snap.data().username
-      ? snap.data().username
-      : "Not set";
+  if (snap.exists() && snap.data().username) {
+    el.innerText = snap.data().username;
+  } else {
+    el.innerText = "Not set";
+  }
 }
 
 /* ================= UPDATE USERNAME ================= */
-window.updateUsername = async function () {
+window.updateUsername = async () => {
   const input = document.getElementById("usernameInput");
   const username = input.value.trim();
 
@@ -63,15 +64,13 @@ window.updateUsername = async function () {
 };
 
 /* ================= RESET PASSWORD ================= */
-window.resetPassword = async function () {
-  if (!user?.email) return;
-
+window.resetPassword = async () => {
   await sendPasswordResetEmail(auth, user.email);
-  alert("Reset email sent 📩");
+  alert("Reset email sent");
 };
 
 /* ================= CREATE POST ================= */
-window.createPost = async function () {
+window.createPost = async () => {
   const input = document.getElementById("postInput");
   const text = input.value.trim();
 
@@ -87,17 +86,17 @@ window.createPost = async function () {
   input.value = "";
 };
 
-/* ================= LOAD POSTS ================= */
+/* ================= LOAD POSTS (V16 FIXED) ================= */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
-  const box = document.getElementById("myPosts");
 
   onSnapshot(q, (snap) => {
+    const box = document.getElementById("myPosts");
     box.innerHTML = "";
 
-    snap.forEach(d => {
-      const p = d.data();
-      const id = d.id;
+    snap.forEach(docSnap => {
+      const p = docSnap.data();
+      const id = docSnap.id;
 
       if (p.user !== user.email.split("@")[0]) return;
 
@@ -106,46 +105,27 @@ function loadPosts() {
       box.innerHTML += `
         <div class="post">
 
-          <div class="post-header">
-            <div class="avatar"></div>
-            <div>${p.user}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;">
+              <div class="avatar"></div>
+              <div style="margin-left:8px;">${p.user}</div>
+            </div>
+
+            <!-- ✅ WORKING 3 DOT -->
+            <div style="position:relative;">
+              <div style="cursor:pointer;font-size:18px;" onclick="togglePostMenu('${id}')">⋯</div>
+
+              <div class="menu-box" id="menu-${id}">
+                <button onclick="editPost('${id}','${p.text}')">✏️ Edit</button>
+                <button onclick="deletePost('${id}')">🗑 Delete</button>
+                <button onclick="togglePrivacy('${id}', '${p.visibility}')">
+                  ${isPrivate ? "🌍 Make Public" : "🔒 Make Private"}
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div style="margin-top:6px;">
-            ${p.text}
-          </div>
-
-          <!-- 3 DOT BUTTON -->
-          <div onclick="window.togglePostMenu('${id}')" style="
-            position:absolute;
-            top:8px;
-            right:10px;
-            font-size:20px;
-            cursor:pointer;
-          ">⋯</div>
-
-          <!-- DROPDOWN -->
-          <div id="menu-${id}" style="
-            display:none;
-            position:absolute;
-            top:30px;
-            right:10px;
-            background:#1c2541;
-            border-radius:8px;
-            overflow:hidden;
-            z-index:999;
-            min-width:140px;
-          ">
-
-            <button onclick="window.editPost('${id}')">✏️ Edit</button>
-
-            <button onclick="window.deletePost('${id}')">🗑 Delete</button>
-
-            <button onclick="window.toggleVisibility('${id}','${p.visibility}')">
-              ${isPrivate ? "🔓 Make Public" : "🔒 Make Private"}
-            </button>
-
-          </div>
+          <div style="margin-top:8px;">${p.text}</div>
 
         </div>
       `;
@@ -153,23 +133,21 @@ function loadPosts() {
   });
 }
 
-/* ================= TOGGLE MENU ================= */
+/* ================= TOGGLE MENU (WORKING) ================= */
 window.togglePostMenu = function (id) {
   const menu = document.getElementById("menu-" + id);
+
+  // close all first
+  document.querySelectorAll(".menu-box").forEach(m => m.style.display = "none");
+
   if (!menu) return;
 
-  const isOpen = menu.style.display === "block";
-
-  document.querySelectorAll('[id^="menu-"]').forEach(m => {
-    m.style.display = "none";
-  });
-
-  menu.style.display = isOpen ? "none" : "block";
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
 /* ================= EDIT ================= */
-window.editPost = async function (id) {
-  const newText = prompt("Edit post:");
+window.editPost = async function (id, oldText) {
+  const newText = prompt("Edit post:", oldText);
   if (!newText) return;
 
   await updateDoc(doc(db, "posts", id), {
@@ -179,11 +157,13 @@ window.editPost = async function (id) {
 
 /* ================= DELETE ================= */
 window.deletePost = async function (id) {
+  if (!confirm("Delete post?")) return;
+
   await deleteDoc(doc(db, "posts", id));
 };
 
-/* ================= TOGGLE ================= */
-window.toggleVisibility = async function (id, current) {
+/* ================= TOGGLE PRIVACY ================= */
+window.togglePrivacy = async function (id, current) {
   const newState = current === "private" ? "public" : "private";
 
   await updateDoc(doc(db, "posts", id), {
