@@ -15,10 +15,8 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
-  runTransaction
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const API = "https://mxm-backend.onrender.com";
 
 let user = null;
 let userData = null;
@@ -39,8 +37,7 @@ onAuthStateChanged(auth, async (u) => {
   isAdmin = userData?.role === "admin";
 
   loadUsers();
-  loadChatV9();
-  setupPresence();
+  loadChatV10();
 });
 
 /* ================= USER ================= */
@@ -67,67 +64,48 @@ function loadUsers() {
   const box = document.getElementById("onlineUsers");
   if (!box) return;
 
-  onSnapshot(collection(db, "presence"), (snap) => {
+  onSnapshot(collection(db, "onlineUsers"), (snap) => {
     box.innerHTML = "";
 
     snap.forEach(d => {
       const u = d.data();
-      if (!u.online) return;
-
-      box.innerHTML += `
-        <div class="user-item">
-          🟢 ${u.username || "user"}
-        </div>
-      `;
+      box.innerHTML += `<div>🟢 ${u.username || "user"}</div>`;
     });
   });
 }
 
-/* ================= CHAT V9 CORE ================= */
-let chatUnsub = null;
-
-function loadChatV9() {
+/* ================= CHAT V10 ================= */
+function loadChatV10() {
   const box = document.getElementById("chatBox");
   if (!box) return;
 
-  /* prevent duplicate listeners (FIX V9 CRITICAL BUG) */
-  if (chatUnsub) chatUnsub();
-
   const q = query(collection(db, "posts"), orderBy("time", "asc"));
 
-  chatUnsub = onSnapshot(q, (snap) => {
+  onSnapshot(q, (snap) => {
     let html = "";
     let lastUser = null;
 
     snap.forEach(d => {
       const m = d.data();
-      if (!m) return;
+      const id = d.id;
 
-      const text = m.text || "";
       const userName = m.user || "unknown";
+      const text = m.text || "";
 
-      const time = m.time?.toDate
-        ? m.time.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "";
+      const time = m.time?.toDate?.().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }) || "";
 
       const isMe = userName === user.email.split("@")[0];
-
       const grouped = lastUser === userName;
       lastUser = userName;
 
       html += `
-        <div style="
-          display:flex;
-          flex-direction:column;
-          align-items:${isMe ? "flex-end" : "flex-start"};
-          margin:${grouped ? "2px 0" : "10px 0"};
-        ">
-          
-          ${!grouped ? `
-            <div style="font-size:11px;opacity:0.6;margin-bottom:3px;">
-              ${userName}
-            </div>
-          ` : ""}
+        <div class="msgBox"
+          style="display:flex;flex-direction:column;align-items:${isMe ? "flex-end" : "flex-start"}">
+
+          ${!grouped ? `<div style="font-size:11px;opacity:0.6;">${userName}</div>` : ""}
 
           <div style="
             max-width:75%;
@@ -136,14 +114,23 @@ function loadChatV9() {
             background:${isMe ? "#5bc0be" : "#1c2541"};
             color:${isMe ? "#000" : "#fff"};
             font-size:13px;
-            word-break:break-word;
           ">
             ${text}
+
+            ${isAdmin ? `
+              <div>
+                <button onclick="deletePost('${id}')"
+                  style="margin-top:5px;font-size:10px;background:red;color:white;border:none;padding:3px 6px;border-radius:4px;">
+                  delete
+                </button>
+              </div>
+            ` : ""}
           </div>
 
           <div style="font-size:9px;opacity:0.4;margin-top:2px;">
             ${time}
           </div>
+
         </div>
       `;
     });
@@ -153,70 +140,48 @@ function loadChatV9() {
   });
 }
 
-/* ================= OPTIMISTIC SEND (V9 FEATURE) ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
 
-  if (!text || !user) return;
+  if (!text) return;
 
   input.value = "";
-
-  /* instant UI feel (no delay) */
-  const tempId = Date.now();
-
-  const box = document.getElementById("chatBox");
-  if (box) {
-    box.innerHTML += `
-      <div style="opacity:0.6;font-size:12px;">
-        sending...
-      </div>
-    `;
-  }
 
   await addDoc(collection(db, "posts"), {
     text,
     user: user.email.split("@")[0],
-    time: serverTimestamp(),
-    clientId: tempId
+    time: serverTimestamp()
   });
 };
 
-/* ================= PRESENCE ================= */
-function setupPresence() {
-  if (!user) return;
+/* ================= ADMIN DELETE FIX ================= */
+window.deletePost = async function (id) {
+  if (!isAdmin) {
+    alert("❌ Admin only");
+    return;
+  }
 
-  const ref = doc(db, "presence", user.uid);
-
-  setDoc(ref, {
-    uid: user.uid,
-    username: user.email.split("@")[0],
-    online: true,
-    lastSeen: serverTimestamp()
-  });
-
-  window.addEventListener("beforeunload", async () => {
-    await setDoc(ref, {
-      uid: user.uid,
-      username: user.email.split("@")[0],
-      online: false,
-      lastSeen: serverTimestamp()
-    }, { merge: true });
-  });
-}
+  try {
+    await deleteDoc(doc(db, "posts", id));
+    alert("Deleted");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete");
+  }
+};
 
 /* ================= MENU ================= */
 window.toggleMenu = function () {
   document.getElementById("menu").classList.toggle("active");
 };
 
-/* ================= LOGOUT ================= */
 window.logout = async function () {
   await signOut(auth);
   location.href = "index.html";
 };
 
-/* ================= NAV ================= */
 window.goHome = () => location.href = "dashboard.html";
 window.goProfile = () => location.href = "profile.html";
 window.goAdSpace = () => location.href = "ads.html";
