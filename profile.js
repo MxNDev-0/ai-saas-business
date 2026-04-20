@@ -15,7 +15,9 @@ import {
   doc,
   getDoc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  where,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
@@ -28,14 +30,18 @@ onAuthStateChanged(auth, async (u) => {
 
   loadPosts();
   loadUsername();
+
+  // V17 SOCIAL GRAPH INIT
+  loadFriendRequests();
+  loadFriends();
 });
 
-/* ================= MENU (FIXED STABLE) ================= */
+/* ================= MENU ================= */
 window.toggleMenu = function () {
   const menu = document.getElementById("dropdownMenu");
   if (!menu) return;
 
-  menu.style.display = (menu.style.display === "block") ? "none" : "block";
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
 /* ================= USERNAME ================= */
@@ -86,7 +92,7 @@ window.createPost = async () => {
   input.value = "";
 };
 
-/* ================= LOAD POSTS (V16.3 CLEAN UI FIX) ================= */
+/* ================= LOAD POSTS ================= */
 function loadPosts() {
   const q = query(collection(db, "posts"), orderBy("time"));
 
@@ -105,35 +111,26 @@ function loadPosts() {
       box.innerHTML += `
         <div class="post">
 
-          <!-- HEADER -->
           <div style="display:flex;justify-content:space-between;align-items:center;">
-
             <div style="display:flex;align-items:center;">
               <div class="avatar"></div>
               <div style="margin-left:8px;">${p.user}</div>
             </div>
 
-            <!-- DOTS (FIXED) -->
+            <!-- 3 DOT MENU -->
             <div style="position:relative;">
-              <div style="cursor:pointer;font-size:20px;"
-                   onclick="togglePostMenu('${id}')">⋯</div>
+              <div style="cursor:pointer;font-size:18px;" onclick="togglePostMenu('${id}')">⋯</div>
 
-              <div class="menu-box" id="menu-${id}" style="display:none;flex-direction:column;">
-
+              <div class="menu-box" id="menu-${id}">
                 <button onclick="editPost('${id}','${p.text}')">✏️ Edit</button>
-
                 <button onclick="deletePost('${id}')">🗑 Delete</button>
-
-                <button onclick="togglePrivacy('${id}')">
+                <button onclick="togglePrivacy('${id}','${p.visibility}')">
                   ${isPrivate ? "🌍 Make Public" : "🔒 Make Private"}
                 </button>
-
               </div>
             </div>
-
           </div>
 
-          <!-- CONTENT -->
           <div style="margin-top:8px;">${p.text}</div>
 
         </div>
@@ -142,48 +139,142 @@ function loadPosts() {
   });
 }
 
-/* ================= TOGGLE MENU (FIXED RELIABLE) ================= */
+/* ================= POST MENU TOGGLE ================= */
 window.togglePostMenu = function (id) {
   const menu = document.getElementById("menu-" + id);
+
+  document.querySelectorAll(".menu-box").forEach(m => m.style.display = "none");
+
   if (!menu) return;
 
-  const isOpen = menu.style.display === "flex";
-
-  document.querySelectorAll(".menu-box").forEach(m => {
-    m.style.display = "none";
-  });
-
-  menu.style.display = isOpen ? "none" : "flex";
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
-/* ================= EDIT ================= */
+/* ================= EDIT POST ================= */
 window.editPost = async function (id, oldText) {
   const newText = prompt("Edit post:", oldText);
   if (!newText) return;
 
-  await updateDoc(doc(db, "posts", id), {
-    text: newText
-  });
+  await updateDoc(doc(db, "posts", id), { text: newText });
 };
 
-/* ================= DELETE ================= */
+/* ================= DELETE POST ================= */
 window.deletePost = async function (id) {
   if (!confirm("Delete post?")) return;
 
   await deleteDoc(doc(db, "posts", id));
 };
 
-/* ================= TOGGLE PRIVACY (FIXED SAFE VERSION) ================= */
-window.togglePrivacy = async function (id) {
-  const ref = doc(db, "posts", id);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) return;
-
-  const current = snap.data().visibility || "public";
+/* ================= PRIVACY TOGGLE ================= */
+window.togglePrivacy = async function (id, current) {
   const newState = current === "private" ? "public" : "private";
 
-  await updateDoc(ref, {
+  await updateDoc(doc(db, "posts", id), {
     visibility: newState
   });
+};
+
+/* =========================================================
+   🔥 V17 SOCIAL GRAPH SYSTEM
+========================================================= */
+
+/* ================= SEND FRIEND REQUEST ================= */
+window.sendFriendRequest = async function (toUid, toName) {
+  if (!user || user.uid === toUid) return;
+
+  await addDoc(collection(db, "friendRequests"), {
+    from: user.uid,
+    fromName: user.email.split("@")[0],
+    to: toUid,
+    toName,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+};
+
+/* ================= LOAD FRIEND REQUESTS ================= */
+function loadFriendRequests() {
+  const box = document.getElementById("friendRequestsBox");
+  if (!box) return;
+
+  const q = query(
+    collection(db, "friendRequests"),
+    where("to", "==", user.uid),
+    where("status", "==", "pending")
+  );
+
+  onSnapshot(q, (snap) => {
+    let html = "";
+
+    snap.forEach(d => {
+      const r = d.data();
+
+      html += `
+        <div class="card">
+          <b>${r.fromName}</b> sent a friend request
+
+          <div style="margin-top:6px;display:flex;gap:6px;">
+            <button onclick="acceptFriend('${d.id}','${r.from}')">Accept</button>
+            <button onclick="rejectFriend('${d.id}')">Reject</button>
+          </div>
+        </div>
+      `;
+    });
+
+    box.innerHTML = html;
+  });
+}
+
+/* ================= ACCEPT FRIEND ================= */
+window.acceptFriend = async function (id, fromUid) {
+  await updateDoc(doc(db, "friendRequests", id), {
+    status: "accepted"
+  });
+
+  await addDoc(collection(db, "friends"), {
+    userA: user.uid,
+    userB: fromUid,
+    createdAt: serverTimestamp()
+  });
+};
+
+/* ================= REJECT FRIEND ================= */
+window.rejectFriend = async function (id) {
+  await updateDoc(doc(db, "friendRequests", id), {
+    status: "rejected"
+  });
+};
+
+/* ================= LOAD FRIENDS ================= */
+function loadFriends() {
+  const box = document.getElementById("friendsBox");
+  if (!box) return;
+
+  const q = query(collection(db, "friends"));
+
+  onSnapshot(q, (snap) => {
+    let html = "";
+
+    snap.forEach(d => {
+      const f = d.data();
+
+      if (f.userA !== user.uid && f.userB !== user.uid) return;
+
+      const friendId = f.userA === user.uid ? f.userB : f.userA;
+
+      html += `
+        <div class="card">
+          👤 ${friendId}
+          <button onclick="openProfile('${friendId}')">View</button>
+        </div>
+      `;
+    });
+
+    box.innerHTML = html;
+  });
+}
+
+/* ================= PROFILE NAV ================= */
+window.openProfile = function (uid) {
+  location.href = `user.html?uid=${uid}`;
 };
