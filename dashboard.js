@@ -15,7 +15,7 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
-  updateDoc
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const API = "https://mxm-backend.onrender.com";
@@ -23,11 +23,6 @@ const API = "https://mxm-backend.onrender.com";
 let user = null;
 let userData = null;
 let isAdmin = false;
-let adsLoaded = false;
-
-/* ================= CHAT V8 STATE ================= */
-let activeChatId = null;
-let unsubscribeMessages = null;
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
@@ -44,7 +39,8 @@ onAuthStateChanged(auth, async (u) => {
   isAdmin = userData?.role === "admin";
 
   loadUsers();
-  loadFeed();
+  loadChatV9();
+  setupPresence();
 });
 
 /* ================= USER ================= */
@@ -71,222 +67,143 @@ function loadUsers() {
   const box = document.getElementById("onlineUsers");
   if (!box) return;
 
-  onSnapshot(collection(db, "onlineUsers"), (snap) => {
+  onSnapshot(collection(db, "presence"), (snap) => {
     box.innerHTML = "";
 
     snap.forEach(d => {
       const u = d.data();
+      if (!u.online) return;
 
       box.innerHTML += `
         <div class="user-item">
-          <span>${u.username || "user"}</span>
+          🟢 ${u.username || "user"}
         </div>
       `;
     });
   });
 }
 
-/* ================= OLD FEED (UNCHANGED) ================= */
-function loadFeed() {
+/* ================= CHAT V9 CORE ================= */
+let chatUnsub = null;
+
+function loadChatV9() {
   const box = document.getElementById("chatBox");
   if (!box) return;
+
+  /* prevent duplicate listeners (FIX V9 CRITICAL BUG) */
+  if (chatUnsub) chatUnsub();
 
   const q = query(collection(db, "posts"), orderBy("time", "asc"));
 
-  onSnapshot(q, (snap) => {
-    box.innerHTML = "";
-
-    snap.forEach(docSnap => {
-      const m = docSnap.data();
-      if (!m?.text) return;
-
-      box.innerHTML += `
-        <div class="msg" style="
-          margin:6px 0;
-          padding:6px;
-          background:#1c2541;
-          border-radius:6px;
-          font-size:13px;
-        ">
-          <b>${m.user}</b>: ${m.text}
-        </div>
-      `;
-    });
-
-    loadAdsIntoDashboard();
-  });
-}
-
-/* ================= CHAT V8 ENGINE ================= */
-
-function getChatId(uid1, uid2) {
-  return uid1 > uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
-}
-
-/* OPEN CHAT */
-window.openChatWith = function (otherUserId) {
-  activeChatId = getChatId(user.uid, otherUserId);
-
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-  }
-
-  loadMessagesV8();
-};
-
-/* LOAD CHAT MESSAGES */
-function loadMessagesV8() {
-  const box = document.getElementById("chatBox");
-  if (!box || !activeChatId) return;
-
-  const q = query(
-    collection(db, "chats", activeChatId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-
-  unsubscribeMessages = onSnapshot(q, (snap) => {
-    const messages = [];
+  chatUnsub = onSnapshot(q, (snap) => {
+    let html = "";
+    let lastUser = null;
 
     snap.forEach(d => {
-      messages.push({ id: d.id, ...d.data() });
-    });
+      const m = d.data();
+      if (!m) return;
 
-    renderMessagesV8(messages);
-    markSeenV8(messages);
-  });
-}
+      const text = m.text || "";
+      const userName = m.user || "unknown";
 
-/* RENDER CHAT */
-function renderMessagesV8(messages) {
-  const box = document.getElementById("chatBox");
-  if (!box) return;
+      const time = m.time?.toDate
+        ? m.time.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "";
 
-  let html = "";
+      const isMe = userName === user.email.split("@")[0];
 
-  messages.forEach(m => {
-    const isMe = m.senderId === user.uid;
+      const grouped = lastUser === userName;
+      lastUser = userName;
 
-    html += `
-      <div style="
-        display:flex;
-        flex-direction:column;
-        align-items:${isMe ? "flex-end" : "flex-start"};
-        margin:6px 0;
-      ">
+      html += `
         <div style="
-          max-width:75%;
-          padding:8px 10px;
-          border-radius:12px;
-          background:${isMe ? "#5bc0be" : "#1c2541"};
-          color:${isMe ? "#000" : "#fff"};
-          font-size:13px;
-          word-break:break-word;
+          display:flex;
+          flex-direction:column;
+          align-items:${isMe ? "flex-end" : "flex-start"};
+          margin:${grouped ? "2px 0" : "10px 0"};
         ">
-          ${m.text}
-        </div>
+          
+          ${!grouped ? `
+            <div style="font-size:11px;opacity:0.6;margin-bottom:3px;">
+              ${userName}
+            </div>
+          ` : ""}
 
-        <small style="font-size:10px;opacity:0.5;">
-          ${m.senderName || "user"} • ${m.seen ? "✓✓ seen" : "✓ sent"}
-        </small>
-      </div>
-    `;
-  });
+          <div style="
+            max-width:75%;
+            padding:8px 10px;
+            border-radius:14px;
+            background:${isMe ? "#5bc0be" : "#1c2541"};
+            color:${isMe ? "#000" : "#fff"};
+            font-size:13px;
+            word-break:break-word;
+          ">
+            ${text}
+          </div>
 
-  box.innerHTML = html;
-  box.scrollTop = box.scrollHeight;
-}
-
-/* SEND MESSAGE */
-window.sendMessage = async function () {
-  const input = document.getElementById("chatInput");
-  const text = input.value.trim();
-
-  if (!text || !activeChatId) return;
-
-  await addDoc(
-    collection(db, "chats", activeChatId, "messages"),
-    {
-      text,
-      senderId: user.uid,
-      senderName: user.email.split("@")[0],
-      createdAt: serverTimestamp(),
-      seen: false
-    }
-  );
-
-  input.value = "";
-};
-
-/* MARK AS SEEN */
-async function markSeenV8(messages) {
-  for (const m of messages) {
-    if (m.senderId !== user.uid && !m.seen) {
-      await updateDoc(
-        doc(db, "chats", activeChatId, "messages", m.id),
-        { seen: true }
-      );
-    }
-  }
-}
-
-/* ================= ADS SYSTEM (UNCHANGED) ================= */
-async function loadAdsIntoDashboard() {
-  const box = document.getElementById("chatBox");
-  if (!box) return;
-
-  if (adsLoaded) return;
-  adsLoaded = true;
-
-  try {
-    const res = await fetch(`${API}/ads/list`);
-    const ads = await res.json();
-
-    ads.forEach(ad => {
-      box.innerHTML += `
-        <div style="
-          margin:8px 0;
-          padding:10px;
-          border:1px dashed #5bc0be;
-          border-radius:8px;
-          background:#16213e;
-        ">
-          <div style="font-size:10px;color:#5bc0be;">SPONSORED</div>
-          <b>${ad.title}</b><br/>
-          <span style="font-size:13px;">${ad.text}</span><br/>
-
-          <button onclick="openAd('${ad.id}','${ad.link}')">
-            Open Ad
-          </button>
+          <div style="font-size:9px;opacity:0.4;margin-top:2px;">
+            ${time}
+          </div>
         </div>
       `;
     });
 
-  } catch (err) {
-    console.log("Ads failed", err);
-  }
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+  });
 }
 
-/* AD CLICK */
-window.openAd = function (id, link) {
-  fetch(`${API}/ads/click/${id}`, { method: "POST" });
-  window.location.href = link;
-};
-
-/* ================= SEND POST ================= */
+/* ================= OPTIMISTIC SEND (V9 FEATURE) ================= */
 window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
 
-  if (!text) return;
+  if (!text || !user) return;
+
+  input.value = "";
+
+  /* instant UI feel (no delay) */
+  const tempId = Date.now();
+
+  const box = document.getElementById("chatBox");
+  if (box) {
+    box.innerHTML += `
+      <div style="opacity:0.6;font-size:12px;">
+        sending...
+      </div>
+    `;
+  }
 
   await addDoc(collection(db, "posts"), {
     text,
     user: user.email.split("@")[0],
-    time: serverTimestamp()
+    time: serverTimestamp(),
+    clientId: tempId
+  });
+};
+
+/* ================= PRESENCE ================= */
+function setupPresence() {
+  if (!user) return;
+
+  const ref = doc(db, "presence", user.uid);
+
+  setDoc(ref, {
+    uid: user.uid,
+    username: user.email.split("@")[0],
+    online: true,
+    lastSeen: serverTimestamp()
   });
 
-  input.value = "";
-};
+  window.addEventListener("beforeunload", async () => {
+    await setDoc(ref, {
+      uid: user.uid,
+      username: user.email.split("@")[0],
+      online: false,
+      lastSeen: serverTimestamp()
+    }, { merge: true });
+  });
+}
 
 /* ================= MENU ================= */
 window.toggleMenu = function () {
