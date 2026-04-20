@@ -81,7 +81,7 @@ function loadUsers() {
   });
 }
 
-/* ================= FEED (CHAT SYSTEM) ================= */
+/* ================= FEED (CHAT SYSTEM FIXED) ================= */
 function loadFeed() {
   const box = document.getElementById("chatBox");
   if (!box) return;
@@ -92,8 +92,12 @@ function loadFeed() {
     box.innerHTML = "";
 
     snap.forEach(docSnap => {
+
       const m = docSnap.data();
-      if (!m?.text) return;
+      if (!m) return;
+
+      const text = m.text || "[empty message]";
+      const userName = m.user || "guest";
 
       const time = m.time?.toDate
         ? m.time.toDate().toLocaleTimeString()
@@ -107,7 +111,7 @@ function loadFeed() {
           border-radius:6px;
           font-size:13px;
         ">
-          <b>${m.user}</b>: ${m.text}
+          <b>${userName}</b>: ${text}
           <div style="font-size:10px;opacity:0.6;">${time}</div>
         </div>
       `;
