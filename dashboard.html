@@ -9,6 +9,28 @@
   <style>
     .menu {
       z-index: 9999;
+      width: 200px;
+      background: #1c2541;
+      border: 1px solid rgba(91,192,190,0.2);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .menu button {
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .menu button:hover {
+      background: rgba(91,192,190,0.1);
     }
 
     #chatBox {
@@ -26,13 +48,6 @@
       background: #1c2541;
       border-radius: 6px;
       font-size: 13px;
-    }
-
-    .msg small {
-      opacity: 0.6;
-      display: block;
-      margin-top: 2px;
-      font-size: 10px;
     }
 
     .row {
@@ -58,7 +73,7 @@
       cursor: pointer;
     }
 
-    /* ✅ AD SPACE FIX */
+    /* ADS BOX */
     #adsBox {
       margin-top: 10px;
     }
@@ -73,17 +88,23 @@
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- MENU -->
+<!-- MENU (REORDERED LOGICALLY) -->
 <div id="menu" class="menu">
-  <button onclick="goHome()">Home</button>
-  <button onclick="goProfile()">Profile</button>
-  <button onclick="goAdmin()">Admin</button>
-  <button onclick="goAdSpace()">Buy Ad Space 🚀</button>
-  <button onclick="support()">Support 💰</button>
-  <button onclick="goFaq()">FAQ</button>
-  <button onclick="goAbout()">About</button>
-  <button onclick="goBlog()">Blog</button>
-  <button onclick="openDeveloper()">Developer 💻</button>
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goProfile()">👤 Profile</button>
+
+  <button onclick="goAdSpace()">🚀 Buy Ad Space</button>
+
+  <button onclick="goBlog()">📰 Blog</button>
+  <button onclick="goFaq()">❓ FAQ</button>
+  <button onclick="goAbout()">ℹ️ About</button>
+
+  <button onclick="support()">💰 Support</button>
+
+  <button onclick="openDeveloper()">💻 Developer</button>
+
+  <!-- ADMIN LAST (SECURE + CLEAN) -->
+  <button onclick="goAdmin()">🔐 Admin</button>
 </div>
 
 <div class="container">
@@ -99,14 +120,13 @@
     <p id="walletUpdated">-</p>
   </div>
 
-  <!-- ================= CHAT SYSTEM ================= -->
+  <!-- CHAT SYSTEM -->
   <div class="card">
     <h4>💬 Community Chat</h4>
 
-    <!-- CHAT -->
     <div id="chatBox"></div>
 
-    <!-- 🔥 FIX: AD SPACE SEPARATED -->
+    <!-- ADS SEPARATED -->
     <div id="adsBox"></div>
 
     <div class="row">
