@@ -23,9 +23,11 @@ const API = "https://mxm-backend.onrender.com";
 let user = null;
 let userData = null;
 let isAdmin = false;
+let adsLoaded = false;
 
-/* ================= CHAT STATE ================= */
+/* ================= CHAT V8 STATE ================= */
 let activeChatId = null;
+let unsubscribeMessages = null;
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
@@ -64,7 +66,7 @@ async function loadUser() {
   if (snap.exists()) userData = snap.data();
 }
 
-/* ================= USERS LIST ================= */
+/* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("onlineUsers");
   if (!box) return;
@@ -76,133 +78,15 @@ function loadUsers() {
       const u = d.data();
 
       box.innerHTML += `
-        <div style="cursor:pointer" onclick="openChat('${u.uid}')">
-          🟢 ${u.username || "user"}
+        <div class="user-item">
+          <span>${u.username || "user"}</span>
         </div>
       `;
     });
   });
 }
 
-/* ================= OPEN CHAT ================= */
-window.openChat = function (uid) {
-  getOrCreateChat(uid);
-};
-
-async function getOrCreateChat(otherUid) {
-  const chatId = [user.uid, otherUid].sort().join("_");
-
-  const ref = doc(db, "conversations", chatId);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      users: [user.uid, otherUid],
-      updatedAt: serverTimestamp(),
-      lastMessage: ""
-    });
-  }
-
-  activeChatId = chatId;
-  loadMessages(chatId);
-}
-
-/* ================= LOAD MESSAGES ================= */
-function loadMessages(chatId) {
-  const box = document.getElementById("chatBox");
-  if (!box) return;
-
-  const q = query(
-    collection(db, "conversations", chatId, "messages"),
-    orderBy("time", "asc")
-  );
-
-  onSnapshot(q, (snap) => {
-    let html = "";
-
-    snap.forEach(d => {
-      const m = d.data();
-
-      const isMe = m.senderId === user.uid;
-
-      html += `
-        <div style="
-          display:flex;
-          flex-direction:column;
-          align-items:${isMe ? "flex-end" : "flex-start"};
-          margin:6px 0;
-        ">
-          <div style="
-            max-width:75%;
-            padding:8px 10px;
-            border-radius:12px;
-            background:${isMe ? "#5bc0be" : "#1c2541"};
-            color:${isMe ? "#000" : "#fff"};
-            font-size:13px;
-            word-break:break-word;
-          ">
-            ${m.text}
-          </div>
-
-          <small style="font-size:10px;opacity:0.5;">
-            ${m.status || "sent"}
-          </small>
-        </div>
-      `;
-    });
-
-    box.innerHTML = html;
-    box.scrollTop = box.scrollHeight;
-
-    markSeen(chatId);
-  });
-}
-
-/* ================= SEND MESSAGE ================= */
-window.sendMessage = async function () {
-  const input = document.getElementById("chatInput");
-  const text = input.value.trim();
-
-  if (!text || !activeChatId) return;
-
-  const msgRef = await addDoc(
-    collection(db, "conversations", activeChatId, "messages"),
-    {
-      text,
-      senderId: user.uid,
-      status: "sent",
-      time: serverTimestamp()
-    }
-  );
-
-  await setDoc(doc(db, "conversations", activeChatId), {
-    lastMessage: text,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
-
-  input.value = "";
-
-  setTimeout(async () => {
-    await updateDoc(msgRef, { status: "delivered" });
-  }, 800);
-};
-
-/* ================= SEEN SYSTEM ================= */
-async function markSeen(chatId) {
-  const q = query(collection(db, "conversations", chatId, "messages"));
-
-  onSnapshot(q, (snap) => {
-    snap.forEach(async (d) => {
-      const m = d.data();
-
-      if (m.senderId !== user.uid && m.status !== "seen") {
-        await updateDoc(d.ref, { status: "seen" });
-      }
-    });
-  });
-}
-
-/* ================= GLOBAL FEED (OPTIONAL KEEP) ================= */
+/* ================= OLD FEED (UNCHANGED) ================= */
 function loadFeed() {
   const box = document.getElementById("chatBox");
   if (!box) return;
@@ -210,22 +94,199 @@ function loadFeed() {
   const q = query(collection(db, "posts"), orderBy("time", "asc"));
 
   onSnapshot(q, (snap) => {
-    let html = "";
+    box.innerHTML = "";
 
-    snap.forEach(d => {
-      const m = d.data();
+    snap.forEach(docSnap => {
+      const m = docSnap.data();
       if (!m?.text) return;
 
-      html += `
-        <div style="margin:4px 0;padding:6px;background:#0b132b;border-radius:6px;">
+      box.innerHTML += `
+        <div class="msg" style="
+          margin:6px 0;
+          padding:6px;
+          background:#1c2541;
+          border-radius:6px;
+          font-size:13px;
+        ">
           <b>${m.user}</b>: ${m.text}
         </div>
       `;
     });
 
-    box.innerHTML = html;
+    loadAdsIntoDashboard();
   });
 }
+
+/* ================= CHAT V8 ENGINE ================= */
+
+function getChatId(uid1, uid2) {
+  return uid1 > uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+}
+
+/* OPEN CHAT */
+window.openChatWith = function (otherUserId) {
+  activeChatId = getChatId(user.uid, otherUserId);
+
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+  }
+
+  loadMessagesV8();
+};
+
+/* LOAD CHAT MESSAGES */
+function loadMessagesV8() {
+  const box = document.getElementById("chatBox");
+  if (!box || !activeChatId) return;
+
+  const q = query(
+    collection(db, "chats", activeChatId, "messages"),
+    orderBy("createdAt", "asc")
+  );
+
+  unsubscribeMessages = onSnapshot(q, (snap) => {
+    const messages = [];
+
+    snap.forEach(d => {
+      messages.push({ id: d.id, ...d.data() });
+    });
+
+    renderMessagesV8(messages);
+    markSeenV8(messages);
+  });
+}
+
+/* RENDER CHAT */
+function renderMessagesV8(messages) {
+  const box = document.getElementById("chatBox");
+  if (!box) return;
+
+  let html = "";
+
+  messages.forEach(m => {
+    const isMe = m.senderId === user.uid;
+
+    html += `
+      <div style="
+        display:flex;
+        flex-direction:column;
+        align-items:${isMe ? "flex-end" : "flex-start"};
+        margin:6px 0;
+      ">
+        <div style="
+          max-width:75%;
+          padding:8px 10px;
+          border-radius:12px;
+          background:${isMe ? "#5bc0be" : "#1c2541"};
+          color:${isMe ? "#000" : "#fff"};
+          font-size:13px;
+          word-break:break-word;
+        ">
+          ${m.text}
+        </div>
+
+        <small style="font-size:10px;opacity:0.5;">
+          ${m.senderName || "user"} • ${m.seen ? "✓✓ seen" : "✓ sent"}
+        </small>
+      </div>
+    `;
+  });
+
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+
+/* SEND MESSAGE */
+window.sendMessage = async function () {
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+
+  if (!text || !activeChatId) return;
+
+  await addDoc(
+    collection(db, "chats", activeChatId, "messages"),
+    {
+      text,
+      senderId: user.uid,
+      senderName: user.email.split("@")[0],
+      createdAt: serverTimestamp(),
+      seen: false
+    }
+  );
+
+  input.value = "";
+};
+
+/* MARK AS SEEN */
+async function markSeenV8(messages) {
+  for (const m of messages) {
+    if (m.senderId !== user.uid && !m.seen) {
+      await updateDoc(
+        doc(db, "chats", activeChatId, "messages", m.id),
+        { seen: true }
+      );
+    }
+  }
+}
+
+/* ================= ADS SYSTEM (UNCHANGED) ================= */
+async function loadAdsIntoDashboard() {
+  const box = document.getElementById("chatBox");
+  if (!box) return;
+
+  if (adsLoaded) return;
+  adsLoaded = true;
+
+  try {
+    const res = await fetch(`${API}/ads/list`);
+    const ads = await res.json();
+
+    ads.forEach(ad => {
+      box.innerHTML += `
+        <div style="
+          margin:8px 0;
+          padding:10px;
+          border:1px dashed #5bc0be;
+          border-radius:8px;
+          background:#16213e;
+        ">
+          <div style="font-size:10px;color:#5bc0be;">SPONSORED</div>
+          <b>${ad.title}</b><br/>
+          <span style="font-size:13px;">${ad.text}</span><br/>
+
+          <button onclick="openAd('${ad.id}','${ad.link}')">
+            Open Ad
+          </button>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.log("Ads failed", err);
+  }
+}
+
+/* AD CLICK */
+window.openAd = function (id, link) {
+  fetch(`${API}/ads/click/${id}`, { method: "POST" });
+  window.location.href = link;
+};
+
+/* ================= SEND POST ================= */
+window.sendMessage = async function () {
+  const input = document.getElementById("chatInput");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  await addDoc(collection(db, "posts"), {
+    text,
+    user: user.email.split("@")[0],
+    time: serverTimestamp()
+  });
+
+  input.value = "";
+};
 
 /* ================= MENU ================= */
 window.toggleMenu = function () {
@@ -247,7 +308,6 @@ window.goFaq = () => location.href = "faq.html";
 window.goAbout = () => location.href = "about.html";
 window.goBlog = () => location.href = "blog/index.html";
 
-/* ================= ADMIN ================= */
 window.goAdmin = () => {
   if (!userData) return alert("Loading...");
   if (!isAdmin) return alert("❌ Admin only");
