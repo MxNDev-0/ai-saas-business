@@ -73,3 +73,21 @@ window.sendMsg = async function () {
 
   input.value = "";
 };
+
+window.sendFriendRequest = async function (toUid, toName) {
+  await addDoc(collection(db, "friendRequests"), {
+    from: user.uid,
+    fromName: user.email.split("@")[0],
+    to: toUid,
+    toName,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+
+  /* notification */
+  await addDoc(collection(db, "notifications", toUid, "items"), {
+    text: `${user.email.split("@")[0]} sent you a friend request`,
+    seen: false,
+    createdAt: serverTimestamp()
+  });
+};
