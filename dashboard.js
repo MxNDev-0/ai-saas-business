@@ -90,7 +90,6 @@ function loadChatV9() {
   const box = document.getElementById("chatBox");
   if (!box) return;
 
-  /* prevent duplicate listeners (FIX V9 CRITICAL BUG) */
   if (chatUnsub) chatUnsub();
 
   const q = query(collection(db, "posts"), orderBy("time", "asc"));
@@ -111,7 +110,6 @@ function loadChatV9() {
         : "";
 
       const isMe = userName === user.email.split("@")[0];
-
       const grouped = lastUser === userName;
       lastUser = userName;
 
@@ -153,7 +151,7 @@ function loadChatV9() {
   });
 }
 
-/* ================= OPTIMISTIC SEND (V9 FEATURE) ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMessage = async function () {
   const input = document.getElementById("chatInput");
   const text = input.value.trim();
@@ -162,23 +160,10 @@ window.sendMessage = async function () {
 
   input.value = "";
 
-  /* instant UI feel (no delay) */
-  const tempId = Date.now();
-
-  const box = document.getElementById("chatBox");
-  if (box) {
-    box.innerHTML += `
-      <div style="opacity:0.6;font-size:12px;">
-        sending...
-      </div>
-    `;
-  }
-
   await addDoc(collection(db, "posts"), {
     text,
     user: user.email.split("@")[0],
-    time: serverTimestamp(),
-    clientId: tempId
+    time: serverTimestamp()
   });
 };
 
@@ -234,3 +219,66 @@ window.goAdmin = () => {
 window.openDeveloper = () => {
   alert("Developer tools coming soon");
 };
+
+/* =========================================================
+   🔥 WALLET MARKET INJECTION (ADDED - DO NOT MODIFY CORE)
+========================================================= */
+
+async function loadWalletMarketData() {
+  try {
+
+    const cryptoRes = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin&vs_currencies=usd"
+    );
+
+    const crypto = await cryptoRes.json();
+
+    const btc = crypto?.bitcoin?.usd ?? 0;
+    const eth = crypto?.ethereum?.usd ?? 0;
+    const bnb = crypto?.binancecoin?.usd ?? 0;
+
+    const fiatRes = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    const fiat = await fiatRes.json();
+
+    const ngn = fiat?.rates?.NGN ?? 0;
+    const eur = fiat?.rates?.EUR ?? 0;
+
+    const walletBox = document.getElementById("walletUpdated");
+    if (!walletBox) return;
+
+    let marketBox = document.getElementById("marketBox");
+
+    if (!marketBox) {
+      marketBox = document.createElement("div");
+      marketBox.id = "marketBox";
+
+      marketBox.style.marginTop = "10px";
+      marketBox.style.padding = "10px";
+      marketBox.style.background = "#0b132b";
+      marketBox.style.borderRadius = "8px";
+      marketBox.style.fontSize = "12px";
+      marketBox.style.border = "1px solid rgba(91,192,190,0.2)";
+
+      walletBox.parentNode.appendChild(marketBox);
+    }
+
+    marketBox.innerHTML = `
+      <b style="color:#5bc0be;">Market Overview</b><br><br>
+
+      ₿ BTC: $${btc.toLocaleString()}<br>
+      Ξ ETH: $${eth.toLocaleString()}<br>
+      🟡 BNB: $${bnb.toLocaleString()}<br>
+
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,0.1);margin:6px 0;">
+
+      💵 USD → NGN: ${ngn.toFixed(2)}<br>
+      💶 USD → EUR: ${eur.toFixed(2)}
+    `;
+
+  } catch (err) {
+    console.log("Market injection failed:", err);
+  }
+}
+
+loadWalletMarketData();
+setInterval(loadWalletMarketData, 60000);
