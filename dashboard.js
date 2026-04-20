@@ -74,27 +74,36 @@ function loadUsers() {
   });
 }
 
-/* CHAT */
+/* ================= CHAT V14 STABLE ================= */
 function loadChat() {
   const box = document.getElementById("chatBox");
+  if (!box) return;
 
   const q = query(collection(db, "posts"), orderBy("time", "asc"));
 
   onSnapshot(q, (snap) => {
-    box.innerHTML = "";
+    let html = "";
 
     snap.forEach(d => {
       const m = d.data();
       const id = d.id;
 
-      const isMe = m.user === user.email.split("@")[0];
+      if (!m?.text) return;
 
-      box.innerHTML += `
-        <div style="margin:6px;padding:6px;background:#1c2541;border-radius:6px;">
-          <b>${m.user}</b>: ${m.text}
+      const userName = m.user || "user";
+      const isMe = userName === user.email.split("@")[0];
+      const likes = m.likes || [];
 
-          <div>
-            <button onclick="likeMsg('${id}')">👍</button>
+      html += `
+        <div style="margin:8px 0;padding:8px;border-radius:8px;background:#1c2541;">
+          <b>${userName}</b>
+
+          <div style="margin:5px 0;">
+            ${m.text}
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="likeMsg('${id}')">👍 ${likes.length}</button>
             ${isMe ? `<button onclick="editMsg('${id}')">Edit</button>` : ""}
             ${isAdmin ? `<button onclick="deletePost('${id}')">Delete</button>` : ""}
           </div>
@@ -102,6 +111,7 @@ function loadChat() {
       `;
     });
 
+    box.innerHTML = html;
     box.scrollTop = box.scrollHeight;
   });
 }
