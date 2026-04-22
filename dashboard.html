@@ -18,37 +18,33 @@
     .navbar {
       display: flex;
       align-items: center;
-      padding: 8px 10px;
+      justify-content: space-between;
       background: #1c2541;
-      position: relative;
+      padding: 10px;
     }
 
     .nav-left button {
-      width: 36px;
-      height: 36px;
+      width: 35px;
+      height: 35px;
       font-size: 16px;
       border-radius: 6px;
     }
 
     .nav-title {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      margin: 0;
       font-size: 18px;
     }
 
     /* MENU */
     .menu {
-      z-index: 9999;
-      width: 200px;
-      background: #1c2541;
-      border-radius: 12px;
       display: none;
       flex-direction: column;
       position: absolute;
       top: 50px;
       left: 10px;
+      width: 200px;
+      background: #1c2541;
+      border-radius: 10px;
+      z-index: 9999;
     }
 
     .menu.active {
@@ -56,38 +52,12 @@
     }
 
     .menu button {
-      width: 100%;
-      text-align: left;
       padding: 10px;
+      text-align: left;
       background: transparent;
       border: none;
       color: white;
       cursor: pointer;
-    }
-
-    /* NOTIFICATIONS */
-    .notif-badge {
-      background: red;
-      color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 10px;
-      margin-left: 6px;
-      display: none;
-    }
-
-    .notif-panel {
-      position: absolute;
-      top: 50px;
-      left: 10px;
-      width: 200px;
-      max-height: 250px;
-      overflow-y: auto;
-      background: #1c2541;
-      border-radius: 10px;
-      display: none;
-      z-index: 9999;
-      padding: 8px;
     }
 
     /* CONTAINER */
@@ -102,16 +72,16 @@
       border-radius: 10px;
     }
 
-    /* ================= NEW ADS DESIGN ================= */
-
+    /* ================= ADS (FIXED CENTERED) ================= */
     .ads-container {
-      position: relative;
       overflow: hidden;
-      border-radius: 12px;
+      position: relative;
+      padding: 10px 0;
     }
 
     .ads-slider {
       display: flex;
+      align-items: center;
       transition: transform 0.6s ease;
     }
 
@@ -120,38 +90,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 25px 15px;
-      cursor: pointer;
     }
 
-    .ad-content {
-      background: linear-gradient(135deg, #1c2541, #0b132b);
-      border: 1px solid rgba(91,192,190,0.3);
-      border-radius: 12px;
-      padding: 20px;
-      width: 90%;
+    .ad-box {
+      width: 80%;
+      max-width: 300px;
       text-align: center;
-      font-size: 14px;
-      color: #5bc0be;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    .ads-dots {
-      display: flex;
-      justify-content: center;
-      margin-top: 8px;
-      gap: 6px;
-    }
-
-    .ads-dots span {
-      width: 6px;
-      height: 6px;
-      background: #555;
-      border-radius: 50%;
-    }
-
-    .ads-dots .active {
-      background: #5bc0be;
+      padding: 12px;
+      background: #0b132b;
+      border-radius: 10px;
+      font-size: 13px;
+      margin: auto;
     }
 
     /* DISCOVER */
@@ -175,7 +124,7 @@
     <button onclick="toggleMenu()">☰</button>
   </div>
 
-  <h3 class="nav-title">MCN Engine</h3>
+  <div class="nav-title">MCN Engine</div>
 </div>
 
 <!-- MENU -->
@@ -188,56 +137,52 @@
   <button onclick="goBlog()">📰 Blog</button>
   <button onclick="goFaq()">❓ FAQ</button>
   <button onclick="goAbout()">ℹ️ About</button>
+
+  <!-- NEW -->
+  <button onclick="toggleNotif()">🔔 Notifications</button>
   <button onclick="donate()">💰 Donate</button>
 
-  <button onclick="toggleNotif()">
-    🔔 Notifications <span id="notifCount" class="notif-badge"></span>
-  </button>
-
-  <button onclick="logout()">🚪 Logout</button>
-
   <button onclick="goAdmin()">🔐 Admin</button>
+  <button onclick="logout()">🚪 Logout</button>
 
 </div>
 
-<!-- NOTIFICATIONS -->
-<div id="notifPanel" class="notif-panel"></div>
+<!-- NOTIFICATION PANEL -->
+<div id="notifPanel" class="menu" style="right:10px;left:auto;top:50px;"></div>
 
 <!-- MAIN -->
 <div class="container">
 
-  <!-- ✅ NEW ADS SECTION -->
+  <!-- ADS -->
   <div class="card">
     <h4>🔥 Sponsored Ads</h4>
 
     <div class="ads-container">
       <div class="ads-slider" id="adsSlider">
 
-        <div class="ad" onclick="openAd('#')">
-          <div class="ad-content">🚀 Promote your project here</div>
+        <div class="ad">
+          <div class="ad-box">🚀 Promote your project here</div>
         </div>
 
-        <div class="ad" onclick="openAd('#')">
-          <div class="ad-content">💰 Buy ad space on MCN Engine</div>
+        <div class="ad">
+          <div class="ad-box">💰 Buy ad space on MCN Engine</div>
         </div>
 
-        <div class="ad" onclick="openAd('#')">
-          <div class="ad-content">📢 Your ad here</div>
+        <div class="ad">
+          <div class="ad-box">📢 Your ad here</div>
         </div>
 
       </div>
-
-      <div class="ads-dots" id="adsDots"></div>
     </div>
   </div>
 
-  <!-- PRICES (UNCHANGED) -->
+  <!-- PRICES -->
   <div class="card">
     <h4>📊 Live Prices</h4>
     <div id="priceBox">Loading...</div>
   </div>
 
-  <!-- DISCOVER (UNCHANGED) -->
+  <!-- DISCOVER -->
   <div class="card">
     <h4>📰 Discover Feed</h4>
     <div id="discoverBox">Loading feed...</div>
@@ -247,17 +192,8 @@
 
 <script type="module" src="dashboard.js"></script>
 
+<!-- DISCOVER SCRIPT -->
 <script>
-function toggleMenu() {
-  document.getElementById("menu").classList.toggle("active");
-}
-
-function toggleNotif() {
-  const panel = document.getElementById("notifPanel");
-  panel.style.display = panel.style.display === "block" ? "none" : "block";
-}
-
-/* DISCOVER (UNCHANGED) */
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
@@ -270,18 +206,21 @@ async function loadDiscover() {
     data.forEach(post => {
       box.innerHTML += `
         <div class="card" onclick="openPost('${post.id}')">
+
           ${post.image ? `<img src="${post.image}">` : ""}
+
           <div>
             <b style="color:#5bc0be">${post.title}</b>
             <p style="font-size:12px;opacity:0.8;">
               ${(post.content || "").substring(0,120)}...
             </p>
           </div>
+
         </div>
       `;
     });
 
-  } catch {
+  } catch (e) {
     box.innerHTML = "Failed to load feed";
   }
 }
@@ -291,45 +230,6 @@ function openPost(id) {
 }
 
 loadDiscover();
-
-/* ✅ NEW ADS LOGIC (SAFE ADDITION) */
-let currentAd = 0;
-
-const slider = document.getElementById("adsSlider");
-const dotsBox = document.getElementById("adsDots");
-
-if (slider && dotsBox) {
-  const total = slider.children.length;
-
-  for (let i = 0; i < total; i++) {
-    const dot = document.createElement("span");
-    if (i === 0) dot.classList.add("active");
-
-    dot.onclick = () => {
-      currentAd = i;
-      updateAds();
-    };
-
-    dotsBox.appendChild(dot);
-  }
-
-  function updateAds() {
-    slider.style.transform = `translateX(-${currentAd * 100}%)`;
-
-    [...dotsBox.children].forEach(d => d.classList.remove("active"));
-    dotsBox.children[currentAd].classList.add("active");
-  }
-
-  setInterval(() => {
-    currentAd = (currentAd + 1) % total;
-    updateAds();
-  }, 4000);
-}
-
-function openAd(link) {
-  if (!link || link === "#") return;
-  window.location.href = link;
-}
 </script>
 
 </body>
