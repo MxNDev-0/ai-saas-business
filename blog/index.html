@@ -138,8 +138,8 @@ function generateSlug(title){
 }
 
 /* ================= OPEN POST ================= */
-function openPost(slug){
-  window.location.href = slug + ".html";
+function openPost(postId){
+  window.location.href = "post.html?id=" + postId;
 }
 
 /* ================= LOAD BLOGS ================= */
@@ -166,7 +166,7 @@ async function loadBlogs() {
       });
 
       container.innerHTML += `
-        <div class="card" onclick="openPost('${slug}')">
+        <div class="card" onclick="openPost('${post.id}')">
 
           ${post.image ? `<img src="${post.image}" alt="${post.title}">` : ""}
 
