@@ -7,32 +7,52 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    .menu {
-      z-index: 9999;
-      width: 200px;
-      background: #1c2541;
-      border-radius: 12px;
-      display: none;
-      flex-direction: column;
-      position: absolute;
-      top: 50px;
-      left: 10px;
+    * {
+      box-sizing: border-box;
     }
 
-    .menu.active {
-      display: flex;
-    }
-
-    .menu button {
-      width: 100%;
-      text-align: left;
-      padding: 10px;
-      background: transparent;
-      border: none;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b132b;
       color: white;
-      cursor: pointer;
+      overflow-x: hidden;
     }
 
+    .container {
+      padding: 10px;
+      max-width: 100%;
+    }
+
+    /* ================= NAVBAR ================= */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #1c2541;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+    }
+
+    .nav-left, .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      margin: 0;
+      color: white;
+      white-space: nowrap;
+    }
+
+    /* ================= NOTIFICATIONS ================= */
     .notif-wrapper {
       position: relative;
       cursor: pointer;
@@ -65,111 +85,46 @@
       z-index: 9999;
     }
 
-    .navbar {
-      display: flex;
-      align-items: center;
-      padding: 8px 10px;
-      background: #1c2541;
-    }
-
-    .nav-left button {
-      width: 40px;
-      height: 40px;
-      padding: 0;
-      font-size: 18px;
-      border-radius: 8px;
-    }
-
-    .nav-title {
-      flex: 1;
-      text-align: center;
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-right button {
-      padding: 6px 10px;
-      font-size: 13px;
-    }
-
-    .ads-container {
-      overflow: hidden;
-      position: relative;
-    }
-
-    .ads-slider {
-      display: flex;
-      transition: transform 0.5s ease;
-    }
-
-    .ad {
-      min-width: 100%;
-      text-align: center;
-      padding: 15px;
-      background: #0b132b;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-
-    .row {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .row input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-      background: white;
-      color: black;
-    }
-
-    .row button {
-      padding: 10px 14px;
-      border-radius: 6px;
-      background: #5bc0be;
-      border: none;
-      cursor: pointer;
-    }
-
-    #discoverBox {
-      margin-top: 10px;
-    }
-
+    /* ================= CARDS ================= */
     .card {
       background: #1c2541;
       border-radius: 10px;
       margin-bottom: 10px;
       overflow: hidden;
-      cursor: pointer;
-    }
-
-    .card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-    }
-
-    .card-content {
       padding: 10px;
     }
 
-    .card-title {
+    /* ================= DISCOVER ================= */
+    #discoverBox {
+      margin-top: 10px;
+    }
+
+    .discover-card {
+      background: #0b132b;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .discover-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .discover-content {
+      padding: 10px;
+    }
+
+    .discover-title {
       color: #5bc0be;
       font-weight: bold;
     }
 
-    .card-text {
+    .discover-text {
       font-size: 12px;
-      opacity: 0.85;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -177,6 +132,7 @@
 <body>
 
 <div class="navbar">
+
   <div class="nav-left">
     <button onclick="toggleMenu()">☰</button>
   </div>
@@ -191,35 +147,15 @@
 
     <button onclick="logout()">Logout</button>
   </div>
+
 </div>
 
 <div id="notifPanel" class="notif-panel"></div>
-
-<div id="menu" class="menu">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="goProfile()">👤 Profile</button>
-  <button onclick="goMessages()">💬 Messages</button>
-  <button onclick="goAdSpace()">🚀 Ads</button>
-  <button onclick="goBlog()">📰 Blog</button>
-  <button onclick="goFaq()">❓ FAQ</button>
-  <button onclick="goAbout()">ℹ️ About</button>
-  <button onclick="donate()">💰 Donate</button>
-  <button onclick="openDeveloper()">💻 Dev</button>
-  <button onclick="goAdmin()">🔐 Admin</button>
-</div>
 
 <div class="container">
 
   <div class="card">
     <h4>🔥 Sponsored Ads</h4>
-
-    <div class="ads-container">
-      <div class="ads-slider" id="adsSlider">
-        <div class="ad">🚀 Promote your project here</div>
-        <div class="ad">💰 Buy ad space on MCN Engine</div>
-        <div class="ad">📢 Your ad here</div>
-      </div>
-    </div>
   </div>
 
   <div class="card">
@@ -227,10 +163,9 @@
     <div id="priceBox">Loading...</div>
   </div>
 
-  <!-- 📰 REPLACED CHAT WITH DISCOVER -->
   <div class="card">
     <h4>📰 Discover Feed</h4>
-    <div id="discoverBox">Loading feed...</div>
+    <div id="discoverBox">Loading...</div>
   </div>
 
 </div>
@@ -238,6 +173,7 @@
 <script type="module" src="dashboard.js"></script>
 
 <script>
+/* ================= DISCOVER ================= */
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
@@ -249,13 +185,13 @@ async function loadDiscover() {
 
     data.forEach(post => {
       box.innerHTML += `
-        <div class="card" onclick="openPost('${post.id}')">
+        <div class="discover-card" onclick="openPost('${post.id}')">
 
           ${post.image ? `<img src="${post.image}">` : ""}
 
-          <div class="card-content">
-            <div class="card-title">${post.title}</div>
-            <div class="card-text">
+          <div class="discover-content">
+            <div class="discover-title">${post.title}</div>
+            <div class="discover-text">
               ${(post.content || "").substring(0, 120)}...
             </div>
           </div>
@@ -269,9 +205,17 @@ async function loadDiscover() {
   }
 }
 
+/* FIXED ROUTING */
 function openPost(id) {
-  location.href = "post.html?id=" + id;
+  location.href = "blog/post.html?id=" + id;
 }
+
+/* NOTIFICATION TOGGLE */
+window.toggleNotif = function () {
+  const panel = document.getElementById("notifPanel");
+  if (!panel) return;
+  panel.style.display = panel.style.display === "block" ? "none" : "block";
+};
 
 loadDiscover();
 </script>
