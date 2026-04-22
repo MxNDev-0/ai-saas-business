@@ -68,7 +68,7 @@
     }
 
     .content p {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .back {
@@ -111,6 +111,17 @@ function getPostId() {
   return params.get("id");
 }
 
+/* ================= AUTO FORMAT CONTENT (🔥 NEW) ================= */
+function formatContent(text) {
+  if (!text) return "";
+
+  return text
+    .split(/\n+/) // split by line breaks
+    .filter(p => p.trim() !== "")
+    .map(p => `<p>${p.trim()}</p>`)
+    .join("");
+}
+
 /* ================= LOAD POST ================= */
 async function loadPost() {
   const id = getPostId();
@@ -133,17 +144,17 @@ async function loadPost() {
       return;
     }
 
-    // 🔥 TITLE
+    // TITLE
     document.title = post.title;
 
-    // 🔥 DESCRIPTION (SEO)
-    const desc = post.content.substring(0, 150);
+    // SEO DESCRIPTION
+    const desc = (post.content || "").substring(0, 150);
 
     document
       .querySelector('meta[name="description"]')
       .setAttribute("content", desc);
 
-    // 🔥 OPEN GRAPH
+    // OPEN GRAPH
     document
       .querySelector('meta[property="og:title"]')
       .setAttribute("content", post.title);
@@ -160,7 +171,7 @@ async function loadPost() {
       .querySelector('meta[property="og:url"]')
       .setAttribute("content", window.location.href);
 
-    // 🔥 STRUCTURED DATA (GOOGLE DISCOVER BOOST)
+    // STRUCTURED DATA (SEO BOOST)
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "Article",
@@ -178,16 +189,18 @@ async function loadPost() {
     script.innerHTML = JSON.stringify(structuredData);
     document.head.appendChild(script);
 
-    // 🔥 RENDER POST
+    // RENDER POST (🔥 FIXED)
     document.getElementById("postContainer").innerHTML = `
       <div class="title">${post.title}</div>
 
       ${post.image ? `<img class="image" src="${post.image}">` : ""}
 
-      <div class="content">${post.content}</div>
+      <div class="content">
+        ${formatContent(post.content)}
+      </div>
     `;
 
-    // 🔥 VIEW TRACKING
+    // VIEW TRACKING
     fetch(`https://mxm-backend.onrender.com/blog/view/${post.id}`, {
       method: "POST"
     });
