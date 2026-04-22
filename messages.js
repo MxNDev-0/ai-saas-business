@@ -22,12 +22,33 @@ onAuthStateChanged(auth, (u) => {
 
   me = u;
 
-  loadMessages();
+  setupUI();
+
+  if (otherUid) {
+    loadMessages();
+  }
 });
 
 /* ================= CHAT ID ================= */
 function chatId(a, b) {
   return [a, b].sort().join("_");
+}
+
+/* ================= UI STATE ================= */
+function setupUI() {
+  const input = document.getElementById("msgInput");
+  const btn = document.getElementById("sendBtn");
+  const warn = document.getElementById("warn");
+
+  if (!otherUid) {
+    warn.innerText = "⚠️ Select a user to start chatting (DM mode required)";
+    input.disabled = true;
+    btn.disabled = true;
+  } else {
+    warn.innerText = "💬 Direct Message Active";
+    input.disabled = false;
+    btn.disabled = false;
+  }
 }
 
 /* ================= LOAD ================= */
@@ -46,18 +67,25 @@ function loadMessages() {
     snap.forEach(d => {
       const m = d.data();
 
+      const isMe = m.sender === me.uid;
+
       box.innerHTML += `
-        <div class="msg">
-          <b>${m.sender === me.uid ? "You" : "User"}</b><br>
+        <div class="msg ${isMe ? "me" : "other"}">
+          <b>${isMe ? "You" : "User"}</b><br>
           ${m.text}
         </div>
       `;
     });
+
+    // auto scroll like WhatsApp
+    box.scrollTop = box.scrollHeight;
   });
 }
 
 /* ================= SEND ================= */
 window.sendMsg = async function () {
+  if (!otherUid) return;
+
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
   if (!text) return;
@@ -80,19 +108,19 @@ window.sendMsg = async function () {
   input.value = "";
 };
 
+/* ================= FRIEND REQUEST (FIXED BUG) ================= */
 window.sendFriendRequest = async function (toUid, toName) {
   await addDoc(collection(db, "friendRequests"), {
-    from: user.uid,
-    fromName: user.email.split("@")[0],
+    from: me.uid,   // ✅ FIXED (was user.uid)
+    fromName: me.email.split("@")[0],
     to: toUid,
     toName,
     status: "pending",
     createdAt: serverTimestamp()
   });
 
-  /* notification */
   await addDoc(collection(db, "notifications", toUid, "items"), {
-    text: `${user.email.split("@")[0]} sent you a friend request`,
+    text: `${me.email.split("@")[0]} sent you a friend request`,
     seen: false,
     createdAt: serverTimestamp()
   });
