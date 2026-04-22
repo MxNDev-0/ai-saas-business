@@ -3,30 +3,31 @@ import { auth, db } from "./firebase.js";
 import {
   collection,
   addDoc,
-  query,
   onSnapshot,
+  query,
   orderBy,
-  serverTimestamp,
   doc,
   setDoc,
+  serverTimestamp,
   updateDoc,
-  arrayUnion
+  arrayUnion,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import {
-  onAuthStateChanged,
-  onDisconnect
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 let me = null;
 let activeChat = null;
+let activeUser = null;
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
   if (!u) location.href = "index.html";
+
   me = u;
 
-  await setPresence();
   loadChatList();
 });
 
@@ -35,22 +36,7 @@ function chatId(a, b) {
   return [a, b].sort().join("_");
 }
 
-/* ================= PRESENCE (REAL PRODUCTION STYLE) ================= */
-async function setPresence() {
-  const ref = doc(db, "users", me.uid);
-
-  await setDoc(ref, {
-    online: true,
-    lastSeen: serverTimestamp()
-  }, { merge: true });
-
-  onDisconnect(ref).update({
-    online: false,
-    lastSeen: serverTimestamp()
-  });
-}
-
-/* ================= CHAT LIST ================= */
+/* ================= CHAT LIST (WHATSAPP STYLE) ================= */
 function loadChatList() {
   const q = query(collection(db, "chats"));
 
@@ -67,7 +53,7 @@ function loadChatList() {
 
       box.innerHTML += `
         <div class="chat-item" onclick="openChat('${other}')">
-          <div class="chat-name">${other}</div>
+          <div class="chat-name">User ${other.substring(0,6)}</div>
           <div class="chat-last">${chat.lastMessage || ""}</div>
         </div>
       `;
@@ -77,7 +63,10 @@ function loadChatList() {
 
 /* ================= OPEN CHAT ================= */
 window.openChat = function(uid) {
+  activeUser = uid;
   activeChat = chatId(me.uid, uid);
+
+  document.getElementById("activeUser").innerText = "Chat with " + uid.substring(0,6);
 
   document.getElementById("msgInput").disabled = false;
   document.getElementById("sendBtn").disabled = false;
@@ -103,41 +92,35 @@ function loadMessages() {
 
       box.innerHTML += `
         <div class="msg ${isMe ? "me" : "other"}">
-          ${m.text}<br>
-          <small>${renderStatus(m)}</small>
+          ${m.text}
+          <div style="font-size:10px;opacity:0.6;">
+            ${m.readBy?.length > 1 ? "✓✓" : "✓"}
+          </div>
         </div>
       `;
     });
 
     box.scrollTop = box.scrollHeight;
-
-    markAsRead(snap);
   });
 }
 
-/* ================= STATUS ENGINE ================= */
-function renderStatus(m) {
-  if (m.readBy?.length > 1) return "✓✓";
-  if (m.delivered) return "✓✓";
-  return "✓";
-}
-
-/* ================= SEND MESSAGE ================= */
+/* ================= SEND ================= */
 window.sendMsg = async function () {
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
+
   if (!text || !activeChat) return;
 
-  const msgRef = await addDoc(collection(db, "chats", activeChat, "messages"), {
+  await addDoc(collection(db, "chats", activeChat, "messages"), {
     text,
     senderId: me.uid,
     createdAt: serverTimestamp(),
-    delivered: false,
-    readBy: [me.uid]
+    readBy: [me.uid],
+    delivered: true
   });
 
   await setDoc(doc(db, "chats", activeChat), {
-    members: [me.uid],
+    members: [me.uid, activeUser],
     lastMessage: text,
     lastUpdated: serverTimestamp()
   }, { merge: true });
@@ -146,33 +129,18 @@ window.sendMsg = async function () {
   setTyping(false);
 };
 
-/* ================= READ RECEIPTS ================= */
-function markAsRead(snap) {
-  snap.forEach(async (d) => {
-    const data = d.data();
-
-    if (data.senderId !== me.uid) {
-      await updateDoc(doc(db, "chats", activeChat, "messages", d.id), {
-        delivered: true,
-        readBy: arrayUnion(me.uid)
-      });
-    }
-  });
-}
-
-/* ================= TYPING SYSTEM ================= */
+/* ================= TYPING ================= */
 document.getElementById("msgInput").addEventListener("input", () => {
   setTyping(true);
-
   clearTimeout(window.typingTimer);
 
   window.typingTimer = setTimeout(() => {
     setTyping(false);
-  }, 1200);
+  }, 1000);
 });
 
 async function setTyping(state) {
-  if (!activeChat) return;
+  if (!activeUser) return;
 
   await setDoc(doc(db, "typing", me.uid), {
     chatId: activeChat,
