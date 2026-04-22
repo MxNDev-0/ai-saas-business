@@ -129,6 +129,19 @@ function trackUser() {
   });
 }
 
+/* ================= SLUG GENERATOR (NEW) ================= */
+function generateSlug(title){
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, "-");
+}
+
+/* ================= OPEN POST ================= */
+function openPost(slug){
+  window.location.href = slug + ".html";
+}
+
 /* ================= LOAD BLOGS ================= */
 async function loadBlogs() {
   try {
@@ -139,11 +152,13 @@ async function loadBlogs() {
     container.innerHTML = "";
 
     if (!data.length) {
-      container.innerHTML = "<p>No articles yet.</p>";
+      container.innerHTML = "<p>No articles yet. New content coming soon 🚀</p>";
       return;
     }
 
     data.forEach(post => {
+
+      const slug = post.slug || generateSlug(post.title);
 
       // VIEW TRACKING (non-blocking)
       fetch(`https://mxm-backend.onrender.com/blog/view/${post.id}`, {
@@ -151,21 +166,24 @@ async function loadBlogs() {
       });
 
       container.innerHTML += `
-        <div class="card">
+        <div class="card" onclick="openPost('${slug}')">
 
-          ${post.image ? `<img src="${post.image}">` : ""}
+          ${post.image ? `<img src="${post.image}" alt="${post.title}">` : ""}
 
           <div class="content">
             <div class="tag">MCN UPDATE</div>
+
             <div class="title">${post.title}</div>
-            <div class="text">${post.content}</div>
+
+            <div class="text">
+              ${(post.content || "").substring(0, 120)}...
+            </div>
           </div>
 
         </div>
       `;
     });
 
-    // IMPORTANT: ADS LOAD AFTER BLOGS
     loadAds();
 
   } catch (err) {
@@ -174,7 +192,7 @@ async function loadBlogs() {
   }
 }
 
-/* ================= ADS SYSTEM (UPDATED CLEAN VERSION) ================= */
+/* ================= ADS SYSTEM ================= */
 async function loadAds() {
   try {
     const res = await fetch("https://mxm-backend.onrender.com/ads/list");
