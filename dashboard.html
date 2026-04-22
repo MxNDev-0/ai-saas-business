@@ -14,72 +14,31 @@
       color: white;
     }
 
-    /* ================= NAVBAR FIXED ================= */
+    /* NAVBAR (RESTORED SMALL STYLE) */
     .navbar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      padding: 8px 10px;
       background: #1c2541;
-      padding: 10px;
       position: relative;
     }
 
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .nav-left button {
+      width: 36px;
+      height: 36px;
+      font-size: 16px;
+      border-radius: 6px;
     }
 
     .nav-title {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 18px;
       margin: 0;
-      pointer-events: none;
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* 🔔 CENTER FIXED BETWEEN TITLE & LOGOUT */
-    .notif-wrapper {
-      position: absolute;
-      left: 50%;
-      transform: translateX(60px);
-      cursor: pointer;
       font-size: 18px;
     }
 
-    .notif-badge {
-      position: absolute;
-      top: -5px;
-      right: -8px;
-      background: red;
-      color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 10px;
-      display: none;
-    }
-
-    .notif-panel {
-      position: absolute;
-      top: 50px;
-      right: 10px;
-      width: 280px;
-      max-height: 350px;
-      overflow-y: auto;
-      background: #1c2541;
-      border-radius: 12px;
-      display: none;
-      z-index: 9999;
-    }
-
-    /* ================= MENU ================= */
+    /* MENU (UNCHANGED STYLE) */
     .menu {
       z-index: 9999;
       width: 200px;
@@ -106,7 +65,33 @@
       cursor: pointer;
     }
 
-    /* ================= ADS FIX ================= */
+    /* NOTIFICATION BADGE */
+    .notif-badge {
+      background: red;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 10px;
+      margin-left: 6px;
+      display: none;
+    }
+
+    /* NOTIFICATION PANEL */
+    .notif-panel {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      width: 200px;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #1c2541;
+      border-radius: 10px;
+      display: none;
+      z-index: 9999;
+      padding: 8px;
+    }
+
+    /* ADS FIX (CENTER PERFECTLY) */
     .ads-container {
       overflow: hidden;
       position: relative;
@@ -114,21 +99,22 @@
 
     .ads-slider {
       display: flex;
-      transition: transform 0.6s ease;
-      scroll-snap-type: x mandatory;
+      transition: transform 0.5s ease;
     }
 
     .ad {
       min-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 18px;
+      padding: 20px;
       background: #0b132b;
       border-radius: 8px;
       font-size: 13px;
-      scroll-snap-align: center;
     }
 
-    /* ================= CARD ================= */
+    /* CARDS */
     .container {
       padding: 10px;
     }
@@ -140,7 +126,7 @@
       border-radius: 10px;
     }
 
-    /* ================= DISCOVER ================= */
+    /* DISCOVER */
     #discoverBox .card {
       cursor: pointer;
     }
@@ -155,31 +141,18 @@
 
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
-
   <div class="nav-left">
     <button onclick="toggleMenu()">☰</button>
   </div>
 
   <h3 class="nav-title">MCN Engine</h3>
-
-  <!-- 🔔 CENTERED -->
-  <div class="notif-wrapper" onclick="toggleNotif()">
-    🔔
-    <span id="notifCount" class="notif-badge"></span>
-  </div>
-
-  <div class="nav-right">
-    <button onclick="logout()">Logout</button>
-  </div>
-
 </div>
-
-<!-- NOTIFICATIONS -->
-<div id="notifPanel" class="notif-panel"></div>
 
 <!-- MENU -->
 <div id="menu" class="menu">
+
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goProfile()">👤 Profile</button>
   <button onclick="goMessages()">💬 Messages</button>
@@ -187,12 +160,27 @@
   <button onclick="goBlog()">📰 Blog</button>
   <button onclick="goFaq()">❓ FAQ</button>
   <button onclick="goAbout()">ℹ️ About</button>
+  <button onclick="donate()">💰 Donate</button>
+
+  <!-- 🔔 INSIDE MENU -->
+  <button onclick="toggleNotif()">
+    🔔 Notifications <span id="notifCount" class="notif-badge"></span>
+  </button>
+
+  <!-- LOGOUT MOVED HERE -->
+  <button onclick="logout()">🚪 Logout</button>
+
   <button onclick="goAdmin()">🔐 Admin</button>
+
 </div>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notifPanel" class="notif-panel"></div>
 
 <!-- MAIN -->
 <div class="container">
 
+  <!-- ADS -->
   <div class="card">
     <h4>🔥 Sponsored Ads</h4>
     <div class="ads-container">
@@ -204,11 +192,13 @@
     </div>
   </div>
 
+  <!-- PRICES -->
   <div class="card">
     <h4>📊 Live Prices</h4>
     <div id="priceBox">Loading...</div>
   </div>
 
+  <!-- DISCOVER -->
   <div class="card">
     <h4>📰 Discover Feed</h4>
     <div id="discoverBox">Loading feed...</div>
@@ -219,10 +209,49 @@
 <script type="module" src="dashboard.js"></script>
 
 <script>
+function toggleMenu() {
+  document.getElementById("menu").classList.toggle("active");
+}
+
 function toggleNotif() {
   const panel = document.getElementById("notifPanel");
   panel.style.display = panel.style.display === "block" ? "none" : "block";
 }
+
+/* KEEP YOUR ORIGINAL DISCOVER */
+async function loadDiscover() {
+  const box = document.getElementById("discoverBox");
+
+  try {
+    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+    const data = await res.json();
+
+    box.innerHTML = "";
+
+    data.forEach(post => {
+      box.innerHTML += `
+        <div class="card" onclick="openPost('${post.id}')">
+          ${post.image ? `<img src="${post.image}">` : ""}
+          <div>
+            <b style="color:#5bc0be">${post.title}</b>
+            <p style="font-size:12px;opacity:0.8;">
+              ${(post.content || "").substring(0,120)}...
+            </p>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch {
+    box.innerHTML = "Failed to load feed";
+  }
+}
+
+function openPost(id) {
+  location.href = "post.html?id=" + id;
+}
+
+loadDiscover();
 </script>
 
 </body>
