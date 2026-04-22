@@ -3,31 +3,64 @@
 <head>
   <title>MCN DM System</title>
 
+  <!-- ✅ FIX: Mobile responsive scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: Arial;
       background: #0b132b;
       color: white;
+      width: 100vw;
+      overflow-x: hidden;
     }
 
     .box {
       padding: 10px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h3 {
+      text-align: center;
+      margin-top: 10px;
     }
 
     .chat {
-      height: 70vh;
+      height: calc(100vh - 180px);
       overflow-y: auto;
       background: #1c2541;
       padding: 10px;
       border-radius: 10px;
+
+      display: flex;
+      flex-direction: column;
     }
 
     .msg {
       margin: 6px 0;
       padding: 8px;
-      background: #0b132b;
       border-radius: 8px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    /* WhatsApp-like alignment */
+    .msg.me {
+      background: #5bc0be;
+      color: black;
+      align-self: flex-end;
+    }
+
+    .msg.other {
+      background: #0b132b;
+      align-self: flex-start;
+      border: 1px solid #5bc0be33;
     }
 
     .input {
@@ -41,6 +74,7 @@
       padding: 10px;
       border-radius: 8px;
       border: none;
+      outline: none;
     }
 
     button {
@@ -48,6 +82,19 @@
       border: none;
       padding: 10px;
       border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled {
+      opacity: 0.5;
+    }
+
+    .warning {
+      text-align: center;
+      font-size: 13px;
+      color: #ffcc00;
+      margin-bottom: 8px;
     }
   </style>
 </head>
@@ -58,11 +105,16 @@
 
   <h3>💬 Messages</h3>
 
+  <!-- ✅ DM warning -->
+  <div class="warning" id="warn">
+    Loading chat...
+  </div>
+
   <div class="chat" id="chat"></div>
 
   <div class="input">
-    <input id="msgInput" placeholder="Type message...">
-    <button onclick="sendMsg()">Send</button>
+    <input id="msgInput" placeholder="Type message..." disabled>
+    <button id="sendBtn" onclick="sendMsg()" disabled>Send</button>
   </div>
 
 </div>
