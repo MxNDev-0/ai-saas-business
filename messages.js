@@ -7,30 +7,49 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  updateDoc,
   doc,
-  getDoc
+  updateDoc,
+  getDoc,
+  setDoc,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import {
-  onAuthStateChanged
+  onAuthStateChanged,
+  onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 let me = null;
 let otherUid = null;
+let typingTimeout = null;
 
 /* ================= AUTH ================= */
-onAuthStateChanged(auth, (u) => {
+onAuthStateChanged(auth, async (u) => {
   if (!u) location.href = "index.html";
-
   me = u;
 
+  await setupPresence();
   loadUsers();
 });
 
 /* ================= CHAT ID ================= */
 function chatId(a, b) {
   return [a, b].sort().join("_");
+}
+
+/* ================= PRESENCE (REAL ONLINE SYSTEM) ================= */
+async function setupPresence() {
+  const userRef = doc(db, "users", me.uid);
+
+  await setDoc(userRef, {
+    online: true,
+    lastSeen: serverTimestamp()
+  }, { merge: true });
+
+  onDisconnect(userRef).update({
+    online: false,
+    lastSeen: serverTimestamp()
+  });
 }
 
 /* ================= USERS LIST ================= */
@@ -68,16 +87,16 @@ window.openChat = function(uid) {
   listenTyping();
 };
 
-/* ================= LOAD MESSAGES ================= */
+/* ================= CHAT LOADER ================= */
 function loadMessages() {
   const id = chatId(me.uid, otherUid);
 
   const q = query(
-    collection(db, "messages", id, "messages"),
-    orderBy("time")
+    collection(db, "chats", id, "messages"),
+    orderBy("createdAt")
   );
 
-  onSnapshot(q, (snap) => {
+  onSnapshot(q, async (snap) => {
     const box = document.getElementById("chat");
     box.innerHTML = "";
 
@@ -88,12 +107,22 @@ function loadMessages() {
       box.innerHTML += `
         <div class="msg ${isMe ? "me" : "other"}">
           ${m.text}<br>
-          <small>${m.read ? "✓✓" : "✓"}</small>
+          <small>
+            ${m.readBy?.includes(me.uid) ? "✓✓" : "✓"}
+          </small>
         </div>
       `;
     });
 
     box.scrollTop = box.scrollHeight;
+
+    /* mark messages as read */
+    snap.forEach(async d => {
+      const ref = doc(db, "chats", id, "messages", d.id);
+      await updateDoc(ref, {
+        readBy: arrayUnion(me.uid)
+      });
+    });
   });
 }
 
@@ -105,37 +134,43 @@ window.sendMsg = async function () {
 
   const id = chatId(me.uid, otherUid);
 
-  await addDoc(collection(db, "messages", id, "messages"), {
+  const msgRef = await addDoc(collection(db, "chats", id, "messages"), {
     text,
     sender: me.uid,
-    time: serverTimestamp(),
-    read: false
+    createdAt: serverTimestamp(),
+    readBy: [me.uid]
   });
 
-  await addDoc(collection(db, "notifications", otherUid, "items"), {
-    text: "New message received",
-    seen: false,
-    createdAt: serverTimestamp()
-  });
+  await setDoc(doc(db, "chats", id), {
+    users: [me.uid, otherUid],
+    lastMessage: text,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 
   input.value = "";
-
   setTyping(false);
 };
 
-/* ================= TYPING ================= */
+/* ================= TYPING SYSTEM (CLEAN + DEBOUNCED) ================= */
 document.getElementById("msgInput").addEventListener("input", () => {
   setTyping(true);
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    setTyping(false);
+  }, 1500);
 });
 
 async function setTyping(state) {
   if (!otherUid) return;
 
-  await updateDoc(doc(db, "typing", me.uid), {
-    typingTo: state ? otherUid : null
+  await setDoc(doc(db, "typing", me.uid), {
+    to: otherUid,
+    typing: state
   });
 }
 
+/* ================= LISTEN TYPING ================= */
 function listenTyping() {
   const ref = doc(db, "typing", otherUid);
 
@@ -143,21 +178,20 @@ function listenTyping() {
     const data = snap.data();
     const el = document.getElementById("typing");
 
-    if (data?.typingTo === me.uid) {
-      el.innerText = "User is typing...";
+    if (data?.to === me.uid && data?.typing) {
+      el.innerText = "typing...";
     } else {
       el.innerText = "";
     }
   });
 }
 
-/* ================= ONLINE STATUS ================= */
-setInterval(async () => {
+/* ================= AUTO OFFLINE ON TAB CLOSE ================= */
+window.addEventListener("beforeunload", async () => {
   if (!me) return;
 
   await updateDoc(doc(db, "users", me.uid), {
-    online: true,
+    online: false,
     lastSeen: serverTimestamp()
   });
-
-}, 10000);
+});
