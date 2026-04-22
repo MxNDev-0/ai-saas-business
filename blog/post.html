@@ -3,9 +3,24 @@
 <head>
   <title>MCN Engine Blog Post</title>
 
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="description" content="MCN Engine blog post">
+  <!-- SEO -->
+  <meta name="description" content="Latest crypto earning guides, referral programs and online income tips.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="MCN Engine Blog">
+  <meta property="og:description" content="Earn crypto, discover platforms and grow online income.">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://via.placeholder.com/600x300">
+  <meta property="og:url" content="">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Google indexing -->
+  <meta name="robots" content="index, follow">
 
   <style>
     body {
@@ -29,10 +44,12 @@
 
     .container {
       padding: 15px;
+      max-width: 700px;
+      margin: auto;
     }
 
     .title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: bold;
       color: #5bc0be;
       margin-bottom: 10px;
@@ -41,13 +58,17 @@
     .image {
       width: 100%;
       border-radius: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     .content {
-      font-size: 14px;
-      line-height: 1.6;
-      opacity: 0.9;
+      font-size: 15px;
+      line-height: 1.7;
+      opacity: 0.95;
+    }
+
+    .content p {
+      margin-bottom: 12px;
     }
 
     .back {
@@ -112,8 +133,52 @@ async function loadPost() {
       return;
     }
 
+    // 🔥 TITLE
     document.title = post.title;
 
+    // 🔥 DESCRIPTION (SEO)
+    const desc = post.content.substring(0, 150);
+
+    document
+      .querySelector('meta[name="description"]')
+      .setAttribute("content", desc);
+
+    // 🔥 OPEN GRAPH
+    document
+      .querySelector('meta[property="og:title"]')
+      .setAttribute("content", post.title);
+
+    document
+      .querySelector('meta[property="og:description"]')
+      .setAttribute("content", desc);
+
+    document
+      .querySelector('meta[property="og:image"]')
+      .setAttribute("content", post.image || "https://via.placeholder.com/600x300");
+
+    document
+      .querySelector('meta[property="og:url"]')
+      .setAttribute("content", window.location.href);
+
+    // 🔥 STRUCTURED DATA (GOOGLE DISCOVER BOOST)
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": post.title,
+      "image": [post.image || "https://via.placeholder.com/600x300"],
+      "datePublished": new Date().toISOString(),
+      "author": {
+        "@type": "Organization",
+        "name": "MCN Engine"
+      }
+    };
+
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.innerHTML = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+
+    // 🔥 RENDER POST
     document.getElementById("postContainer").innerHTML = `
       <div class="title">${post.title}</div>
 
