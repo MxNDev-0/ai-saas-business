@@ -4,8 +4,6 @@
   <title>MCN Engine Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
-
   <style>
     body {
       margin: 0;
@@ -21,6 +19,7 @@
       justify-content: space-between;
       background: #1c2541;
       padding: 10px;
+      position: relative;
     }
 
     .nav-left button {
@@ -28,10 +27,21 @@
       height: 35px;
       font-size: 16px;
       border-radius: 6px;
+      cursor: pointer;
     }
 
     .nav-title {
       font-size: 18px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     /* ================= MENU ================= */
@@ -41,10 +51,11 @@
       position: absolute;
       top: 50px;
       left: 10px;
-      width: 200px;
+      width: 210px;
       background: #1c2541;
       border-radius: 10px;
       z-index: 9999;
+      overflow: hidden;
     }
 
     .menu.active {
@@ -52,12 +63,17 @@
     }
 
     .menu button {
-      padding: 10px;
+      padding: 12px;
       text-align: left;
       background: transparent;
       border: none;
       color: white;
       cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .menu button:hover {
+      background: #111a33;
     }
 
     /* ================= CONTAINER ================= */
@@ -72,7 +88,7 @@
       border-radius: 10px;
     }
 
-    /* ================= ADS (FIXED SLIDER) ================= */
+    /* ================= ADS ================= */
     .ads-container {
       overflow: hidden;
       position: relative;
@@ -93,7 +109,7 @@
 
     .ad-box {
       width: 80%;
-      max-width: 300px;
+      max-width: 320px;
       text-align: center;
       padding: 14px;
       background: linear-gradient(135deg, #5bc0be, #3a86ff);
@@ -101,62 +117,41 @@
       border-radius: 12px;
       font-size: 13px;
       font-weight: bold;
-      margin: auto;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* ================= DISCOVER (NEW UI STYLE) ================= */
-    #discoverBox {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .discover-item {
-      background: #111a33;
-      border-radius: 12px;
-      padding: 10px;
+    /* ================= DISCOVER (CLEAN UI) ================= */
+    #discoverBox .card {
       cursor: pointer;
-      border: 1px solid rgba(91,192,190,0.2);
-      transition: 0.2s ease;
+      padding: 10px;
     }
 
-    .discover-item:hover {
-      transform: scale(1.01);
-      border-color: #5bc0be;
-    }
-
-    .discover-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      background: #5bc0be;
-      border-radius: 50%;
-    }
-
-    .discover-title {
-      font-size: 13px;
-      font-weight: bold;
-      color: #5bc0be;
-    }
-
-    .discover-item img {
+    #discoverBox img {
       width: 100%;
-      border-radius: 10px;
-      margin: 6px 0;
+      border-radius: 8px;
     }
 
-    .discover-text {
-      font-size: 12px;
-      opacity: 0.85;
-      line-height: 1.4;
+    .card-title {
+      color: #5bc0be;
+      font-weight: bold;
+      margin-top: 6px;
     }
+
+    .card-text {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* ================= NOTIFY BADGE ================= */
+    .badge {
+      background: red;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 50%;
+      margin-left: 4px;
+    }
+
   </style>
 </head>
 
@@ -164,11 +159,16 @@
 
 <!-- NAVBAR -->
 <div class="navbar">
+
   <div class="nav-left">
     <button onclick="toggleMenu()">☰</button>
   </div>
 
   <div class="nav-title">MCN Engine</div>
+
+  <div class="nav-right">
+    <button onclick="logout()">Logout</button>
+  </div>
 </div>
 
 <!-- MENU -->
@@ -180,14 +180,16 @@
   <button onclick="goBlog()">📰 Blog</button>
   <button onclick="goFaq()">❓ FAQ</button>
   <button onclick="goAbout()">ℹ️ About</button>
+
   <button onclick="toggleNotif()">🔔 Notifications</button>
   <button onclick="donate()">💰 Donate</button>
+
   <button onclick="goAdmin()">🔐 Admin</button>
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
-<!-- NOTIFICATION PANEL -->
-<div id="notifPanel" class="menu" style="right:10px;left:auto;top:50px;"></div>
+<!-- NOTIFICATIONS -->
+<div id="notifPanel" class="menu" style="right:10px;left:auto;"></div>
 
 <!-- MAIN -->
 <div class="container">
@@ -199,17 +201,9 @@
     <div class="ads-container">
       <div class="ads-slider" id="adsSlider">
 
-        <div class="ad">
-          <div class="ad-box">🚀 Promote your project here</div>
-        </div>
-
-        <div class="ad">
-          <div class="ad-box">💰 Buy ad space on MCN Engine</div>
-        </div>
-
-        <div class="ad">
-          <div class="ad-box">📢 Your ad here</div>
-        </div>
+        <div class="ad"><div class="ad-box">🚀 Promote your project here</div></div>
+        <div class="ad"><div class="ad-box">💰 Buy ad space on MCN Engine</div></div>
+        <div class="ad"><div class="ad-box">📢 Your ad here</div></div>
 
       </div>
     </div>
@@ -229,28 +223,23 @@
 
 </div>
 
+<!-- JS -->
+<script type="module" src="dashboard.js"></script>
+
 <script>
-/* ================= ADS SLIDER (FIXED) ================= */
-let currentAd = 0;
+/* ================= MENU TOGGLE FIX ================= */
+window.toggleMenu = function () {
+  document.getElementById("menu").classList.toggle("active");
+};
 
-setInterval(() => {
-  const slider = document.getElementById("adsSlider");
-  if (!slider) return;
-
-  const total = slider.children.length;
-  currentAd = (currentAd + 1) % total;
-
-  slider.style.transform = `translateX(-${currentAd * 100}%)`;
-}, 3500);
-
-/* ================= DISCOVER ================= */
+/* ================= DISCOVER FIXED (NO 404 CRASH) ================= */
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
   try {
     const res = await fetch("https://mxm-backend.onrender.com/blog/list");
 
-    if (!res.ok) throw new Error("Server error");
+    if (!res.ok) throw new Error("API error");
 
     const data = await res.json();
 
@@ -263,35 +252,39 @@ async function loadDiscover() {
 
     data.forEach(post => {
       box.innerHTML += `
-        <div class="discover-item" onclick="openPost('${post.id}')">
-
-          <div class="discover-header">
-            <span class="dot"></span>
-            <span class="discover-title">${post.title}</span>
-          </div>
-
+        <div class="card" onclick="openPost('${post.id}')">
           ${post.image ? `<img src="${post.image}">` : ""}
 
-          <div class="discover-text">
-            ${(post.content || "").substring(0, 110)}...
-          </div>
-
+          <div class="card-title">${post.title}</div>
+          <div class="card-text">${(post.content || "").substring(0,120)}...</div>
         </div>
       `;
     });
 
   } catch (err) {
-    console.log(err);
     box.innerHTML = "⚠️ Discover feed unavailable";
   }
 }
 
+/* ================= ROUTING FIX ================= */
 function openPost(id) {
-  if (!id) return;
   window.location.href = "blog/post.html?id=" + encodeURIComponent(id);
 }
 
+/* ================= INIT ================= */
 loadDiscover();
+
+/* ================= ADS SLIDER FIX (CENTER + PAUSE) ================= */
+let index = 0;
+
+setInterval(() => {
+  const slider = document.getElementById("adsSlider");
+  if (!slider) return;
+
+  index = (index + 1) % slider.children.length;
+  slider.style.transform = `translateX(-${index * 100}%)`;
+}, 3500);
+
 </script>
 
 </body>
