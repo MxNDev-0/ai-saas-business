@@ -14,18 +14,24 @@
       font-family: Arial;
       background: #0b132b;
       color: white;
-      display: flex;
       height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* MOBILE FIRST */
+    .app {
+      display: flex;
+      height: 100%;
       overflow: hidden;
     }
 
-    /* LEFT CHAT LIST (WHATSAPP STYLE) */
+    /* SIDEBAR */
     .sidebar {
-      width: 30%;
-      min-width: 250px;
+      width: 100%;
+      max-width: 100%;
       background: #1c2541;
       overflow-y: auto;
-      border-right: 1px solid #333;
     }
 
     .chat-item {
@@ -47,19 +53,34 @@
       opacity: 0.7;
     }
 
-    /* CHAT WINDOW */
+    /* CHAT AREA */
     .chat-area {
-      flex: 1;
+      position: fixed;
+      top: 0;
+      left: 100%;
+      width: 100%;
+      height: 100%;
+      background: #0b132b;
       display: flex;
       flex-direction: column;
+      transition: 0.3s;
+    }
+
+    .chat-area.active {
+      left: 0;
     }
 
     .header {
       padding: 10px;
       background: #1c2541;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-btn {
+      cursor: pointer;
+      margin-right: 10px;
     }
 
     .messages {
@@ -69,7 +90,7 @@
     }
 
     .msg {
-      max-width: 70%;
+      max-width: 75%;
       padding: 8px;
       margin: 5px 0;
       border-radius: 10px;
@@ -83,8 +104,7 @@
     }
 
     .other {
-      background: #0b132b;
-      border: 1px solid #333;
+      background: #1c2541;
     }
 
     .input-box {
@@ -113,32 +133,69 @@
       font-size: 12px;
       opacity: 0.7;
     }
+
+    /* DESKTOP MODE */
+    @media(min-width: 768px){
+      .sidebar {
+        width: 30%;
+      }
+
+      .chat-area {
+        position: relative;
+        left: 0;
+        width: 70%;
+      }
+
+      .chat-area.active {
+        left: 0;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-<!-- LEFT -->
-<div class="sidebar" id="chatList"></div>
+<div class="app">
 
-<!-- RIGHT -->
-<div class="chat-area">
+  <!-- CHAT LIST -->
+  <div class="sidebar" id="chatList"></div>
 
-  <div class="header">
-    <div id="activeUser">Select chat</div>
-    <div class="typing" id="typing"></div>
-  </div>
+  <!-- CHAT WINDOW -->
+  <div class="chat-area" id="chatArea">
 
-  <div class="messages" id="messages"></div>
+    <div class="header">
+      <span class="back-btn" onclick="goBack()">←</span>
+      <div id="activeUser">Select chat</div>
+      <div class="typing" id="typing"></div>
+    </div>
 
-  <div class="input-box">
-    <input id="msgInput" placeholder="Type message..." disabled>
-    <button id="sendBtn" onclick="sendMsg()" disabled>Send</button>
+    <div class="messages" id="messages"></div>
+
+    <div class="input-box">
+      <input id="msgInput" placeholder="Type message..." disabled>
+      <button id="sendBtn" onclick="sendMsg()" disabled>Send</button>
+    </div>
+
   </div>
 
 </div>
 
 <script type="module" src="messages.js"></script>
+
+<script>
+function goBack(){
+  document.getElementById("chatArea").classList.remove("active");
+}
+
+/* HOOK INTO YOUR EXISTING FUNCTION */
+const originalOpenChat = window.openChat;
+
+window.openChat = function(uid){
+  if(originalOpenChat) originalOpenChat(uid);
+
+  document.getElementById("chatArea").classList.add("active");
+};
+</script>
 
 </body>
 </html>
