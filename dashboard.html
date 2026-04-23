@@ -4,8 +4,6 @@
   <title>MCN Engine Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
-
   <style>
     body {
       margin: 0;
@@ -29,16 +27,21 @@
       height: 35px;
       font-size: 16px;
       border-radius: 6px;
+      cursor: pointer;
     }
 
     .nav-title {
       font-size: 18px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
     }
 
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     /* ================= MENU ================= */
@@ -48,7 +51,7 @@
       position: absolute;
       top: 50px;
       left: 10px;
-      width: 220px;
+      width: 210px;
       background: #1c2541;
       border-radius: 10px;
       z-index: 9999;
@@ -60,50 +63,17 @@
     }
 
     .menu button {
-      padding: 10px;
+      padding: 12px;
       text-align: left;
       background: transparent;
       border: none;
       color: white;
       cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
 
     .menu button:hover {
-      background: #243256;
-    }
-
-    /* ================= NOTIFICATION ================= */
-    .notif-wrapper {
-      position: relative;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-    }
-
-    .notif-badge {
-      position: absolute;
-      top: -5px;
-      right: -8px;
-      background: red;
-      color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 10px;
-      display: none;
-    }
-
-    .notif-panel {
-      position: absolute;
-      top: 50px;
-      right: 10px;
-      width: 280px;
-      max-height: 350px;
-      overflow-y: auto;
-      background: #1c2541;
-      border-radius: 12px;
-      display: none;
-      z-index: 9999;
+      background: #111a33;
     }
 
     /* ================= CONTAINER ================= */
@@ -122,25 +92,38 @@
     .ads-container {
       overflow: hidden;
       position: relative;
+      padding: 10px 0;
     }
 
     .ads-slider {
       display: flex;
-      transition: transform 0.5s ease;
+      transition: transform 0.6s ease;
     }
 
     .ad {
       min-width: 100%;
-      text-align: center;
-      padding: 15px;
-      background: #0b132b;
-      border-radius: 8px;
-      font-size: 13px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    /* ================= DISCOVER ================= */
+    .ad-box {
+      width: 80%;
+      max-width: 320px;
+      text-align: center;
+      padding: 14px;
+      background: linear-gradient(135deg, #5bc0be, #3a86ff);
+      color: #000;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* ================= DISCOVER (CLEAN UI) ================= */
     #discoverBox .card {
       cursor: pointer;
+      padding: 10px;
     }
 
     #discoverBox img {
@@ -148,68 +131,67 @@
       border-radius: 8px;
     }
 
-    /* ================= LANGUAGE ================= */
-    .lang-select {
-      background: #0b132b;
-      color: white;
-      border: 1px solid #5bc0be;
-      border-radius: 6px;
-      padding: 5px;
-      font-size: 12px;
+    .card-title {
+      color: #5bc0be;
+      font-weight: bold;
+      margin-top: 6px;
     }
+
+    .card-text {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* ================= NOTIFY BADGE ================= */
+    .badge {
+      background: red;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 50%;
+      margin-left: 4px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
+<!-- NAVBAR -->
 <div class="navbar">
 
   <div class="nav-left">
     <button onclick="toggleMenu()">☰</button>
   </div>
 
-  <div class="nav-title" data-i18n="title">MCN Engine</div>
+  <div class="nav-title">MCN Engine</div>
 
   <div class="nav-right">
-
-    <!-- 🔔 NOTIFICATION -->
-    <div class="notif-wrapper" onclick="toggleNotif()">
-      🔔
-      <span id="notifCount" class="notif-badge"></span>
-    </div>
-
-    <!-- 🌐 LANGUAGE -->
-    <select class="lang-select" onchange="setLanguage(this.value)">
-      <option value="en">EN</option>
-      <option value="fr">FR</option>
-      <option value="es">ES</option>
-      <option value="ig">IG</option>
-    </select>
-
+    <button onclick="logout()">Logout</button>
   </div>
 </div>
 
-<!-- NOTIF PANEL -->
-<div id="notifPanel" class="notif-panel"></div>
-
-<!-- ================= MENU ================= -->
+<!-- MENU -->
 <div id="menu" class="menu">
-  <button onclick="goHome()" data-i18n="home">🏠 Home</button>
-  <button onclick="goProfile()" data-i18n="profile">👤 Profile</button>
-  <button onclick="goMessages()" data-i18n="messages">💬 Messages</button>
-  <button onclick="goAdSpace()" data-i18n="ads">🚀 Ads</button>
-  <button onclick="goBlog()" data-i18n="blog">📰 Blog</button>
-  <button onclick="goFaq()" data-i18n="faq">❓ FAQ</button>
-  <button onclick="goAbout()" data-i18n="about">ℹ️ About</button>
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goProfile()">👤 Profile</button>
+  <button onclick="goMessages()">💬 Messages</button>
+  <button onclick="goAdSpace()">🚀 Ads</button>
+  <button onclick="goBlog()">📰 Blog</button>
+  <button onclick="goFaq()">❓ FAQ</button>
+  <button onclick="goAbout()">ℹ️ About</button>
+
+  <button onclick="toggleNotif()">🔔 Notifications</button>
+  <button onclick="donate()">💰 Donate</button>
 
   <button onclick="goAdmin()">🔐 Admin</button>
-
-  <!-- ✅ RESTORED LOGOUT (LAST ITEM) -->
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
-<!-- ================= MAIN ================= -->
+<!-- NOTIFICATIONS -->
+<div id="notifPanel" class="menu" style="right:10px;left:auto;"></div>
+
+<!-- MAIN -->
 <div class="container">
 
   <!-- ADS -->
@@ -218,9 +200,11 @@
 
     <div class="ads-container">
       <div class="ads-slider" id="adsSlider">
-        <div class="ad">🚀 Promote your project here</div>
-        <div class="ad">💰 Buy ad space on MCN Engine</div>
-        <div class="ad">📢 Your ad here</div>
+
+        <div class="ad"><div class="ad-box">🚀 Promote your project here</div></div>
+        <div class="ad"><div class="ad-box">💰 Buy ad space on MCN Engine</div></div>
+        <div class="ad"><div class="ad-box">📢 Your ad here</div></div>
+
       </div>
     </div>
   </div>
@@ -239,24 +223,30 @@
 
 </div>
 
+<!-- JS -->
 <script type="module" src="dashboard.js"></script>
 
 <script>
-
 /* ================= MENU TOGGLE FIX ================= */
 window.toggleMenu = function () {
   document.getElementById("menu").classList.toggle("active");
 };
 
-/* ================= DISCOVER SAFE LOAD ================= */
+/* ================= DISCOVER FIXED (NO 404 CRASH) ================= */
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
   try {
     const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-    if (!res.ok) throw new Error("404");
+
+    if (!res.ok) throw new Error("API error");
 
     const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      box.innerHTML = "No new posts yet 🚀";
+      return;
+    }
 
     box.innerHTML = "";
 
@@ -264,26 +254,36 @@ async function loadDiscover() {
       box.innerHTML += `
         <div class="card" onclick="openPost('${post.id}')">
           ${post.image ? `<img src="${post.image}">` : ""}
-          <div>
-            <b style="color:#5bc0be">${post.title}</b>
-            <p style="font-size:12px;opacity:0.8">
-              ${(post.content || "").substring(0,120)}...
-            </p>
-          </div>
+
+          <div class="card-title">${post.title}</div>
+          <div class="card-text">${(post.content || "").substring(0,120)}...</div>
         </div>
       `;
     });
 
-  } catch (e) {
-    box.innerHTML = "Discover unavailable";
+  } catch (err) {
+    box.innerHTML = "⚠️ Discover feed unavailable";
   }
 }
 
+/* ================= ROUTING FIX ================= */
 function openPost(id) {
-  location.href = "blog/post.html?id=" + encodeURIComponent(id);
+  window.location.href = "blog/post.html?id=" + encodeURIComponent(id);
 }
 
+/* ================= INIT ================= */
 loadDiscover();
+
+/* ================= ADS SLIDER FIX (CENTER + PAUSE) ================= */
+let index = 0;
+
+setInterval(() => {
+  const slider = document.getElementById("adsSlider");
+  if (!slider) return;
+
+  index = (index + 1) % slider.children.length;
+  slider.style.transform = `translateX(-${index * 100}%)`;
+}, 3500);
 
 </script>
 
