@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MCN Engine v1.6 - Admin Control Panel</title>
+  <title>MCN Engine V16 - Admin Control Panel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="style.css">
@@ -30,6 +30,15 @@
       border: none;
       background: #0b132b;
       color: white;
+      box-sizing: border-box;
+    }
+
+    /* ✅ FIXED CONTENT BOX SYMMETRY */
+    textarea {
+      min-height: 90px;
+      max-height: 140px;
+      resize: vertical;
+      overflow-y: auto;
     }
 
     button {
@@ -62,22 +71,31 @@
       border-radius: 8px;
     }
 
+    /* 🔥 MONITOR SCREEN */
     .monitor {
       background: #000;
-      color: #0f0;
+      color: #00ff66;
       height: 200px;
       overflow-y: auto;
       font-family: monospace;
       padding: 10px;
       border-radius: 8px;
-      white-space: pre-wrap;
     }
+
+    /* FIX GRID CARD STRETCH ISSUE */
+    .card {
+      background: #1c2541;
+      padding: 12px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>👑 MCN Engine v1.6 - Admin Control Panel</h2>
+<h2>👑 MCN Admin Panel V16 (Monetization Control Network)</h2>
 
 <div class="grid">
 
@@ -87,13 +105,22 @@
     <div id="monitor" class="monitor"></div>
   </div>
 
+  <!-- BLOG -->
+  <div class="card">
+    <h3>📝 Create Blog</h3>
+    <input id="blogTitle" placeholder="Blog Title">
+    <textarea id="blogContent" placeholder="Blog Content"></textarea>
+    <input id="blogImage" placeholder="Image URL (optional)">
+    <button onclick="createBlog()">Publish</button>
+  </div>
+
   <!-- USERS -->
   <div class="card">
     <h3>👥 Users</h3>
     <div id="usersList" class="list-box"></div>
   </div>
 
-  <!-- AD REQUESTS -->
+  <!-- AD REQUESTS (APPROVAL SYSTEM READY) -->
   <div class="card">
     <h3>📢 Ad Payment Requests</h3>
     <div id="upgradeList" class="list-box"></div>
@@ -104,15 +131,6 @@
     <h3>💬 Posts</h3>
     <button class="danger" onclick="clearAllPosts()">Clear All</button>
     <div id="postsList" class="list-box"></div>
-  </div>
-
-  <!-- BLOG -->
-  <div class="card">
-    <h3>📝 Create Blog</h3>
-    <input id="blogTitle" placeholder="Title">
-    <textarea id="blogContent" placeholder="Content"></textarea>
-    <input id="blogImage" placeholder="Image URL">
-    <button onclick="createBlog()">Publish</button>
   </div>
 
   <!-- ANALYTICS -->
