@@ -44,7 +44,7 @@
       gap: 8px;
     }
 
-    /* ================= LANGUAGE SELECTOR ================= */
+    /* ================= LANGUAGE SELECT ================= */
     .lang-select {
       background: #0b132b;
       color: white;
@@ -53,7 +53,6 @@
       border-radius: 6px;
       font-size: 12px;
       cursor: pointer;
-      outline: none;
     }
 
     /* ================= MENU ================= */
@@ -170,15 +169,13 @@
 
   <div class="nav-right">
 
-    <!-- 🌍 LANGUAGE SELECTOR (REPLACED LOGOUT HERE) -->
-    <select class="lang-select" onchange="setLanguage(this.value)">
-      <option value="en">🇬🇧 English</option>
-      <option value="fr">🇫🇷 Français</option>
-      <option value="es">🇪🇸 Español</option>
-      <option value="de">🇩🇪 Deutsch</option>
-      <option value="pt">🇵🇹 Português</option>
-      <option value="ar">🇸🇦 العربية</option>
-      <option value="zh">🇨🇳 中文</option>
+    <!-- 🌍 LANGUAGE SELECT (STEP 3 INJECTED HERE) -->
+    <select class="lang-select" onchange="applyMCNLanguage(this.value)">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+      <option value="de">Deutsch</option>
+      <option value="ar">العربية</option>
     </select>
 
   </div>
@@ -204,7 +201,6 @@
 <!-- MAIN -->
 <div class="container">
 
-  <!-- ADS -->
   <div class="card">
     <h4>🔥 Sponsored Ads</h4>
 
@@ -219,13 +215,11 @@
     </div>
   </div>
 
-  <!-- PRICES -->
   <div class="card">
     <h4>📊 Live Prices</h4>
     <div id="priceBox">Loading...</div>
   </div>
 
-  <!-- DISCOVER -->
   <div class="card">
     <h4>📰 Discover Feed</h4>
     <div id="discoverBox">Loading feed...</div>
@@ -233,40 +227,48 @@
 
 </div>
 
+<!-- CORE JS -->
 <script type="module" src="dashboard.js"></script>
 
+<!-- DISCOVER -->
 <script>
-/* ================= MENU ================= */
 window.toggleMenu = function () {
   document.getElementById("menu").classList.toggle("active");
 };
 
-/* ================= LANGUAGE SYSTEM ================= */
-window.setLanguage = function(lang) {
-  localStorage.setItem("mcn_lang", lang);
-
-  const map = {
-    en: "MCN Engine",
-    fr: "Moteur MCN",
-    es: "Motor MCN",
-    de: "MCN Motor",
-    pt: "Motor MCN",
-    ar: "محرك MCN",
-    zh: "MCN 引擎"
-  };
-
-  document.querySelector(".nav-title").innerText = map[lang] || "MCN Engine";
+/* ================= LANGUAGE ENGINE (STEP 2 INJECTED HERE) ================= */
+const MCN_LANG = {
+  en: { title: "MCN Engine", ads: "Sponsored Ads", prices: "Live Prices", discover: "Discover Feed" },
+  fr: { title: "Moteur MCN", ads: "Publicités", prices: "Prix en direct", discover: "Découvrir" },
+  es: { title: "Motor MCN", ads: "Anuncios", prices: "Precios", discover: "Descubrir" },
+  de: { title: "MCN Motor", ads: "Werbung", prices: "Preise", discover: "Entdecken" },
+  ar: { title: "محرك MCN", ads: "إعلانات", prices: "الأسعار", discover: "اكتشف" }
 };
+
+function applyMCNLanguage(lang) {
+  const t = MCN_LANG[lang] || MCN_LANG.en;
+
+  document.querySelector(".nav-title").innerText = t.title;
+
+  const cards = document.querySelectorAll(".card h4");
+  if (cards[0]) cards[0].innerText = "🔥 " + t.ads;
+  if (cards[1]) cards[1].innerText = "📊 " + t.prices;
+  if (cards[2]) cards[2].innerText = "📰 " + t.discover;
+
+  localStorage.setItem("mcn_lang", lang);
+}
 
 /* restore language */
 (function(){
   const saved = localStorage.getItem("mcn_lang") || "en";
+  applyMCNLanguage(saved);
+
   const select = document.querySelector(".lang-select");
   if (select) select.value = saved;
-  window.setLanguage(saved);
 })();
+</script>
 
-/* ================= DISCOVER ================= */
+<script>
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
@@ -299,7 +301,7 @@ function openPost(id) {
 
 loadDiscover();
 
-/* ================= ADS SLIDER ================= */
+/* ADS SLIDER */
 let i = 0;
 setInterval(() => {
   const s = document.getElementById("adsSlider");
