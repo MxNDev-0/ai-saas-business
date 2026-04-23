@@ -193,15 +193,24 @@
 
 </div>
 
-<script type="module" src="dashboard.js"></script>
-
 <script>
 async function loadDiscover() {
   const box = document.getElementById("discoverBox");
 
   try {
     const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+
+    // 🔥 SAFETY CHECK (prevents broken 404 UI freeze)
+    if (!res.ok) {
+      throw new Error("Server error");
+    }
+
     const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      box.innerHTML = "No new posts yet 🚀";
+      return;
+    }
 
     box.innerHTML = "";
 
@@ -209,26 +218,29 @@ async function loadDiscover() {
       box.innerHTML += `
         <div class="card" onclick="openPost('${post.id}')">
 
-          ${post.image ? `<img src="${post.image}">` : ""}
+          ${post.image ? `<img src="${post.image}" />` : ""}
 
-          <div>
-            <b style="color:#5bc0be">${post.title}</b>
-            <p style="font-size:12px;opacity:0.8;">
-              ${(post.content || "").substring(0,120)}...
-            </p>
+          <div class="card-content">
+            <div class="card-title">${post.title}</div>
+            <div class="card-text">
+              ${(post.content || "").substring(0, 120)}...
+            </div>
           </div>
 
         </div>
       `;
     });
 
-  } catch (e) {
-    box.innerHTML = "Failed to load feed";
+  } catch (err) {
+    console.log("Discover error:", err);
+    box.innerHTML = "⚠️ Discover feed unavailable";
   }
 }
 
+/* 🔥 FIXED ROUTING (no broken 404 paths) */
 function openPost(id) {
-  location.href = "post.html?id=" + id;
+  if (!id) return;
+  window.location.href = "blog/post.html?id=" + encodeURIComponent(id);
 }
 
 loadDiscover();
