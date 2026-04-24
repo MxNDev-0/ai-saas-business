@@ -17,7 +17,7 @@ script.onload = () => {
   log("📧 EmailJS ready");
 };
 
-/* ================= EMAIL FUNCTION ================= */
+/* ================= EMAIL FUNCTION (CLEAN FIX) ================= */
 function sendEmail(message) {
   if (typeof emailjs === "undefined") {
     log("⚠️ EmailJS not loaded");
@@ -25,8 +25,6 @@ function sendEmail(message) {
   }
 
   emailjs.send("service_faxlkup", "template_0f9tfzw", {
-    name: "MCN Engine",
-    email: "mcnengine@gmail.com",
     message: message,
     time: new Date().toLocaleString()
   })
@@ -89,7 +87,7 @@ window.createBlog = async () => {
 
     log("Blog created: " + title);
 
-    // ✅ SAFE EMAIL TRIGGER
+    // ✅ EMAIL TRIGGER
     sendEmail("New blog created: " + title);
   }
 };
