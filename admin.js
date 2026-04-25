@@ -7,6 +7,13 @@ import {
   query, orderBy, getDocs, writeBatch, getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* ================= PUSH IMPORT ================= */
+import {
+  getMessaging,
+  getToken,
+  onMessage
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
 /* ================= EMAILJS (SAFE LOAD) ================= */
 const script = document.createElement("script");
 script.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js";
@@ -17,7 +24,7 @@ script.onload = () => {
   log("📧 EmailJS ready");
 };
 
-/* ================= EMAIL FUNCTION (CLEAN FIX) ================= */
+/* ================= EMAIL FUNCTION ================= */
 function sendEmail(message) {
   if (typeof emailjs === "undefined") {
     log("⚠️ EmailJS not loaded");
@@ -28,14 +35,75 @@ function sendEmail(message) {
     message: message,
     time: new Date().toLocaleString()
   })
-  .then(() => {
-    log("📩 Email sent");
-  })
+  .then(() => log("📩 Email sent"))
   .catch(err => {
     console.error(err);
     log("❌ Email failed");
   });
 }
+
+/* ================= SERVICE WORKER ================= */
+async function registerSW() {
+  if ("serviceWorker" in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+      log("✅ Service Worker registered");
+      return reg;
+    } catch (err) {
+      console.error(err);
+      log("❌ SW registration failed");
+    }
+  }
+}
+
+/* ================= PUSH SYSTEM ================= */
+async function initPush() {
+  try {
+    log("🔄 Starting push...");
+
+    const permission = await Notification.requestPermission();
+    log("Permission: " + permission);
+
+    if (permission !== "granted") {
+      log("❌ Notification denied");
+      return;
+    }
+
+    await registerSW();
+
+    const messaging = getMessaging();
+
+    const token = await getToken(messaging, {
+      vapidKey: "BMtRVhjhwqYJ9Gn5Imp5ZuqdeY_N4lX9mUiGg9uJoHl3-kH2b5vXTG6cp1zAtAxZe3eOLviglmOklScCIBWFIm4"
+    });
+
+    if (token) {
+      log("🔔 Push ready");
+
+      await setDoc(doc(db, "adminTokens", "main"), {
+        token: token
+      });
+
+    } else {
+      log("❌ No token");
+    }
+
+  } catch (err) {
+    console.error(err);
+    log("❌ Push error: " + err.message);
+  }
+}
+
+/* ================= FOREGROUND PUSH ================= */
+const messaging = getMessaging();
+onMessage(messaging, (payload) => {
+  log("🔔 " + payload.notification.title);
+
+  alert(
+    payload.notification.title + "\n" +
+    payload.notification.body
+  );
+});
 
 /* ================= ADMIN GUARD ================= */
 onAuthStateChanged(auth, async (user) => {
@@ -49,6 +117,9 @@ onAuthStateChanged(auth, async (user) => {
     location.href = "dashboard.html";
   } else {
     log("Admin logged in");
+
+    // 🔥 START PUSH
+    initPush();
   }
 });
 
@@ -87,7 +158,6 @@ window.createBlog = async () => {
 
     log("Blog created: " + title);
 
-    // ✅ EMAIL TRIGGER
     sendEmail("New blog created: " + title);
   }
 };
@@ -181,9 +251,7 @@ function loadSuggestions() {
       const s = d.data();
 
       box.innerHTML += `
-        <div class="item">
-          💡 ${s.text || "No text"}
-        </div>
+        <div class="item">💡 ${s.text || "No text"}</div>
       `;
     });
   });
