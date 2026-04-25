@@ -5,9 +5,16 @@ import {
   signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+/* ================= SAFE DOM ACCESS ================= */
+function getVal(id){
+  const el = document.getElementById(id);
+  return el ? el.value : "";
+}
+
+/* ================= SIGNUP ================= */
 window.signup = async function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = getVal("email");
+  const password = getVal("password");
 
   try {
     await createUserWithEmailAndPassword(auth, email, password);
@@ -18,9 +25,10 @@ window.signup = async function () {
   }
 };
 
+/* ================= LOGIN ================= */
 window.login = async function () {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = getVal("email");
+  const password = getVal("password");
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
