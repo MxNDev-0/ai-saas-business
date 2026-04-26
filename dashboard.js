@@ -13,7 +13,10 @@ import {
   onSnapshot,
   serverTimestamp,
   addDoc,
-  updateDoc
+  updateDoc,
+  query,
+  orderBy,
+  where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
@@ -32,6 +35,7 @@ onAuthStateChanged(auth, async (u) => {
 
   loadPrices();
   loadNotifications();
+  loadBroadcasts(); // ✅ NEW
   startLiveSystem();
 });
 
@@ -52,6 +56,33 @@ async function ensureUser() {
 async function loadUser() {
   const snap = await getDoc(doc(db, "users", user.uid));
   if (snap.exists()) userData = snap.data();
+}
+
+/* ================= BROADCAST SYSTEM (NEW) ================= */
+function loadBroadcasts() {
+  const box = document.getElementById("broadcastBox");
+  if (!box) return;
+
+  const q = query(
+    collection(db, "broadcasts"),
+    where("active", "==", true),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, (snapshot) => {
+    box.innerHTML = "";
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+
+      box.innerHTML += `
+        <div class="item">
+          <b>🔔 ${data.title}</b><br>
+          ${data.message}
+        </div>
+      `;
+    });
+  });
 }
 
 /* PRICES + LIVE UPDATE SYSTEM */
