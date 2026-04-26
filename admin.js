@@ -9,14 +9,10 @@ import {
   query, orderBy, getDocs, writeBatch, getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= SAFE MONITOR ================= */
+/* ================= MONITOR ================= */
 function log(msg) {
-  let box = document.getElementById("monitor");
-
-  if (!box) {
-    console.error("Monitor missing");
-    return;
-  }
+  const box = document.getElementById("monitor");
+  if (!box) return;
 
   const time = new Date().toLocaleTimeString();
 
@@ -27,13 +23,11 @@ function log(msg) {
   box.scrollTop = box.scrollHeight;
 }
 
-/* ================= SAFE BOOT ================= */
+/* ================= BOOT ================= */
 window.addEventListener("DOMContentLoaded", () => {
   const box = document.getElementById("monitor");
 
-  if (box) {
-    box.innerHTML = "🟢 Initializing Admin Panel...";
-  }
+  if (box) box.innerHTML = "🟢 Initializing Admin Panel...";
 
   setTimeout(() => {
     log("🚀 System ready");
@@ -41,59 +35,58 @@ window.addEventListener("DOMContentLoaded", () => {
   }, 500);
 });
 
-/* ================= ERROR CATCHER (CRITICAL) ================= */
-window.onerror = function (msg, url, line, col, error) {
-  log("❌ JS ERROR: " + msg);
-};
+/* ================= CHAT → MONITOR ================= */
+function loadChatToMonitor() {
+  const q = query(
+    collection(db, "chats/messages"),
+    orderBy("timestamp", "asc")
+  );
+
+  onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const msg = change.doc.data();
+        log(`💬 ${msg.username}: ${msg.text}`);
+      }
+    });
+  });
+}
 
 /* ================= BROADCAST ================= */
 window.sendBroadcast = async () => {
-  const title = document.getElementById("broadcastTitle").value;
-  const message = document.getElementById("broadcastMessage").value;
+  const title = broadcastTitle.value;
+  const message = broadcastMessage.value;
 
-  if (!title || !message) {
-    log("⚠️ Fill broadcast fields");
-    return;
-  }
+  if (!title || !message) return log("⚠️ Fill fields");
 
-  try {
-    await addDoc(collection(db, "broadcasts"), {
-      title,
-      message,
-      createdAt: Date.now(),
-      createdBy: auth.currentUser?.uid || "admin",
-      active: true
-    });
+  await addDoc(collection(db, "broadcasts"), {
+    title,
+    message,
+    createdAt: Date.now(),
+    createdBy: auth.currentUser?.uid || "admin",
+    active: true
+  });
 
-    log("🔔 Broadcast sent: " + title);
+  log("🔔 Broadcast sent: " + title);
 
-    broadcastTitle.value = "";
-    broadcastMessage.value = "";
-
-  } catch (err) {
-    log("❌ Broadcast failed");
-    console.error(err);
-  }
+  broadcastTitle.value = "";
+  broadcastMessage.value = "";
 };
 
 /* ================= ADMIN GUARD ================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "index.html";
 
-  try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    const role = snap.exists() ? snap.data().role : "user";
+  const snap = await getDoc(doc(db, "users", user.uid));
+  const role = snap.exists() ? snap.data().role : "user";
 
-    if (role !== "admin") {
-      alert("Access denied");
-      location.href = "dashboard.html";
-    } else {
-      log("🔐 Admin logged in");
-      startSystem();
-    }
-
-  } catch (err) {
-    log("❌ Admin check failed");
+  if (role !== "admin") {
+    alert("Access denied");
+    location.href = "dashboard.html";
+  } else {
+    log("🔐 Admin logged in");
+    startSystem();
+    loadChatToMonitor(); // ✅ CHAT IN MONITOR
   }
 });
 
@@ -104,25 +97,21 @@ function startSystem() {
   loadAdRequests();
 }
 
-/* ================= USERS ================= */
+/* USERS */
 function loadUsers() {
   const box = document.getElementById("usersList");
-  if (!box) return;
 
   onSnapshot(collection(db, "onlineUsers"), (snap) => {
     box.innerHTML = "";
-
     snap.forEach(d => {
-      const u = d.data();
-      box.innerHTML += `<div class="item">${u.email || "user"}</div>`;
+      box.innerHTML += `<div class="item">${d.data().email}</div>`;
     });
   });
 }
 
-/* ================= POSTS ================= */
+/* POSTS */
 function loadPosts() {
   const box = document.getElementById("postsList");
-  if (!box) return;
 
   onSnapshot(query(collection(db, "posts"), orderBy("time")), (snap) => {
     box.innerHTML = "";
@@ -155,10 +144,9 @@ window.clearAllPosts = async () => {
   log("🧹 All posts cleared");
 };
 
-/* ================= AD REQUESTS ================= */
+/* ADS */
 function loadAdRequests() {
   const box = document.getElementById("upgradeList");
-  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), (snap) => {
     box.innerHTML = "";
