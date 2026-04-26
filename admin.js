@@ -1,4 +1,3 @@
-alert("ADMIN JS RUNNING");
 import { auth, db } from "./firebase.js";
 import { app } from "./firebase.js";
 
