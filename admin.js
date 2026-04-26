@@ -1,6 +1,8 @@
 import { auth, db } from "./firebase.js";
 
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
   doc,
@@ -15,12 +17,13 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= MONITOR CORE (NEVER FAILS) ================= */
+/* ================= MONITOR ================= */
 function log(msg) {
   const box = document.getElementById("monitor");
   if (!box) return;
 
   const time = new Date().toLocaleTimeString();
+
   const line = document.createElement("div");
   line.textContent = `[${time}] ${msg}`;
 
@@ -28,110 +31,82 @@ function log(msg) {
   box.scrollTop = box.scrollHeight;
 }
 
-/* ================= SAFE BOOT (ALWAYS RUNS) ================= */
+/* ================= BOOT ================= */
 window.addEventListener("DOMContentLoaded", () => {
   const box = document.getElementById("monitor");
 
-  if (!box) {
-    console.error("❌ Monitor element missing");
-    return;
-  }
+  if (box) box.innerHTML = "🟢 Admin booting...";
 
-  box.innerHTML = "🟢 MCN Admin Booting...";
-  log("📡 DOM ready");
-  log("🖥 Monitor initialized");
-
-  // failsafe so you ALWAYS see something
   setTimeout(() => {
-    log("⏳ Waiting for authentication...");
+    log("System ready");
   }, 500);
 });
 
-/* ================= AUTH SYSTEM (FIXED SAFE VERSION) ================= */
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
-  try {
-    const box = document.getElementById("monitor");
+  if (!user) return location.href = "index.html";
 
-    if (!box) return;
+  const snap = await getDoc(doc(db, "users", user.uid));
+  const role = snap.exists() ? snap.data().role : "user";
 
-    if (!user) {
-      log("❌ No user detected → redirecting");
-      location.href = "index.html";
-      return;
-    }
-
-    log("🔐 User detected, verifying admin...");
-
-    const snap = await getDoc(doc(db, "users", user.uid));
-    const role = snap.exists() ? snap.data().role : "user";
-
-    if (role !== "admin") {
-      log("⛔ Access denied (not admin)");
-      alert("Access denied");
-      location.href = "dashboard.html";
-      return;
-    }
-
-    log("✅ Admin verified");
-    log("🚀 System online");
-
-    startSystem();
-
-  } catch (err) {
-    console.error(err);
-    log("❌ Auth error (Firestore or network issue)");
+  if (role !== "admin") {
+    alert("Access denied");
+    location.href = "dashboard.html";
+    return;
   }
+
+  log("Admin logged in");
+  startSystem();
 });
 
-/* ================= SYSTEM START ================= */
+/* ================= SYSTEM ================= */
 function startSystem() {
   loadUsers();
   loadPosts();
   loadAdRequests();
+  loadChatMonitor();
+}
 
-  log("📦 Admin modules loaded");
+/* ================= CHAT MONITOR ================= */
+function loadChatMonitor() {
+  onSnapshot(collection(db, "chats"), (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const m = change.doc.data();
+
+        const box = document.getElementById("monitor");
+
+        const line = document.createElement("div");
+        line.textContent = `💬 ${m.username}: ${m.text}`;
+
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+      }
+    });
+  });
 }
 
 /* ================= BROADCAST ================= */
 window.sendBroadcast = async () => {
-  try {
-    const title = document.getElementById("broadcastTitle");
-    const message = document.getElementById("broadcastMessage");
+  const title = document.getElementById("broadcastTitle");
+  const message = document.getElementById("broadcastMessage");
 
-    if (!title || !message) {
-      log("❌ Broadcast inputs missing");
-      return;
-    }
-
-    if (!title.value || !message.value) {
-      log("⚠️ Fill broadcast fields");
-      return;
-    }
-
-    const user = auth.currentUser;
-
-    if (!user) {
-      log("❌ Not authenticated");
-      return;
-    }
-
-    await addDoc(collection(db, "broadcasts"), {
-      title: title.value,
-      message: message.value,
-      createdAt: Date.now(),
-      createdBy: user.uid,
-      active: true
-    });
-
-    log("🔔 Broadcast sent: " + title.value);
-
-    title.value = "";
-    message.value = "";
-
-  } catch (err) {
-    console.error(err);
-    log("❌ Broadcast failed: " + err.message);
+  if (!title.value || !message.value) {
+    log("Fill fields");
+    return;
   }
+
+  await addDoc(collection(db, "broadcasts"), {
+    title: title.value,
+    message: message.value,
+    createdAt: Date.now(),
+    active: true
+  });
+
+  log("Broadcast sent");
+
+  title.value = "";
+  message.value = "";
 };
 
 /* ================= USERS ================= */
@@ -143,12 +118,8 @@ function loadUsers() {
     box.innerHTML = "";
 
     snap.forEach(d => {
-      const u = d.data();
-      box.innerHTML += `<div class="item">👤 ${u.email || "user"}</div>`;
+      box.innerHTML += `<div class="item">${d.data().email}</div>`;
     });
-
-    const stat = document.getElementById("statUsers");
-    if (stat) stat.innerText = snap.size;
   });
 }
 
@@ -161,11 +132,9 @@ function loadPosts() {
     box.innerHTML = "";
 
     snap.forEach(d => {
-      const p = d.data();
-
       box.innerHTML += `
         <div class="item">
-          ${p.text || ""}
+          ${d.data().text}
           <button onclick="deletePost('${d.id}')">Delete</button>
         </div>
       `;
@@ -175,7 +144,7 @@ function loadPosts() {
 
 window.deletePost = async (id) => {
   await deleteDoc(doc(db, "posts", id));
-  log("🗑 Post deleted");
+  log("Post deleted");
 };
 
 window.clearAllPosts = async () => {
@@ -185,7 +154,7 @@ window.clearAllPosts = async () => {
   snap.forEach(d => batch.delete(d.ref));
 
   await batch.commit();
-  log("🧹 All posts cleared");
+  log("All posts cleared");
 };
 
 /* ================= AD REQUESTS ================= */
@@ -197,35 +166,11 @@ function loadAdRequests() {
     box.innerHTML = "";
 
     snap.forEach(d => {
-      const ad = d.data();
-
       box.innerHTML += `
         <div class="item">
-          📢 ${ad.title || "No title"}<br>
-          Status: ${ad.status || "pending"}
+          ${d.data().title}
         </div>
       `;
     });
-
-    const stat = document.getElementById("statRequests");
-    if (stat) stat.innerText = snap.size;
   });
 }
-
-/* ================= STATS ================= */
-window.loadStats = async () => {
-  try {
-    log("📊 Loading stats...");
-
-    const blogsSnap = await getDocs(collection(db, "blogs"));
-
-    const views = document.getElementById("statViews");
-    if (views) views.innerText = blogsSnap.size;
-
-    log("📊 Stats refreshed");
-
-  } catch (err) {
-    console.error(err);
-    log("❌ Stats failed: " + err.message);
-  }
-};
