@@ -28,7 +28,36 @@ import {
 
 const messaging = getMessaging(app);
 
-/* ================= BROADCAST SYSTEM (NEW) ================= */
+/* ================= MONITOR FIX (IMPORTANT) ================= */
+function log(msg) {
+  const box = document.getElementById("monitor");
+
+  if (!box) {
+    console.warn("Monitor not ready:", msg);
+    return;
+  }
+
+  const time = new Date().toLocaleTimeString();
+  box.innerHTML += `[${time}] ${msg}<br>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+/* 🔥 FORCE MONITOR BOOT */
+window.addEventListener("DOMContentLoaded", () => {
+  const box = document.getElementById("monitor");
+
+  if (box) {
+    box.innerHTML = "🟢 Initializing MCN Engine Admin Monitor...<br>";
+  }
+
+  setTimeout(() => {
+    log("🚀 System ready");
+    log("🔐 Admin panel active");
+    log("📡 Live monitor online");
+  }, 400);
+});
+
+/* ================= BROADCAST SYSTEM ================= */
 window.sendBroadcast = async () => {
   const title = document.getElementById("broadcastTitle").value;
   const message = document.getElementById("broadcastMessage").value;
@@ -47,7 +76,8 @@ window.sendBroadcast = async () => {
       active: true
     });
 
-    log("🔔 Broadcast sent");
+    log(`🔔 Broadcast sent: ${title}`);
+    log(`📢 ${message}`);
 
     document.getElementById("broadcastTitle").value = "";
     document.getElementById("broadcastMessage").value = "";
@@ -72,16 +102,6 @@ onAuthStateChanged(auth, async (user) => {
     log("Admin logged in");
   }
 });
-
-/* ================= MONITOR ================= */
-function log(msg) {
-  const box = document.getElementById("monitor");
-  if (!box) return;
-
-  const time = new Date().toLocaleTimeString();
-  box.innerHTML += `[${time}] ${msg}<br>`;
-  box.scrollTop = box.scrollHeight;
-}
 
 /* ================= BLOG ================= */
 window.createBlog = async () => {
@@ -147,5 +167,3 @@ window.clearAllPosts = async () => {
 
 /* ================= INIT ================= */
 loadPosts();
-
-log("🚀 System ready");
