@@ -6,6 +6,23 @@ import {
   signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+/* 🔔 PUSH IMPORTS (NEW) */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
+/* 🔥 FIREBASE CONFIG (FOR PUSH ONLY) */
+const firebaseConfigPush = {
+  apiKey: "AIzaSyAu8BaL9NV6NU_oKSy-pxh89TuVrovZzaE",
+  authDomain: "ai-saas-business-ecfab.firebaseapp.com",
+  projectId: "ai-saas-business-ecfab",
+  messagingSenderId: "568523173235",
+  appId: "1:568523173235:web:b714d052976268f1e72906"
+};
+
+/* 🔔 INIT PUSH */
+const pushApp = initializeApp(firebaseConfigPush, "pushApp");
+const messaging = getMessaging(pushApp);
+
 /* ================= UI ELEMENT ================= */
 function showMessage(text, color = "#5bc0be") {
   let msg = document.getElementById("authMessage");
@@ -38,6 +55,41 @@ function setLoading(btn, state, text) {
   }
 }
 
+/* ================= 🔔 INIT PUSH FUNCTION ================= */
+async function initPush() {
+  try {
+    const permission = await Notification.requestPermission();
+
+    if (permission === "granted") {
+      console.log("✅ Notification allowed");
+
+      const token = await getToken(messaging, {
+        vapidKey: "BMtRVhjhwqYJ9Gn5Imp5ZuqdeY_N4lX9mUiGg9uJoHl3-kH2b5vXTG6cp1zAtAxZe3eOLviglmOklScCIBWFIm4"
+      });
+
+      console.log("🔑 USER TOKEN:", token);
+
+      /* OPTIONAL: SEND TOKEN TO BACKEND */
+      fetch("https://mxm-backend.onrender.com/save-token", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ token })
+      });
+
+    } else {
+      console.log("❌ Notification permission denied");
+    }
+
+  } catch (err) {
+    console.error("Push error:", err);
+  }
+}
+
+/* 🔔 FOREGROUND NOTIFICATION */
+onMessage(messaging, (payload) => {
+  alert(payload.notification.title + " - " + payload.notification.body);
+});
+
 /* ================= SIGNUP ================= */
 window.signup = async function () {
   const email = document.getElementById("email").value.trim();
@@ -54,6 +106,9 @@ window.signup = async function () {
     await createUserWithEmailAndPassword(auth, email, password);
 
     showMessage("Account created successfully!", "#00ff88");
+
+    /* 🔔 INIT PUSH AFTER SIGNUP */
+    initPush();
 
     setTimeout(() => {
       document.getElementById("loginModal").style.display = "none";
@@ -83,6 +138,9 @@ window.login = async function () {
     await signInWithEmailAndPassword(auth, email, password);
 
     showMessage("Login successful!", "#00ff88");
+
+    /* 🔔 INIT PUSH AFTER LOGIN */
+    initPush();
 
     setTimeout(() => {
       document.getElementById("loginModal").style.display = "none";
