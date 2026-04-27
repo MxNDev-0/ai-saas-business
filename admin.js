@@ -63,10 +63,38 @@ function startSystem() {
   loadUsers();
   loadPosts();
   loadAdRequests();
-  loadEventMonitor(); // 🔥 NEW UNIFIED MONITOR
+  loadEventMonitor();
+  bridgeChatsToEvents(); // 🔥 FIX ADDED
 }
 
-/* ================= UNIFIED MONITOR (CHAT + LOGS) ================= */
+/* ================= 🔥 BRIDGE (CRITICAL FIX) ================= */
+function bridgeChatsToEvents() {
+  onSnapshot(collection(db, "chats"), (snap) => {
+    snap.docChanges().forEach(async (change) => {
+      if (change.type === "added") {
+        const m = change.doc.data();
+
+        // prevent duplicate re-insert
+        if (m._eventCreated) return;
+
+        await addDoc(collection(db, "events"), {
+          type: "chat",
+          text: m.text,
+          uid: m.uid,
+          username: m.username,
+          createdAt: m.createdAt || serverTimestamp()
+        });
+
+        // mark original message (optional safety)
+        try {
+          await change.doc.ref.update({ _eventCreated: true });
+        } catch {}
+      }
+    });
+  });
+}
+
+/* ================= UNIFIED MONITOR ================= */
 function loadEventMonitor() {
   const box = document.getElementById("monitor");
   if (!box) return;
@@ -187,7 +215,7 @@ function loadAdRequests() {
   });
 }
 
-/* ================= QUICK ACTIONS ================= */
+/* ================= ACTIONS ================= */
 window.openUser = (uid) => {
   alert("Open user profile: " + uid);
 };
