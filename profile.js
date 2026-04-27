@@ -15,7 +15,6 @@ import {
   doc,
   getDoc,
   setDoc,
-  deleteDoc,
   where,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -38,15 +37,12 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  log("User logged in");
+  log("🟢 Profile loaded");
 
   loadUsername();
   loadFriendRequests();
   loadFriends();
-
-  // 🔥 NEW
-  loadNotifications();
-  monitorAdRequests();
+  loadChatMonitor();
 });
 
 /* ================= USERNAME ================= */
@@ -80,86 +76,120 @@ window.updateUsername = async () => {
 window.resetPassword = async () => {
   await sendPasswordResetEmail(auth, user.email);
   alert("Reset email sent");
-
-  log("Password reset email sent");
+  log("Password reset sent");
 };
 
-/* ================= 🔥 REAL NOTIFICATIONS ================= */
-function loadNotifications() {
-  const ref = collection(db, "notifications", user.uid, "items");
+/* ================= 🔥 CHAT SYSTEM (MONITOR CORE) ================= */
 
-  onSnapshot(query(ref, orderBy("createdAt", "desc")), (snap) => {
-    snap.docChanges().forEach(change => {
-      if (change.type === "added") {
-        const data = change.doc.data();
+const chatRef = collection(db, "chats", "global", "messages");
 
-        log(data.text || "New notification");
+/* SEND MESSAGE */
+window.sendChat = async () => {
+  const input = document.getElementById("chatInput");
+  if (!input || !input.value.trim()) return;
 
-        // 🔥 update message counter
-        const msgCount = document.getElementById("msgCount");
-        if (msgCount) {
-          msgCount.innerText = Number(msgCount.innerText) + 1;
-        }
-      }
+  try {
+    await addDoc(chatRef, {
+      text: input.value,
+      uid: user.uid,
+      username: user.email.split("@")[0],
+      createdAt: serverTimestamp()
     });
-  });
-}
 
-/* ================= 🔥 AD REQUEST MONITOR ================= */
-function monitorAdRequests() {
-  const q = query(
-    collection(db, "adRequests"),
-    where("userId", "==", user.uid)
-  );
+    input.value = "";
 
-  onSnapshot(q, (snap) => {
-    let active = "No active ads";
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+/* LOAD CHAT INTO MONITOR */
+function loadChatMonitor() {
+  const box = document.getElementById("monitor");
+  if (!box) return;
+
+  onSnapshot(query(chatRef, orderBy("createdAt")), (snap) => {
+    box.innerHTML = "";
 
     snap.forEach(d => {
-      const ad = d.data();
+      const m = d.data();
 
-      if (ad.status === "approved") {
-        active = "Active";
-        log("✅ Ad approved");
-      }
+      const line = document.createElement("div");
+      line.innerHTML = `
+        💬 <b onclick="openUser('${m.uid}','${m.username}')"
+             style="color:#5bc0be; cursor:pointer;">
+          ${m.username}
+        </b>: ${m.text}
+      `;
 
-      if (ad.status === "rejected") {
-        log("❌ Ad rejected");
-      }
-
-      if (ad.status === "pending") {
-        log("⏳ Ad request pending");
-      }
+      box.appendChild(line);
     });
 
-    const el = document.getElementById("adStatus");
-    if (el) el.innerText = active;
+    box.scrollTop = box.scrollHeight;
   });
 }
 
-/* ================= FRIEND REQUEST ================= */
+loadChatMonitor();
+
+/* USER CLICK (DM HOOK) */
+window.openUser = (uid, name) => {
+  log("Selected user: " + name);
+  // future: open DM popup
+};
+
+/* ================= ACTIVATE CHAT INPUT ================= */
+window.enableChat = () => {
+  const input = document.getElementById("chatInput");
+  const btn = document.getElementById("sendBtn");
+
+  if (input) input.style.display = "block";
+  if (btn) btn.style.display = "block";
+
+  input.focus();
+};
+
+/* ================= FRIEND SYSTEM ================= */
 window.sendFriendRequest = async function (toUid, toName) {
   if (!user || user.uid === toUid) return;
 
   await addDoc(collection(db, "friendRequests"), {
     from: user.uid,
-    fromName: user.email.split("@")[0],
     to: toUid,
-    toName,
     status: "pending",
-    createdAt: serverTimestamp()
-  });
-
-  await addDoc(collection(db, "notifications", toUid, "items"), {
-    text: `${user.email.split("@")[0]} sent you a friend request`,
-    seen: false,
     createdAt: serverTimestamp()
   });
 
   log("Friend request sent");
 };
 
-/* ================= LOAD REQUESTS ================= */
+/* ================= FRIEND LIST ================= */
+function loadFriends() {
+  const box = document.getElementById("friendsBox");
+  if (!box) return;
+
+  onSnapshot(collection(db, "friends"), (snap) => {
+    let html = "";
+
+    snap.forEach(d => {
+      const f = d.data();
+
+      if (f.userA !== user.uid && f.userB !== user.uid) return;
+
+      const friendId = f.userA === user.uid ? f.userB : f.userA;
+
+      html += `
+        <div class="card">
+          👤 ${friendId}
+          <button onclick="openUser('${friendId}','Friend')">DM</button>
+        </div>
+      `;
+    });
+
+    box.innerHTML = html;
+  });
+}
+
+/* ================= FRIEND REQUESTS ================= */
 function loadFriendRequests() {
   const box = document.getElementById("friendRequestsBox");
   if (!box) return;
@@ -178,71 +208,7 @@ function loadFriendRequests() {
 
       html += `
         <div class="card">
-          <b>${r.fromName}</b> sent a friend request
-          <div style="margin-top:6px;">
-            <button onclick="acceptFriend('${d.id}','${r.from}')">Accept</button>
-            <button onclick="rejectFriend('${d.id}')">Reject</button>
-          </div>
-        </div>
-      `;
-    });
-
-    box.innerHTML = html;
-  });
-}
-
-/* ================= ACCEPT ================= */
-window.acceptFriend = async function (id, fromUid) {
-  await updateDoc(doc(db, "friendRequests", id), {
-    status: "accepted"
-  });
-
-  await addDoc(collection(db, "friends"), {
-    userA: user.uid,
-    userB: fromUid,
-    createdAt: serverTimestamp()
-  });
-
-  await addDoc(collection(db, "notifications", fromUid, "items"), {
-    text: `${user.email.split("@")[0]} accepted your request`,
-    seen: false,
-    createdAt: serverTimestamp()
-  });
-
-  log("Friend request accepted");
-};
-
-/* ================= REJECT ================= */
-window.rejectFriend = async function (id) {
-  await updateDoc(doc(db, "friendRequests", id), {
-    status: "rejected"
-  });
-
-  log("Friend request rejected");
-};
-
-/* ================= FRIEND LIST ================= */
-function loadFriends() {
-  const box = document.getElementById("friendsBox");
-  if (!box) return;
-
-  const q = query(collection(db, "friends"));
-
-  onSnapshot(q, (snap) => {
-    let html = "";
-
-    snap.forEach(d => {
-      const f = d.data();
-
-      if (f.userA !== user.uid && f.userB !== user.uid) return;
-
-      const friendId =
-        f.userA === user.uid ? f.userB : f.userA;
-
-      html += `
-        <div class="card">
-          👤 ${friendId}
-          <button onclick="openProfile('${friendId}')">View</button>
+          <b>${r.from}</b> sent request
         </div>
       `;
     });
