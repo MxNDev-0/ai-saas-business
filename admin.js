@@ -16,7 +16,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= MONITOR CORE ================= */
+/* ================= MONITOR ================= */
 function log(msg) {
   const box = document.getElementById("monitor");
   if (!box) return;
@@ -42,6 +42,8 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ================= AUTH ================= */
+let adminUser = null;
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) return location.href = "index.html";
 
@@ -54,6 +56,8 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  adminUser = user;
+
   log("Admin verified");
   startSystem();
 });
@@ -64,17 +68,16 @@ function startSystem() {
   loadPosts();
   loadAdRequests();
   loadEventMonitor();
-  bridgeChatsToEvents(); // 🔥 FIX ADDED
+  bridgeChatsToEvents();
 }
 
-/* ================= 🔥 BRIDGE (CRITICAL FIX) ================= */
+/* ================= CHAT → EVENTS ================= */
 function bridgeChatsToEvents() {
   onSnapshot(collection(db, "chats"), (snap) => {
     snap.docChanges().forEach(async (change) => {
       if (change.type === "added") {
         const m = change.doc.data();
 
-        // prevent duplicate re-insert
         if (m._eventCreated) return;
 
         await addDoc(collection(db, "events"), {
@@ -85,7 +88,6 @@ function bridgeChatsToEvents() {
           createdAt: m.createdAt || serverTimestamp()
         });
 
-        // mark original message (optional safety)
         try {
           await change.doc.ref.update({ _eventCreated: true });
         } catch {}
@@ -94,7 +96,7 @@ function bridgeChatsToEvents() {
   });
 }
 
-/* ================= UNIFIED MONITOR ================= */
+/* ================= MONITOR ================= */
 function loadEventMonitor() {
   const box = document.getElementById("monitor");
   if (!box) return;
@@ -109,7 +111,7 @@ function loadEventMonitor() {
         box.innerHTML += `
           <div style="padding:6px;border-bottom:1px solid #222;">
             💬 <b onclick="openUser('${e.uid}')">${e.username}</b>: ${e.text}
-            <button onclick="replyToUser('${e.uid}')">↩</button>
+            <button onclick="replyToUser('${e.uid}', '${e.username}')">↩</button>
           </div>
         `;
       }
@@ -127,27 +129,28 @@ function loadEventMonitor() {
   });
 }
 
-/* ================= BROADCAST ================= */
-window.sendBroadcast = async () => {
-  const title = document.getElementById("broadcastTitle");
-  const message = document.getElementById("broadcastMessage");
+/* ================= 🔥 DM SYSTEM ================= */
+window.replyToUser = async (uid, username) => {
+  const message = prompt(`Reply to ${username}`);
 
-  if (!title.value || !message.value) {
-    log("Fill fields");
-    return;
-  }
+  if (!message || !message.trim()) return;
 
-  await addDoc(collection(db, "broadcasts"), {
-    title: title.value,
-    message: message.value,
-    createdAt: serverTimestamp(),
-    active: true
+  const chatId = [adminUser.uid, uid].sort().join("_");
+
+  await addDoc(collection(db, "dms", chatId, "messages"), {
+    text: message,
+    from: adminUser.uid,
+    to: uid,
+    createdAt: serverTimestamp()
   });
 
-  log("Broadcast sent");
+  // 🔔 Notify user
+  await addDoc(collection(db, "notifications", uid, "items"), {
+    text: `📩 Admin replied to you`,
+    createdAt: serverTimestamp()
+  });
 
-  title.value = "";
-  message.value = "";
+  log(`DM sent to ${username}`);
 };
 
 /* ================= USERS ================= */
@@ -197,7 +200,7 @@ window.clearAllPosts = async () => {
   log("All posts cleared");
 };
 
-/* ================= AD REQUESTS ================= */
+/* ================= ADS ================= */
 function loadAdRequests() {
   const box = document.getElementById("upgradeList");
   if (!box) return;
@@ -215,11 +218,7 @@ function loadAdRequests() {
   });
 }
 
-/* ================= ACTIONS ================= */
+/* ================= PROFILE ================= */
 window.openUser = (uid) => {
-  alert("Open user profile: " + uid);
-};
-
-window.replyToUser = (uid) => {
-  alert("Reply to user: " + uid);
+  alert("Profile system coming next: " + uid);
 };
