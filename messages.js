@@ -10,14 +10,18 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
 let chatId = null;
+let currentChatUser = null;
+
+const adminId = "pmXooqSVxdO53xiCugrqDijR6iI3";
 
 /* ================= AUTH ================= */
-onAuthStateChanged(auth, (u) => {
+onAuthStateChanged(auth, async (u) => {
   if (!u) {
     location.href = "index.html";
     return;
@@ -25,15 +29,23 @@ onAuthStateChanged(auth, (u) => {
 
   user = u;
 
-  // 🔥 ADMIN UID (already correct)
-  const adminId = "pmXooqSVxdO53xiCugrqDijR6iI3";
+  // default = admin chat
+  openChat(adminId);
 
-  chatId = [user.uid, adminId].sort().join("_");
-
-  loadMessages();
+  // build inbox
+  loadInbox();
 });
 
-/* ================= LOAD ================= */
+/* ================= OPEN CHAT ================= */
+function openChat(otherUserId) {
+  currentChatUser = otherUserId;
+
+  chatId = [user.uid, otherUserId].sort().join("_");
+
+  loadMessages();
+}
+
+/* ================= LOAD MESSAGES ================= */
 function loadMessages() {
   const box = document.getElementById("chatBox");
 
@@ -65,12 +77,7 @@ window.sendMsg = async function () {
     const input = document.getElementById("msgInput");
 
     if (!input.value.trim()) return;
-
-    // 🚫 prevent sending before auth/chat ready
-    if (!user || !chatId) {
-      console.log("Chat not ready yet");
-      return;
-    }
+    if (!user || !chatId) return;
 
     await addDoc(collection(db, "dms", chatId, "messages"), {
       text: input.value.trim(),
@@ -81,8 +88,8 @@ window.sendMsg = async function () {
     input.value = "";
 
   } catch (err) {
-    console.error("Send error:", err);
-    alert("Message failed to send");
+    console.error(err);
+    alert("Message failed");
   }
 };
 
@@ -92,9 +99,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (input) {
     input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        sendMsg();
-      }
+      if (e.key === "Enter") sendMsg();
     });
   }
 });
+
+/* ================= INBOX SYSTEM ================= */
+async function loadInbox() {
+  const inbox = document.getElementById("inboxList");
+  if (!inbox) return;
+
+  inbox.innerHTML = "Loading...";
+
+  try {
+    const dmsRef = collection(db, "dms");
+    const snapshot = await getDocs(dmsRef);
+
+    inbox.innerHTML = "";
+
+    snapshot.forEach(docSnap => {
+      const id = docSnap.id;
+
+      // chatId format: uid_uid
+      if (!id.includes(user.uid)) return;
+
+      const parts = id.split("_");
+      const otherUser = parts[0] === user.uid ? parts[1] : parts[0];
+
+      const div = document.createElement("div");
+      div.className = "inbox-item";
+      div.textContent = otherUser;
+
+      div.onclick = () => {
+        openChat(otherUser);
+      };
+
+      inbox.appendChild(div);
+    });
+
+    // fallback if no chats
+    if (inbox.innerHTML === "") {
+      inbox.innerHTML = "<div style='padding:10px;'>No conversations yet</div>";
+    }
+
+  } catch (err) {
+    console.error("Inbox error:", err);
+    inbox.innerHTML = "Failed to load inbox";
+  }
+}
