@@ -4,8 +4,6 @@
   <title>MCN Engine Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
-
   <style>
     body {
       margin: 0;
@@ -30,17 +28,8 @@
       cursor: pointer;
     }
 
-    #dropdownMenu {
-      display: none;
-      padding: 10px;
-      background: #1c2541;
-      margin: 10px;
-      border-radius: 10px;
-    }
-
     .monitor {
       background: #000;
-      color: #fff;
       font-size: 13px;
       height: 120px;
       overflow-y: auto;
@@ -57,12 +46,6 @@
       margin: 10px;
       padding: 10px;
       border-radius: 12px;
-      animation: glow 2s infinite alternate;
-    }
-
-    @keyframes glow {
-      from { box-shadow: 0 0 5px #5bc0be; }
-      to { box-shadow: 0 0 15px #5bc0be; }
     }
 
     .avatar {
@@ -85,60 +68,32 @@
       border-radius: 12px;
     }
 
-    .chat-row {
-      display: flex;
-      gap: 6px;
-      margin: 10px;
-    }
-
-    .chat-row input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-
-    .chat-row button {
-      width: 80px;
-      border-radius: 8px;
-      border: none;
-      background: #5bc0be;
-      font-weight: bold;
-    }
-
-    .popup {
-      display: none;
-      position: fixed;
-      top: 20%;
-      left: 10%;
-      right: 10%;
-      background: #1c2541;
-      padding: 12px;
-      border-radius: 12px;
-    }
-
-    /* 🔥 NEW CLEAN USER ROW */
+    /* 🔥 ONLINE USERS FIX */
     .user-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #0b132b;
-      padding: 8px;
-      margin-top: 6px;
-      border-radius: 8px;
+      background: #0f1a2f;
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
     }
 
-    .user-info {
+    .user-left {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .online-dot {
-      width: 8px;
-      height: 8px;
+    .dot {
+      width: 10px;
+      height: 10px;
       background: #00ff88;
       border-radius: 50%;
+    }
+
+    .name {
+      font-size: 14px;
     }
 
     .user-actions {
@@ -146,15 +101,21 @@
       gap: 6px;
     }
 
-    .small-btn {
+    .user-actions button {
       padding: 4px 8px;
       font-size: 12px;
-      border: none;
       border-radius: 6px;
+      border: none;
       cursor: pointer;
+    }
+
+    .btn-add {
       background: #5bc0be;
-      color: black;
-      font-weight: bold;
+    }
+
+    .btn-msg {
+      background: #3a86ff;
+      color: white;
     }
   </style>
 </head>
@@ -164,30 +125,10 @@
 <div class="navbar">
   <button class="icon-btn" onclick="location.href='dashboard.html'">Back</button>
   <h3>Profile</h3>
-  <button class="icon-btn" onclick="toggleMenu()">☰</button>
-</div>
-
-<div id="dropdownMenu">
-  <h4 id="usernameDisplay">Loading...</h4>
-
-  <input id="usernameInput" placeholder="New username">
-  <button onclick="updateUsername()">Save Username</button>
-
-  <button onclick="resetPassword()">Reset Password</button>
-
-  <hr>
-
-  <button onclick="openRequests()">👥 Requests</button>
-  <button onclick="openFriends()">👤 Friends</button>
 </div>
 
 <div id="monitor" class="monitor">
   [SYSTEM] Profile monitor started...
-</div>
-
-<div class="chat-row">
-  <input id="chatInput" placeholder="Type message...">
-  <button onclick="sendChat()">Send</button>
 </div>
 
 <div class="profile-header">
@@ -195,51 +136,11 @@
   <div class="username">Online Users</div>
 </div>
 
-<!-- 🔥 ONLINE USERS -->
 <div class="card">
-  <h4>🟢 Users Online</h4>
   <div id="onlineUsers"></div>
 </div>
 
-<div id="requestsPopup" class="popup">
-  <h4>Friend Requests</h4>
-  <div id="friendRequestsBox"></div>
-  <button onclick="closePopup('requestsPopup')">Close</button>
-</div>
-
-<div id="friendsPopup" class="popup">
-  <h4>Friends</h4>
-  <div id="friendsBox"></div>
-  <button onclick="closePopup('friendsPopup')">Close</button>
-</div>
-
-<div class="card">
-  <h4>📊 Activity Overview</h4>
-  <p>Ad Status: <b id="adStatus">No active ads</b></p>
-  <p>
-    Messages:
-    <b id="msgCount">0</b>
-    <span id="msgBadge" style="margin-left:6px;"></span>
-  </p>
-</div>
-
 <script type="module" src="profile.js"></script>
-
-<script>
-function toggleMenu() {
-  const menu = document.getElementById("dropdownMenu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
-}
-
-document.addEventListener("click", function (e) {
-  const menu = document.getElementById("dropdownMenu");
-  if (menu.style.display === "block" &&
-      !menu.contains(e.target) &&
-      !e.target.classList.contains("icon-btn")) {
-    menu.style.display = "none";
-  }
-});
-</script>
 
 </body>
 </html>
