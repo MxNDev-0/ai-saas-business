@@ -29,10 +29,7 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  // default = admin chat
   openChat(adminId);
-
-  // build inbox
   loadInbox();
 });
 
@@ -71,7 +68,7 @@ function loadMessages() {
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMsg = async function () {
   try {
     const input = document.getElementById("msgInput");
@@ -79,9 +76,21 @@ window.sendMsg = async function () {
     if (!input.value.trim()) return;
     if (!user || !chatId) return;
 
+    const text = input.value.trim();
+
     await addDoc(collection(db, "dms", chatId, "messages"), {
-      text: input.value.trim(),
+      text,
       from: user.uid,
+      to: currentChatUser,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    // 🔥 ADMIN MONITOR EVENT (NO MESSAGE CONTENT)
+    await addDoc(collection(db, "events"), {
+      type: "dm",
+      from: user.uid,
+      to: currentChatUser,
       createdAt: serverTimestamp()
     });
 
@@ -120,7 +129,6 @@ async function loadInbox() {
     snapshot.forEach(docSnap => {
       const id = docSnap.id;
 
-      // chatId format: uid_uid
       if (!id.includes(user.uid)) return;
 
       const parts = id.split("_");
@@ -137,7 +145,6 @@ async function loadInbox() {
       inbox.appendChild(div);
     });
 
-    // fallback if no chats
     if (inbox.innerHTML === "") {
       inbox.innerHTML = "<div style='padding:10px;'>No conversations yet</div>";
     }
