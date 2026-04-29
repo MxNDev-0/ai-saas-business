@@ -101,29 +101,58 @@ function loadDMCount() {
   const el = document.getElementById("msgCount");
   if (!el) return;
 
-  onSnapshot(collection(db, "dms"), (snap) => {
-    let count = 0;
+  const unreadMap = new Map();
 
-    snap.forEach(docSnap => {
-      const chatId = docSnap.id;
+  onSnapshot(collection(db, "dms"), (snap) => {
+
+    snap.forEach(chatDoc => {
+      const chatId = chatDoc.id;
 
       if (!chatId.includes(user.uid)) return;
 
       const messagesRef = collection(db, "dms", chatId, "messages");
 
       onSnapshot(messagesRef, (msgSnap) => {
+
+        let unread = 0;
+
         msgSnap.forEach(m => {
           const data = m.data();
 
+          // only messages sent TO user and not read
           if (data.to === user.uid && data.read === false) {
-            count++;
+            unread++;
           }
         });
 
-        el.innerText = count;
+        unreadMap.set(chatId, unread);
+
+        updateTotalUnread();
       });
+
     });
+
   });
+
+  function updateTotalUnread() {
+    let total = 0;
+
+    unreadMap.forEach(val => {
+      total += val;
+    });
+
+    // 🔥 MAIN PROFILE BADGE UPDATE
+    el.innerText = total;
+
+    // 🔥 OPTIONAL: visual alert effect
+    if (total > 0) {
+      el.style.color = "#ff4d4d";
+      el.style.fontWeight = "bold";
+    } else {
+      el.style.color = "#fff";
+      el.style.fontWeight = "normal";
+    }
+  }
 }
 
 /* ================= CRYPTO ================= */
