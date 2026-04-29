@@ -11,12 +11,13 @@ import {
   onSnapshot,
   query,
   orderBy,
-  updateDoc,
   doc,
   getDoc,
   getDocs,
   setDoc,
   where,
+  updateDoc,
+  deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -32,7 +33,6 @@ function log(msg, color = "#fff") {
   const line = document.createElement("div");
   line.innerHTML = `[${time}] ${msg}`;
   line.style.color = color;
-  line.style.fontSize = "13px";
 
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
@@ -48,17 +48,154 @@ onAuthStateChanged(auth, async (u) => {
   log("User authenticated");
 
   loadUsername();
-  loadFriendRequests();
-  loadFriends();
   loadNotifications();
   monitorAdRequests();
   loadChat();
   startCryptoMonitor();
 
-  loadDMCount();
+  // 🔥 FRIEND SYSTEM
+  loadAllUsers();
+  loadFriendRequests();
+  loadFriends();
 });
 
-/* ================= CHAT SYSTEM ================= */
+/* ================= LOAD ALL USERS ================= */
+function loadAllUsers() {
+  const box = document.getElementById("friendRequestsBox");
+  if (!box) return;
+
+  onSnapshot(collection(db, "users"), (snap) => {
+    box.innerHTML = "<h4>👥 Users</h4>";
+
+    snap.forEach(docSnap => {
+      const u = docSnap.data();
+      const uid = docSnap.id;
+
+      if (uid === user.uid) return;
+
+      const div = document.createElement("div");
+      div.style.marginBottom = "8px";
+
+      div.innerHTML = `
+        <b>${u.username || "User"}</b>
+        <button onclick="sendFriendRequest('${uid}','${u.username || "User"}')">Add</button>
+        <button onclick="startDM('${uid}')">Message</button>
+      `;
+
+      box.appendChild(div);
+    });
+  });
+}
+
+/* ================= SEND REQUEST ================= */
+window.sendFriendRequest = async function (toUid, toName) {
+  if (toUid === user.uid) return;
+
+  await addDoc(collection(db, "friendRequests"), {
+    from: user.uid,
+    fromName: user.email.split("@")[0],
+    to: toUid,
+    toName,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+
+  log("Friend request sent");
+};
+
+/* ================= LOAD REQUESTS ================= */
+function loadFriendRequests() {
+  const box = document.getElementById("friendRequestsBox");
+  if (!box) return;
+
+  const q = query(
+    collection(db, "friendRequests"),
+    where("to", "==", user.uid),
+    where("status", "==", "pending")
+  );
+
+  onSnapshot(q, (snap) => {
+    snap.forEach(docSnap => {
+      const r = docSnap.data();
+
+      const div = document.createElement("div");
+
+      div.innerHTML = `
+        <b>${r.fromName}</b>
+        <button onclick="acceptRequest('${docSnap.id}','${r.from}','${r.fromName}')">Accept</button>
+        <button onclick="rejectRequest('${docSnap.id}')">Reject</button>
+      `;
+
+      box.appendChild(div);
+    });
+  });
+}
+
+/* ================= ACCEPT ================= */
+window.acceptRequest = async (id, fromUid, fromName) => {
+
+  // add to friends (both users)
+  await addDoc(collection(db, "friends"), {
+    user1: user.uid,
+    user2: fromUid,
+    createdAt: serverTimestamp()
+  });
+
+  await updateDoc(doc(db, "friendRequests", id), {
+    status: "accepted"
+  });
+
+  log(`You are now friends with ${fromName}`);
+};
+
+/* ================= REJECT ================= */
+window.rejectRequest = async (id) => {
+  await updateDoc(doc(db, "friendRequests", id), {
+    status: "rejected"
+  });
+
+  log("Friend request rejected");
+};
+
+/* ================= LOAD FRIENDS ================= */
+function loadFriends() {
+  const box = document.getElementById("friendsBox");
+  if (!box) return;
+
+  onSnapshot(collection(db, "friends"), async (snap) => {
+    box.innerHTML = "";
+
+    for (const d of snap.docs) {
+      const f = d.data();
+
+      let friendId = null;
+
+      if (f.user1 === user.uid) friendId = f.user2;
+      if (f.user2 === user.uid) friendId = f.user1;
+
+      if (!friendId) continue;
+
+      const userSnap = await getDoc(doc(db, "users", friendId));
+      const name = userSnap.exists() ? userSnap.data().username : "User";
+
+      const div = document.createElement("div");
+
+      div.innerHTML = `
+        <b>${name}</b>
+        <button onclick="startDM('${friendId}')">Chat</button>
+      `;
+
+      box.appendChild(div);
+    }
+  });
+}
+
+/* ================= START DM ================= */
+window.startDM = function (uid) {
+  location.href = "messages.html?uid=" + uid;
+};
+
+/* ================= CHAT ================= */
 function loadChat() {
   const q = query(collection(db, "chats"), orderBy("createdAt"));
 
@@ -72,119 +209,17 @@ function loadChat() {
   });
 }
 
-window.sendChat = async function () {
-  const input = document.getElementById("chatInput");
-  if (!input || !input.value.trim()) return;
-
-  const text = input.value;
-
-  log(`💬 <b>You</b>: ${text}`, "#5bc0be");
-
-  input.value = "";
-
-  try {
-    await addDoc(collection(db, "chats"), {
-      text: text,
-      uid: user.uid,
-      username: user.email.split("@")[0],
-      createdAt: serverTimestamp()
-    });
-  } catch (e) {
-    log("Message failed to send", "#ff4d4d");
-  }
-};
-
-/* ================= 🔥 FIXED DM COUNT SYSTEM ================= */
-function loadDMCount() {
-  const el = document.getElementById("msgCount");
-  const badge = document.getElementById("msgBadge");
-
-  if (!el) return;
-
-  const unreadMap = new Map();
-
-  onSnapshot(collection(db, "dms"), (snap) => {
-
-    snap.forEach(chatDoc => {
-      const chatId = chatDoc.id;
-
-      if (!chatId.includes(user.uid)) return;
-
-      const messagesRef = collection(db, "dms", chatId, "messages");
-
-      onSnapshot(messagesRef, (msgSnap) => {
-
-        let unread = 0;
-
-        msgSnap.forEach(m => {
-          const data = m.data();
-
-          if (data.to === user.uid && data.read === false) {
-            unread++;
-          }
-        });
-
-        unreadMap.set(chatId, unread);
-
-        updateTotalUnread();
-      });
-
-    });
-
-  });
-
-  function updateTotalUnread() {
-    let total = 0;
-
-    unreadMap.forEach(val => {
-      total += val;
-    });
-
-    el.innerText = total;
-
-    if (total > 0) {
-      el.style.color = "#ff4d4d";
-      el.style.fontWeight = "bold";
-
-      if (badge) badge.innerHTML = "🔴 NEW";
-    } else {
-      el.style.color = "#fff";
-      el.style.fontWeight = "normal";
-
-      if (badge) badge.innerHTML = "";
-    }
-  }
-}
-
 /* ================= CRYPTO ================= */
-let lastBTC = null;
-let lastETH = null;
-
-async function fetchCrypto() {
-  try {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,ngn"
-    );
-
-    const data = await res.json();
-
-    const btc = data.bitcoin.usd;
-    const eth = data.ethereum.usd;
-
-    log(`BTC → $${btc.toLocaleString()} | ₦${data.bitcoin.ngn.toLocaleString()}`, "#ccc");
-    log(`ETH → $${eth.toLocaleString()} | ₦${data.ethereum.ngn.toLocaleString()}`, "#ccc");
-
-    lastBTC = btc;
-    lastETH = eth;
-
-  } catch (e) {
-    log("Crypto fetch failed", "#ff4d4d");
-  }
-}
-
 function startCryptoMonitor() {
-  fetchCrypto();
-  setInterval(fetchCrypto, 30000);
+  setInterval(async () => {
+    try {
+      const res = await fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
+      );
+      const data = await res.json();
+      log(`BTC → $${data.bitcoin.usd}`, "#ccc");
+    } catch {}
+  }, 30000);
 }
 
 /* ================= USER ================= */
@@ -192,34 +227,15 @@ async function loadUsername() {
   const snap = await getDoc(doc(db, "users", user.uid));
   const el = document.getElementById("usernameDisplay");
 
-  if (snap.exists() && snap.data().username) {
-    el.innerText = snap.data().username;
-  } else {
-    el.innerText = "Not set";
+  if (snap.exists()) {
+    el.innerText = snap.data().username || "User";
   }
 }
-
-/* ================= UPDATE USERNAME ================= */
-window.updateUsername = async () => {
-  const input = document.getElementById("usernameInput");
-  const username = input.value.trim();
-
-  if (!username) return alert("Enter username");
-
-  await setDoc(doc(db, "users", user.uid), { username }, { merge: true });
-
-  document.getElementById("usernameDisplay").innerText = username;
-  input.value = "";
-
-  log("Username updated");
-};
 
 /* ================= RESET PASSWORD ================= */
 window.resetPassword = async () => {
   await sendPasswordResetEmail(auth, user.email);
   alert("Reset email sent");
-
-  log("Password reset email sent");
 };
 
 /* ================= NOTIFICATIONS ================= */
@@ -229,8 +245,7 @@ function loadNotifications() {
   onSnapshot(query(ref, orderBy("createdAt", "desc")), (snap) => {
     snap.docChanges().forEach(change => {
       if (change.type === "added") {
-        const data = change.doc.data();
-        log(data.text || "New notification", "#ccc");
+        log("🔔 New notification", "#ccc");
       }
     });
   });
@@ -244,42 +259,11 @@ function monitorAdRequests() {
   );
 
   onSnapshot(q, (snap) => {
-    let active = "No active ads";
-
     snap.forEach(d => {
       const ad = d.data();
 
-      if (ad.status === "approved") {
-        active = "Active";
-        log("✅ Ad approved", "#00ff88");
-      }
-
-      if (ad.status === "rejected") {
-        log("❌ Ad rejected", "#ff4d4d");
-      }
-
-      if (ad.status === "pending") {
-        log("⏳ Ad pending", "#ffaa00");
-      }
+      if (ad.status === "approved") log("Ad approved", "#00ff88");
+      if (ad.status === "rejected") log("Ad rejected", "#ff4d4d");
     });
-
-    const el = document.getElementById("adStatus");
-    if (el) el.innerText = active;
   });
 }
-
-/* ================= FRIENDS ================= */
-window.sendFriendRequest = async function (toUid, toName) {
-  if (!user || user.uid === toUid) return;
-
-  await addDoc(collection(db, "friendRequests"), {
-    from: user.uid,
-    fromName: user.email.split("@")[0],
-    to: toUid,
-    toName,
-    status: "pending",
-    createdAt: serverTimestamp()
-  });
-
-  log("Friend request sent");
-};
