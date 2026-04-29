@@ -19,12 +19,16 @@ import {
 let user = null;
 let chatId = null;
 let currentChatUser = null;
+let unsubscribeMessages = null; // 🔥 FIX: prevent duplicate listeners
 
 const adminId = "pmXooqSVxdO53xiCugrqDijR6iI3";
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
-  if (!u) return location.href = "index.html";
+  if (!u) {
+    location.href = "index.html";
+    return;
+  }
 
   user = u;
 
@@ -35,26 +39,31 @@ onAuthStateChanged(auth, async (u) => {
 /* ================= OPEN CHAT ================= */
 function openChat(otherUserId) {
   currentChatUser = otherUserId;
+
   chatId = [user.uid, otherUserId].sort().join("_");
+
   loadMessages();
 }
 
-/* ================= LOAD ================= */
+/* ================= LOAD MESSAGES ================= */
 function loadMessages() {
   const box = document.getElementById("chatBox");
+
+  // 🔥 FIX: stop old listener (THIS caused duplicate messages)
+  if (unsubscribeMessages) unsubscribeMessages();
 
   const q = query(
     collection(db, "dms", chatId, "messages"),
     orderBy("createdAt", "asc")
   );
 
-  onSnapshot(q, (snap) => {
+  unsubscribeMessages = onSnapshot(q, (snap) => {
     box.innerHTML = "";
 
     snap.forEach(async (docSnap) => {
       const m = docSnap.data();
 
-      // mark as read
+      // 🔥 mark as read
       if (m.to === user.uid && m.read === false) {
         try {
           await updateDoc(doc(db, "dms", chatId, "messages", docSnap.id), {
@@ -63,6 +72,7 @@ function loadMessages() {
         } catch {}
       }
 
+      // 🔥 render message
       const div = document.createElement("div");
       div.className = "msg " + (m.from === user.uid ? "me" : "them");
       div.textContent = m.text;
@@ -70,25 +80,30 @@ function loadMessages() {
       box.appendChild(div);
     });
 
+    // smooth scroll (no reload)
     box.scrollTop = box.scrollHeight;
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMsg = async function () {
   try {
     const input = document.getElementById("msgInput");
 
     if (!input.value.trim()) return;
+    if (!user || !chatId) return;
+
+    const text = input.value.trim();
 
     await addDoc(collection(db, "dms", chatId, "messages"), {
-      text: input.value.trim(),
+      text,
       from: user.uid,
       to: currentChatUser,
       read: false,
       createdAt: serverTimestamp()
     });
 
+    // 🔥 ADMIN EVENT (NO MESSAGE CONTENT)
     await addDoc(collection(db, "events"), {
       type: "dm",
       from: user.uid,
@@ -99,11 +114,12 @@ window.sendMsg = async function () {
     input.value = "";
 
   } catch (err) {
+    console.error(err);
     alert("Message failed");
   }
 };
 
-/* ================= ENTER ================= */
+/* ================= ENTER TO SEND ================= */
 document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("msgInput");
 
@@ -114,28 +130,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-/* ================= INBOX ================= */
+/* ================= INBOX SYSTEM ================= */
 async function loadInbox() {
   const inbox = document.getElementById("inboxList");
+  if (!inbox) return;
 
-  const snapshot = await getDocs(collection(db, "dms"));
+  inbox.innerHTML = "Loading...";
 
-  inbox.innerHTML = "";
+  try {
+    const snapshot = await getDocs(collection(db, "dms"));
 
-  snapshot.forEach(docSnap => {
-    const id = docSnap.id;
+    inbox.innerHTML = "";
 
-    if (!id.includes(user.uid)) return;
+    snapshot.forEach(docSnap => {
+      const id = docSnap.id;
 
-    const parts = id.split("_");
-    const otherUser = parts[0] === user.uid ? parts[1] : parts[0];
+      if (!id.includes(user.uid)) return;
 
-    const div = document.createElement("div");
-    div.className = "inbox-item";
-    div.textContent = otherUser;
+      const parts = id.split("_");
+      const otherUser = parts[0] === user.uid ? parts[1] : parts[0];
 
-    div.onclick = () => openChat(otherUser);
+      const div = document.createElement("div");
+      div.className = "inbox-item";
+      div.textContent = otherUser;
 
-    inbox.appendChild(div);
-  });
+      div.onclick = () => openChat(otherUser);
+
+      inbox.appendChild(div);
+    });
+
+    if (inbox.innerHTML === "") {
+      inbox.innerHTML = "<div style='padding:10px;'>No conversations yet</div>";
+    }
+
+  } catch (err) {
+    console.error("Inbox error:", err);
+    inbox.innerHTML = "Failed to load inbox";
+  }
 }
