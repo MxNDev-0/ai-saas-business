@@ -7,7 +7,8 @@ import {
 import {
   collection,
   onSnapshot,
-  addDoc,
+  setDoc,
+  doc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -15,49 +16,44 @@ let user = null;
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
-  if (!u) {
-    location.href = "index.html";
-    return;
-  }
+  if (!u) return location.href = "index.html";
 
   user = u;
 
-  trackOnlineStatus();
+  trackPresence();
   loadOnlineUsers();
 });
 
-/* ================= TRACK ONLINE ================= */
-function trackOnlineStatus() {
+/* ================= PRESENCE FIX ================= */
+function trackPresence() {
   setInterval(async () => {
-    await addDoc(collection(db, "presence"), {
+    await setDoc(doc(db, "presence", user.uid), {
       uid: user.uid,
       name: user.email.split("@")[0],
-      lastSeen: Date.now()
-    });
+      lastSeen: Date.now(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
   }, 5000);
 }
 
-/* ================= LOAD ONLINE USERS ================= */
+/* ================= ONLINE USERS ================= */
 function loadOnlineUsers() {
   onSnapshot(collection(db, "presence"), (snap) => {
 
-    const users = [];
     const now = Date.now();
+    const users = [];
 
-    snap.forEach(doc => {
-      const data = doc.data();
-
-      if (now - data.lastSeen < 10000) {
-        users.push(data);
-      }
+    snap.forEach(d => {
+      const u = d.data();
+      if (now - u.lastSeen < 10000) users.push(u);
     });
 
-    renderOnlineUsers(users);
+    render(users);
   });
 }
 
-/* ================= RENDER USERS ================= */
-function renderOnlineUsers(users) {
+/* ================= RENDER ================= */
+function render(users) {
   const box = document.getElementById("onlineUsers");
   box.innerHTML = "";
 
@@ -68,33 +64,15 @@ function renderOnlineUsers(users) {
     row.className = "user-row";
 
     row.innerHTML = `
-      <div class="user-left">
-        <span class="dot"></span>
-        <span class="name">${u.name}</span>
-      </div>
-
-      <div class="user-actions">
-        <button class="btn-add" onclick="sendFriendRequest('${u.uid}','${u.name}')">Add</button>
-        <button class="btn-msg" onclick="openDM('${u.uid}')">Message</button>
-      </div>
+      <div>${u.name}</div>
+      <button onclick="openDM('${u.uid}')">Message</button>
     `;
 
     box.appendChild(row);
   });
 }
 
-/* ================= ACTIONS ================= */
-window.openDM = function(uid) {
+/* ================= ACTION ================= */
+window.openDM = (uid) => {
   location.href = "messages.html?uid=" + uid;
-};
-
-window.sendFriendRequest = async function(toUid, toName) {
-  await addDoc(collection(db, "friendRequests"), {
-    from: user.uid,
-    to: toUid,
-    toName,
-    createdAt: serverTimestamp()
-  });
-
-  alert("Friend request sent");
 };
