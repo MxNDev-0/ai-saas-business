@@ -39,10 +39,7 @@
       box-sizing: border-box;
     }
 
-    textarea {
-      min-height: 90px;
-      resize: none;
-    }
+    textarea { min-height: 90px; resize: none; }
 
     button {
       width: 100%;
@@ -56,10 +53,7 @@
       margin-top: 5px;
     }
 
-    .danger {
-      background: red;
-      color: white;
-    }
+    .danger { background: red; color: white; }
 
     .list-box {
       max-height: 220px;
@@ -74,10 +68,8 @@
       margin-bottom: 6px;
       background: #16213e;
       border-radius: 8px;
-      cursor: pointer;
     }
 
-    /* 🔥 MONITOR FIXED (RECTANGULAR) */
     .monitor {
       background: linear-gradient(145deg, #05070f, #0a0f1f);
       color: #00ff88;
@@ -89,13 +81,11 @@
       border: 1px solid #1c2541;
     }
 
-    .mini-btn {
-      background: transparent;
-      border: none;
-      color: #00ff88;
-      font-size: 13px;
-      cursor: pointer;
-      padding: 0 5px;
+    .small-btn {
+      width: auto;
+      padding: 4px 6px;
+      font-size: 12px;
+      margin-left: 5px;
     }
   </style>
 </head>
@@ -106,58 +96,55 @@
 
 <div class="grid">
 
+  <!-- MONITOR -->
   <div class="card">
-    <h3>🖥 Live Monitor</h3>
+    <h3>🖥 System Monitor</h3>
     <div id="monitor" class="monitor"></div>
   </div>
 
+  <!-- BLOG -->
   <div class="card">
     <h3>📝 Create Blog</h3>
     <input id="blogTitle" placeholder="Blog Title">
     <textarea id="blogContent" placeholder="Blog Content"></textarea>
-    <input id="blogImage" placeholder="Image URL (optional)">
+    <input id="blogImage" placeholder="Image URL">
     <button onclick="createBlog()">Publish Blog</button>
   </div>
 
+  <!-- BROADCAST -->
   <div class="card">
-    <h3>🔔 Broadcast System</h3>
-    <input id="broadcastTitle" placeholder="Broadcast Title">
-    <textarea id="broadcastMessage" placeholder="Broadcast Message"></textarea>
-    <button onclick="sendBroadcast()">Send Broadcast</button>
+    <h3>🔔 Broadcast</h3>
+    <input id="broadcastTitle" placeholder="Title">
+    <textarea id="broadcastMessage" placeholder="Message"></textarea>
+    <button onclick="sendBroadcast()">Send</button>
   </div>
 
+  <!-- USERS -->
   <div class="card">
-    <h3>👥 Users Online</h3>
+    <h3>👥 Users</h3>
     <div id="usersList" class="list-box"></div>
   </div>
 
+  <!-- ADS -->
   <div class="card">
-    <h3>📢 Ad Payment Requests</h3>
+    <h3>📢 Ad Requests</h3>
     <div id="upgradeList" class="list-box"></div>
-    <button class="danger" onclick="clearAdRequests()">Clear All Requests</button>
   </div>
 
+  <!-- POSTS -->
   <div class="card">
     <h3>💬 Post Manager</h3>
     <div id="postsList" class="list-box"></div>
 
     <h3>✏️ Edit Post</h3>
-    <input id="editPostId" readonly>
+    <input id="editPostId" placeholder="Post ID" readonly>
     <input id="editPostTitle" placeholder="Title">
     <textarea id="editPostContent" placeholder="Content"></textarea>
 
     <button onclick="updatePost()">Update Post</button>
   </div>
 
-  <div class="card">
-    <h3>📊 Analytics</h3>
-    <div class="item">Users: <b id="statUsers">0</b></div>
-    <div class="item">Blog Posts: <b id="statViews">0</b></div>
-    <div class="item">Ad Clicks: <b id="statClicks">0</b></div>
-    <div class="item">Ad Requests: <b id="statRequests">0</b></div>
-    <button onclick="loadStats()">Refresh</button>
-  </div>
-
+  <!-- REJECTED ADS -->
   <div class="card">
     <h3>❌ Rejected Ads</h3>
     <div id="rejectedList" class="list-box"></div>
