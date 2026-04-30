@@ -97,13 +97,11 @@
 
 <div class="grid">
 
-  <!-- MONITOR -->
   <div class="card">
     <h3>🖥 Live Monitor</h3>
     <div id="monitor" class="monitor"></div>
   </div>
 
-  <!-- BLOG -->
   <div class="card">
     <h3>📝 Create Blog</h3>
     <input id="blogTitle" placeholder="Blog Title">
@@ -112,7 +110,6 @@
     <button onclick="createBlog()">Publish Blog</button>
   </div>
 
-  <!-- BROADCAST -->
   <div class="card">
     <h3>🔔 Broadcast System</h3>
     <input id="broadcastTitle" placeholder="Broadcast Title">
@@ -120,26 +117,28 @@
     <button onclick="sendBroadcast()">Send Broadcast</button>
   </div>
 
-  <!-- USERS -->
   <div class="card">
     <h3>👥 Users</h3>
     <div id="usersList" class="list-box"></div>
   </div>
 
-  <!-- AD REQUESTS -->
   <div class="card">
     <h3>📢 Ad Payment Requests</h3>
     <div id="upgradeList" class="list-box"></div>
   </div>
 
-  <!-- POSTS -->
   <div class="card">
-    <h3>💬 Posts</h3>
+    <h3>💬 Posts Manager</h3>
     <button class="danger" onclick="clearAllPosts()">Clear All</button>
     <div id="postsList" class="list-box"></div>
+
+    <h3>✏️ Edit Post</h3>
+    <input id="editPostId" placeholder="Post ID">
+    <input id="editPostTitle" placeholder="New Title">
+    <textarea id="editPostContent" placeholder="New Content"></textarea>
+    <button onclick="updatePost()">Update Post</button>
   </div>
 
-  <!-- ANALYTICS -->
   <div class="card">
     <h3>📊 Analytics</h3>
 
