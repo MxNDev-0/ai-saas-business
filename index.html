@@ -4,6 +4,7 @@
   <title>MCN Engine V15 — Monetization Control Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- 🔥 SEO META (INJECTED) -->
   <meta name="description" content="Discover websites, apps, and online opportunities with MCN Engine. Learn, explore, and grow online in one place.">
 
   <meta property="og:title" content="MCN Engine — Discover. Learn. Explore.">
@@ -18,6 +19,7 @@
       margin: 0;
     }
 
+    /* HEADER */
     .header {
       display: flex;
       justify-content: space-between;
@@ -56,6 +58,7 @@
       font-weight: bold;
     }
 
+    /* MENU */
     #menu {
       display: none;
       background: #1c2541;
@@ -68,6 +71,7 @@
       cursor: pointer;
     }
 
+    /* BLOG (UPDATED UI ONLY) */
     .featured {
       padding: 15px;
     }
@@ -103,6 +107,7 @@
       color: #ccc;
     }
 
+    /* LOGIN */
     .login-modal {
       display: none;
       position: fixed;
@@ -144,6 +149,13 @@
       font-weight: bold;
     }
 
+    .secondary-btn {
+      background: transparent;
+      border: 1px solid #5bc0be;
+      color: #5bc0be;
+    }
+
+    /* FOOTER */
     .footer {
       text-align: center;
       padding: 20px;
@@ -161,14 +173,17 @@
 
 <body>
 
+<!-- HEADER -->
 <div class="header">
   <div class="left">
     <div class="menu-btn" onclick="toggleMenu()">☰</div>
     <div class="logo">MCN Engine</div>
   </div>
+
   <div class="profile-btn" onclick="openLogin()">👤</div>
 </div>
 
+<!-- MENU -->
 <div id="menu">
   <div onclick="goHome()">Home</div>
   <div onclick="goTrending()">Trending</div>
@@ -176,67 +191,105 @@
   <div onclick="goSettings()">Settings</div>
 </div>
 
+<!-- FEATURED -->
 <div class="featured" id="featuredPost"></div>
+
+<!-- FEED -->
 <div class="feed" id="feed">Loading posts...</div>
 
+<!-- LOGIN -->
 <div class="login-modal" id="loginModal">
   <div class="center-box">
     <h3>Login / Register</h3>
+
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
-    <button>Create Account</button>
-    <button>Login</button>
+
+    <button onclick="signup()">Create Account</button>
+    <button class="secondary-btn" onclick="login()">Login</button>
+
     <button onclick="closeLogin()">Close</button>
   </div>
 </div>
 
+<!-- FOOTER -->
 <div class="footer">
-  © MCN Engine
+  <a href="about.html">About</a> |
+  <a href="faq.html">FAQ</a> |
+  <a href="privacy.html">Privacy</a> |
+  <a href="terms.html">Terms</a> |
+  <a href="copyright.html">Copyright</a> |
+  <a href="anti-spam.html">Anti-Spam</a> |
+  <a href="ads-policy.html">Ads Policy</a>
+  <br><br>
+  © MCN Engine • Discover. Learn. Explore.
 </div>
 
 <script type="module">
 
-window.toggleMenu = () => {
-  const m = document.getElementById("menu");
-  m.style.display = m.style.display === "block" ? "none" : "block";
+window.toggleMenu = function () {
+  const menu = document.getElementById("menu");
+  menu.style.display = (menu.style.display === "block") ? "none" : "block";
 };
 
-window.openLogin = () => {
+window.openLogin = function () {
   document.getElementById("loginModal").style.display = "flex";
 };
 
-window.closeLogin = () => {
+window.closeLogin = function () {
   document.getElementById("loginModal").style.display = "none";
 };
 
-window.openPost = (id) => {
-  location.href = "./blog/post.html?id=" + id;
+window.openPost = function (id) {
+  window.location.href = "./blog/post.html?id=" + id;
 };
 
-async function loadFeed() {
-  const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-  const posts = await res.json();
+function getCategoryColor(cat) {
+  switch (cat) {
+    case "Crypto": return "#5bc0be";
+    case "News": return "#ffcc00";
+    case "Guide": return "#00ff88";
+    case "Update": return "#ff6b6b";
+    default: return "#aaa";
+  }
+}
 
+async function loadFeed() {
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
 
+  const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+  const posts = await res.json();
+
   feed.innerHTML = "";
 
-  const sorted = posts.sort((a,b) => new Date(b.createdAt||0)-new Date(a.createdAt||0));
-  const featured = sorted[0];
+  if (!posts || posts.length === 0) {
+    feed.innerHTML = "<p>No posts yet</p>";
+    return;
+  }
+
+  const sorted = posts.sort((a, b) => {
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
+  const featured = sorted.find(p => p.featured) || sorted[0];
 
   featuredBox.innerHTML = `
-    <div class="post" onclick="openPost('${featured.id}')">
+    <div class="post" onclick="openPost('${featured.id}')" style="border:2px solid #5bc0be">
       <h3>🔥 Featured</h3>
       <h4>${featured.title}</h4>
+      <p>${(featured.content || "").slice(0,120)}...</p>
     </div>
   `;
 
   sorted.forEach(p => {
     feed.innerHTML += `
       <div class="post" onclick="openPost('${p.id}')">
+        <small style="color:${getCategoryColor(p.category)}">
+          ${p.category || "General"}
+        </small>
         <h4>${p.title}</h4>
-        <p>${(p.content||"").slice(0,90)}...</p>
+        <p>${(p.content || "").slice(0,90)}...</p>
       </div>
     `;
   });
@@ -244,12 +297,25 @@ async function loadFeed() {
 
 loadFeed();
 
-window.goHome = () => location.href = "index.html";
-window.goTrending = () => document.getElementById("featuredPost").scrollIntoView({behavior:"smooth"});
-window.goDashboard = () => location.href = "dashboard.html";
-window.goSettings = () => location.href = "settings.html";
+window.goHome = function () {
+  location.href = "index.html";
+};
+
+window.goTrending = function () {
+  document.getElementById("featuredPost")?.scrollIntoView({ behavior: "smooth" });
+};
+
+window.goDashboard = function () {
+  location.href = "dashboard.html";
+};
+
+window.goSettings = function () {
+  location.href = "settings.html";
+};
 
 </script>
+
+<script type="module" src="app.js"></script>
 
 </body>
 </html>
