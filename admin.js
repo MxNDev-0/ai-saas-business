@@ -1,20 +1,28 @@
 import { auth, db } from "./firebase.js";
-
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
-  doc,
-  getDoc,
-  addDoc,
-  collection,
-  onSnapshot,
-  deleteDoc,
-  query,
-  orderBy,
-  getDocs,
-  writeBatch,
-  serverTimestamp
+  doc, getDoc, addDoc, collection, onSnapshot,
+  deleteDoc, updateDoc, query, orderBy,
+  getDocs, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* ================= MONITOR ================= */
+function log(msg, type = "ok") {
+  const box = document.getElementById("monitor");
+  if (!box) return;
+
+  const color =
+    type === "error" ? "red" :
+    type === "warn" ? "orange" : "#00ff88";
+
+  const div = document.createElement("div");
+  div.style.color = color;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
 
 /* ================= AUTH ================= */
 let adminUser = null;
@@ -25,188 +33,155 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, "users", user.uid));
   if (!snap.exists() || snap.data().role !== "admin") {
     alert("Access denied");
-    return location.href = "dashboard.html";
+    location.href = "index.html";
+    return;
   }
 
   adminUser = user;
-  startSystem();
+
+  log("Admin online");
+  loadPosts();
+  loadUsers();
+  loadAds();
+  loadRejectedAds();
 });
 
-/* ================= SYSTEM ================= */
-function startSystem() {
-  loadUsers();
-  loadPosts();
-  loadAdRequests();
-  loadRejected();
-  loadEventMonitor();
-  loadStats(); // ✅ FIXED
-}
+/* ================= BLOG CREATE ================= */
+window.createBlog = async () => {
+  const title = blogTitle.value;
+  const content = blogContent.value;
+  const image = blogImage.value;
 
-/* ================= MONITOR ================= */
-function loadEventMonitor() {
-  const box = document.getElementById("monitor");
-
-  onSnapshot(query(collection(db, "events"), orderBy("createdAt", "asc")), (snap) => {
-    box.innerHTML = "";
-
-    snap.forEach(docSnap => {
-      const e = docSnap.data();
-
-      if (e.type === "chat") {
-        box.innerHTML += `
-          <div style="display:flex;justify-content:space-between;">
-            <span>💬 <b>${e.username}</b>: ${e.text}</span>
-            <button style="background:none;border:none;color:#00ff88;font-size:12px;cursor:pointer"
-              onclick="replyToUser('${e.uid}','${e.username}')">➤</button>
-          </div>
-        `;
-      }
-    });
+  const ref = await addDoc(collection(db, "posts"), {
+    title,
+    content,
+    image,
+    createdAt: serverTimestamp()
   });
-}
+
+  log("Blog created: " + ref.id);
+};
 
 /* ================= POSTS ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
 
-  onSnapshot(collection(db, "posts"), (snap) => {
+  onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) => {
     box.innerHTML = "";
 
     snap.forEach(d => {
-      const data = d.data();
-
-      box.innerHTML += `
-        <div class="item" onclick="selectPost('${d.id}', \`${data.text}\`)">
-          ${data.text}
-          <button class="danger"
-            onclick="event.stopPropagation(); deletePost('${d.id}')">Delete</button>
-        </div>
-      `;
-    });
-  });
-}
-
-window.selectPost = (id, text) => {
-  document.getElementById("editPostId").value = id;
-  document.getElementById("editPostContent").value = text;
-};
-
-window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
-  alert("Post deleted");
-};
-
-window.updatePost = async () => {
-  const id = document.getElementById("editPostId").value;
-  const content = document.getElementById("editPostContent").value;
-
-  if (!id) return alert("Select a post");
-
-  await fetch(`https://mxm-backend.onrender.com/blog/update/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content })
-  });
-
-  alert("Post updated");
-};
-
-/* ================= ADS ================= */
-function loadAdRequests() {
-  const box = document.getElementById("upgradeList");
-
-  onSnapshot(collection(db, "adRequests"), (snap) => {
-    box.innerHTML = "";
-
-    snap.forEach(d => {
-      const data = d.data();
+      const p = d.data();
 
       box.innerHTML += `
         <div class="item">
-          ${data.title}
-          <button onclick="acceptAd('${d.id}')">Accept</button>
-          <button onclick="rejectAd('${d.id}','${data.title}')">Reject</button>
+          <b>${p.title}</b><br>
+          <button class="small-btn" onclick="fillEdit('${d.id}', \`${p.title}\`, \`${p.content}\`)">Edit</button>
+          <button class="small-btn" onclick="deletePost('${d.id}')">Delete</button>
         </div>
       `;
     });
   });
 }
 
-window.acceptAd = async (id) => {
-  await deleteDoc(doc(db, "adRequests", id));
-  alert("Ad accepted");
+/* AUTO FILL EDIT */
+window.fillEdit = (id, title, content) => {
+  editPostId.value = id;
+  editPostTitle.value = title;
+  editPostContent.value = content;
 };
 
-window.rejectAd = async (id, title) => {
-  await addDoc(collection(db, "adRejected"), { title });
-  await deleteDoc(doc(db, "adRequests", id));
-  alert("Ad rejected");
-};
+/* UPDATE POST */
+window.updatePost = async () => {
+  const id = editPostId.value;
 
-window.clearAdRequests = async () => {
-  const snap = await getDocs(collection(db, "adRequests"));
-  const batch = writeBatch(db);
-
-  snap.forEach(d => batch.delete(d.ref));
-
-  await batch.commit();
-  alert("All requests cleared");
-};
-
-/* ================= REJECTED ================= */
-function loadRejected() {
-  const box = document.getElementById("rejectedList");
-
-  onSnapshot(collection(db, "adRejected"), (snap) => {
-    box.innerHTML = "";
-    snap.forEach(d => {
-      box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
-    });
+  await updateDoc(doc(db, "posts", id), {
+    title: editPostTitle.value,
+    content: editPostContent.value
   });
-}
 
-window.clearRejected = async () => {
-  const snap = await getDocs(collection(db, "adRejected"));
-  const batch = writeBatch(db);
+  log("Post updated");
+};
 
-  snap.forEach(d => batch.delete(d.ref));
-
-  await batch.commit();
-  alert("Rejected cleared");
+/* DELETE POST */
+window.deletePost = async (id) => {
+  await deleteDoc(doc(db, "posts", id));
+  log("Post deleted");
 };
 
 /* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("usersList");
 
-  onSnapshot(collection(db, "onlineUsers"), (snap) => {
+  onSnapshot(collection(db, "onlineUsers"), snap => {
     box.innerHTML = "";
-    snap.forEach(d => {
-      box.innerHTML += `<div class="item">${d.data().email}</div>`;
+    snap.forEach(u => {
+      box.innerHTML += `<div class="item">${u.data().email}</div>`;
     });
   });
 }
 
-/* ================= ANALYTICS FIX ================= */
-window.loadStats = async () => {
-  const users = await getDocs(collection(db, "users"));
-  const posts = await getDocs(collection(db, "posts"));
-  const ads = await getDocs(collection(db, "adRequests"));
+/* ================= ADS SYSTEM ================= */
+function loadAds() {
+  const box = document.getElementById("upgradeList");
 
-  document.getElementById("statUsers").textContent = users.size;
-  document.getElementById("statViews").textContent = posts.size;
-  document.getElementById("statRequests").textContent = ads.size;
+  onSnapshot(collection(db, "adRequests"), snap => {
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+      const ad = d.data();
+
+      box.innerHTML += `
+        <div class="item">
+          <b>${ad.title}</b><br>
+
+          <button class="small-btn" onclick="acceptAd('${d.id}')">Accept</button>
+          <button class="small-btn" onclick="rejectAd('${d.id}')">Reject</button>
+        </div>
+      `;
+    });
+  });
+}
+
+/* ACCEPT AD */
+window.acceptAd = async (id) => {
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "accepted"
+  });
+  log("Ad accepted");
 };
 
-/* ================= DM ================= */
-window.replyToUser = async (uid, username) => {
-  const msg = prompt("Reply to " + username);
-  if (!msg) return;
-
-  await addDoc(collection(db, "dms"), {
-    text: msg,
-    to: uid,
-    from: adminUser.uid,
-    createdAt: serverTimestamp()
+/* REJECT AD */
+window.rejectAd = async (id) => {
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "rejected"
   });
+  log("Ad rejected", "warn");
+};
+
+/* REJECTED LIST */
+function loadRejectedAds() {
+  const box = document.getElementById("rejectedList");
+
+  onSnapshot(query(collection(db, "adRequests")), snap => {
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+      if (d.data().status === "rejected") {
+        box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
+      }
+    });
+  });
+}
+
+/* CLEAR REJECTED */
+window.clearRejected = async () => {
+  const snap = await getDocs(collection(db, "adRequests"));
+  const batch = writeBatch(db);
+
+  snap.forEach(d => {
+    if (d.data().status === "rejected") batch.delete(d.ref);
+  });
+
+  await batch.commit();
+  log("Rejected ads cleared");
 };
