@@ -32,14 +32,13 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  // 🔥 FIX: open user from URL if exists
   const params = new URLSearchParams(window.location.search);
   const uidFromUrl = params.get("uid");
 
   if (uidFromUrl) {
     openChat(uidFromUrl);
   } else {
-    openChat(adminId);
+    document.getElementById("chatBox").innerHTML = "";
   }
 
   loadInbox();
@@ -51,6 +50,8 @@ function openChat(otherUserId) {
 
   chatId = [user.uid, otherUserId].sort().join("_");
 
+  document.getElementById("inboxList").style.display = "none";
+
   loadMessages();
 }
 
@@ -58,7 +59,6 @@ function openChat(otherUserId) {
 function loadMessages() {
   const box = document.getElementById("chatBox");
 
-  // 🔥 CRITICAL FIX: stop old listener (prevents duplicates)
   if (unsubscribeMessages) unsubscribeMessages();
 
   const q = query(
@@ -72,18 +72,14 @@ function loadMessages() {
     snap.forEach(async (docSnap) => {
       const m = docSnap.data();
 
-      // 🔥 mark as read
       if (m.to === user.uid && m.read === false) {
         try {
           await updateDoc(doc(db, "dms", chatId, "messages", docSnap.id), {
             read: true
           });
-        } catch (e) {
-          console.log("read update failed");
-        }
+        } catch (e) {}
       }
 
-      // 🔥 render message
       const div = document.createElement("div");
       div.className = "msg " + (m.from === user.uid ? "me" : "them");
       div.textContent = m.text;
@@ -91,8 +87,9 @@ function loadMessages() {
       box.appendChild(div);
     });
 
-    // 🔥 smooth scroll (NO page reload)
-    box.scrollTop = box.scrollHeight;
+    setTimeout(() => {
+      box.scrollTop = box.scrollHeight;
+    }, 50);
   });
 }
 
@@ -114,7 +111,6 @@ window.sendMsg = async function () {
       createdAt: serverTimestamp()
     });
 
-    // 🔥 ADMIN EVENT (NO MESSAGE CONTENT)
     await addDoc(collection(db, "events"), {
       type: "dm",
       from: user.uid,
@@ -151,7 +147,6 @@ async function loadInbox() {
   try {
     const snapshot = await getDocs(collection(db, "dms"));
 
-    // 🔥 FIX: handle empty safely
     if (snapshot.empty) {
       inbox.innerHTML = "<div style='padding:10px;'>No conversations yet</div>";
       return;
@@ -162,14 +157,13 @@ async function loadInbox() {
     snapshot.forEach(docSnap => {
       const id = docSnap.id;
 
-      // only show user-related chats
       if (!id.includes(user.uid)) return;
 
       const parts = id.split("_");
       const otherUser = parts[0] === user.uid ? parts[1] : parts[0];
 
       const div = document.createElement("div");
-      div.className = "inbox-item";
+      div.className = "item";
       div.textContent = otherUser;
 
       div.onclick = () => openChat(otherUser);
