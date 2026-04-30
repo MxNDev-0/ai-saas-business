@@ -16,25 +16,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= MONITOR ================= */
-function log(msg) {
-  const box = document.getElementById("monitor");
-  if (!box) return;
-
-  const time = new Date().toLocaleTimeString();
-  const line = document.createElement("div");
-
-  line.textContent = `[${time}] ${msg}`;
-  box.appendChild(line);
-  box.scrollTop = box.scrollHeight;
-}
-
-/* ================= BOOT ================= */
-window.addEventListener("DOMContentLoaded", () => {
-  const box = document.getElementById("monitor");
-  if (box) box.innerHTML = "🟢 Admin Monitor Initializing...";
-});
-
 /* ================= AUTH ================= */
 let adminUser = null;
 
@@ -58,6 +39,7 @@ function startSystem() {
   loadAdRequests();
   loadRejected();
   loadEventMonitor();
+  loadStats(); // ✅ FIXED
 }
 
 /* ================= MONITOR ================= */
@@ -72,9 +54,10 @@ function loadEventMonitor() {
 
       if (e.type === "chat") {
         box.innerHTML += `
-          <div>
-            💬 <b>${e.username}</b>: ${e.text}
-            <button class="mini-btn" onclick="replyToUser('${e.uid}','${e.username}')">➤</button>
+          <div style="display:flex;justify-content:space-between;">
+            <span>💬 <b>${e.username}</b>: ${e.text}</span>
+            <button style="background:none;border:none;color:#00ff88;font-size:12px;cursor:pointer"
+              onclick="replyToUser('${e.uid}','${e.username}')">➤</button>
           </div>
         `;
       }
@@ -95,7 +78,8 @@ function loadPosts() {
       box.innerHTML += `
         <div class="item" onclick="selectPost('${d.id}', \`${data.text}\`)">
           ${data.text}
-          <button class="danger" onclick="event.stopPropagation(); deletePost('${d.id}')">Delete</button>
+          <button class="danger"
+            onclick="event.stopPropagation(); deletePost('${d.id}')">Delete</button>
         </div>
       `;
     });
@@ -103,23 +87,28 @@ function loadPosts() {
 }
 
 window.selectPost = (id, text) => {
-  editPostId.value = id;
-  editPostContent.value = text;
+  document.getElementById("editPostId").value = id;
+  document.getElementById("editPostContent").value = text;
 };
 
 window.deletePost = async (id) => {
   await deleteDoc(doc(db, "posts", id));
+  alert("Post deleted");
 };
 
 window.updatePost = async () => {
-  const id = editPostId.value;
-  const content = editPostContent.value;
+  const id = document.getElementById("editPostId").value;
+  const content = document.getElementById("editPostContent").value;
+
+  if (!id) return alert("Select a post");
 
   await fetch(`https://mxm-backend.onrender.com/blog/update/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content })
   });
+
+  alert("Post updated");
 };
 
 /* ================= ADS ================= */
@@ -136,7 +125,7 @@ function loadAdRequests() {
         <div class="item">
           ${data.title}
           <button onclick="acceptAd('${d.id}')">Accept</button>
-          <button onclick="rejectAd('${d.id}', '${data.title}')">Reject</button>
+          <button onclick="rejectAd('${d.id}','${data.title}')">Reject</button>
         </div>
       `;
     });
@@ -145,18 +134,23 @@ function loadAdRequests() {
 
 window.acceptAd = async (id) => {
   await deleteDoc(doc(db, "adRequests", id));
+  alert("Ad accepted");
 };
 
 window.rejectAd = async (id, title) => {
   await addDoc(collection(db, "adRejected"), { title });
   await deleteDoc(doc(db, "adRequests", id));
+  alert("Ad rejected");
 };
 
 window.clearAdRequests = async () => {
   const snap = await getDocs(collection(db, "adRequests"));
   const batch = writeBatch(db);
+
   snap.forEach(d => batch.delete(d.ref));
+
   await batch.commit();
+  alert("All requests cleared");
 };
 
 /* ================= REJECTED ================= */
@@ -165,7 +159,6 @@ function loadRejected() {
 
   onSnapshot(collection(db, "adRejected"), (snap) => {
     box.innerHTML = "";
-
     snap.forEach(d => {
       box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
     });
@@ -175,8 +168,11 @@ function loadRejected() {
 window.clearRejected = async () => {
   const snap = await getDocs(collection(db, "adRejected"));
   const batch = writeBatch(db);
+
   snap.forEach(d => batch.delete(d.ref));
+
   await batch.commit();
+  alert("Rejected cleared");
 };
 
 /* ================= USERS ================= */
@@ -190,6 +186,17 @@ function loadUsers() {
     });
   });
 }
+
+/* ================= ANALYTICS FIX ================= */
+window.loadStats = async () => {
+  const users = await getDocs(collection(db, "users"));
+  const posts = await getDocs(collection(db, "posts"));
+  const ads = await getDocs(collection(db, "adRequests"));
+
+  document.getElementById("statUsers").textContent = users.size;
+  document.getElementById("statViews").textContent = posts.size;
+  document.getElementById("statRequests").textContent = ads.size;
+};
 
 /* ================= DM ================= */
 window.replyToUser = async (uid, username) => {
