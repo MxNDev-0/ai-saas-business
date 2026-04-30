@@ -13,14 +13,14 @@ import {
 
 let user = null;
 
-/* ================= LOGGER ================= */
+/* LOGGER */
 function log(msg) {
   const monitor = document.getElementById("monitor");
   monitor.innerHTML += "<br>" + msg;
   monitor.scrollTop = monitor.scrollHeight;
 }
 
-/* ================= AUTH ================= */
+/* AUTH */
 onAuthStateChanged(auth, async (u) => {
   if (!u) {
     location.href = "index.html";
@@ -29,13 +29,13 @@ onAuthStateChanged(auth, async (u) => {
 
   user = u;
 
-  log("[AUTH] Logged in as " + u.email);
+  log("[AUTH] " + u.email);
 
   trackOnlineStatus();
   loadOnlineUsers();
 });
 
-/* ================= TRACK ONLINE ================= */
+/* ONLINE TRACK */
 function trackOnlineStatus() {
   setInterval(async () => {
     await addDoc(collection(db, "presence"), {
@@ -44,12 +44,12 @@ function trackOnlineStatus() {
       lastSeen: Date.now()
     });
 
-    log("[PING] online update sent");
+    log("[PING] active");
 
   }, 5000);
 }
 
-/* ================= LOAD ONLINE USERS ================= */
+/* LOAD USERS */
 function loadOnlineUsers() {
   onSnapshot(collection(db, "presence"), (snap) => {
 
@@ -58,19 +58,16 @@ function loadOnlineUsers() {
 
     snap.forEach(doc => {
       const data = doc.data();
-
-      if (now - data.lastSeen < 10000) {
-        users.push(data);
-      }
+      if (now - data.lastSeen < 10000) users.push(data);
     });
 
-    log("[UPDATE] Online users: " + users.length);
+    log("[USERS] " + users.length + " online");
 
     renderOnlineUsers(users);
   });
 }
 
-/* ================= RENDER USERS ================= */
+/* RENDER USERS */
 function renderOnlineUsers(users) {
   const box = document.getElementById("onlineUsers");
   box.innerHTML = "";
@@ -84,12 +81,10 @@ function renderOnlineUsers(users) {
     row.innerHTML = `
       <div class="user-left">
         <span class="dot"></span>
-        <span class="name">${u.name}</span>
+        <span>${u.name}</span>
       </div>
-
-      <div class="user-actions">
-        <button class="btn-add" onclick="sendFriendRequest('${u.uid}','${u.name}')">Add</button>
-        <button class="btn-msg" onclick="openDM('${u.uid}')">Message</button>
+      <div>
+        <button onclick="openDM('${u.uid}')">Msg</button>
       </div>
     `;
 
@@ -97,18 +92,16 @@ function renderOnlineUsers(users) {
   });
 }
 
-/* ================= ACTIONS ================= */
-window.openDM = function(uid) {
-  location.href = "messages.html?uid=" + uid;
+/* MONITOR INPUT */
+window.sendMonitorMsg = function() {
+  const input = document.getElementById("monitorInput");
+  if (!input.value.trim()) return;
+
+  log("[CMD] " + input.value);
+  input.value = "";
 };
 
-window.sendFriendRequest = async function(toUid, toName) {
-  await addDoc(collection(db, "friendRequests"), {
-    from: user.uid,
-    to: toUid,
-    toName,
-    createdAt: serverTimestamp()
-  });
-
-  alert("Friend request sent");
+/* ACTIONS */
+window.openDM = function(uid) {
+  location.href = "messages.html?uid=" + uid;
 };
