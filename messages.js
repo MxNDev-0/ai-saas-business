@@ -11,52 +11,79 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  doc,
-  setDoc,
-  getDocs
+  getDocs,
+  updateDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let user = null;
 let chatId = null;
 let currentChatUser = null;
+let unsubscribeMessages = null;
+
+const adminId = "pmXooqSVxdO53xiCugrqDijR6iI3";
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
-  if (!u) return location.href = "index.html";
+  if (!u) {
+    location.href = "index.html";
+    return;
+  }
 
   user = u;
 
-  const params = new URLSearchParams(location.search);
-  const uid = params.get("uid");
+  // 🔥 FIX: open user from URL if exists
+  const params = new URLSearchParams(window.location.search);
+  const uidFromUrl = params.get("uid");
 
-  if (uid) openChat(uid);
+  if (uidFromUrl) {
+    openChat(uidFromUrl);
+  } else {
+    openChat(adminId);
+  }
 
   loadInbox();
 });
 
 /* ================= OPEN CHAT ================= */
-function openChat(other) {
-  currentChatUser = other;
-  chatId = [user.uid, other].sort().join("_");
+function openChat(otherUserId) {
+  currentChatUser = otherUserId;
 
-  listenMessages();
+  chatId = [user.uid, otherUserId].sort().join("_");
+
+  loadMessages();
 }
 
-/* ================= MESSAGES ================= */
-function listenMessages() {
+/* ================= LOAD MESSAGES ================= */
+function loadMessages() {
   const box = document.getElementById("chatBox");
+
+  // 🔥 CRITICAL FIX: stop old listener (prevents duplicates)
+  if (unsubscribeMessages) unsubscribeMessages();
 
   const q = query(
     collection(db, "dms", chatId, "messages"),
     orderBy("createdAt", "asc")
   );
 
-  onSnapshot(q, (snap) => {
+  unsubscribeMessages = onSnapshot(q, (snap) => {
     box.innerHTML = "";
 
-    snap.forEach(d => {
-      const m = d.data();
+    snap.forEach(async (docSnap) => {
+      const m = docSnap.data();
 
+      // 🔥 mark as read
+      if (m.to === user.uid && m.read === false) {
+        try {
+          await updateDoc(doc(db, "dms", chatId, "messages", docSnap.id), {
+            read: true
+          });
+        } catch (e) {
+          console.log("read update failed");
+        }
+      }
+
+      // 🔥 render message
       const div = document.createElement("div");
       div.className = "msg " + (m.from === user.uid ? "me" : "them");
       div.textContent = m.text;
@@ -64,54 +91,94 @@ function listenMessages() {
       box.appendChild(div);
     });
 
+    // 🔥 smooth scroll (NO page reload)
     box.scrollTop = box.scrollHeight;
   });
 }
 
-/* ================= SEND ================= */
+/* ================= SEND MESSAGE ================= */
 window.sendMsg = async function () {
-  const input = document.getElementById("msgInput");
-  if (!input.value.trim()) return;
+  try {
+    const input = document.getElementById("msgInput");
 
-  await addDoc(collection(db, "dms", chatId, "messages"), {
-    text: input.value,
-    from: user.uid,
-    to: currentChatUser,
-    read: false,
-    createdAt: serverTimestamp()
-  });
+    if (!input.value.trim()) return;
+    if (!user || !chatId) return;
 
-  // inbox sync fix
-  await setDoc(doc(db, "conversations", chatId), {
-    participants: [user.uid, currentChatUser],
-    lastMessage: input.value,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+    const text = input.value.trim();
 
-  input.value = "";
+    await addDoc(collection(db, "dms", chatId, "messages"), {
+      text,
+      from: user.uid,
+      to: currentChatUser,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    // 🔥 ADMIN EVENT (NO MESSAGE CONTENT)
+    await addDoc(collection(db, "events"), {
+      type: "dm",
+      from: user.uid,
+      to: currentChatUser,
+      createdAt: serverTimestamp()
+    });
+
+    input.value = "";
+
+  } catch (err) {
+    console.error(err);
+    alert("Message failed");
+  }
 };
 
-/* ================= FIXED INBOX ================= */
+/* ================= ENTER TO SEND ================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("msgInput");
+
+  if (input) {
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMsg();
+    });
+  }
+});
+
+/* ================= INBOX SYSTEM ================= */
 async function loadInbox() {
-  const box = document.getElementById("inboxList");
+  const inbox = document.getElementById("inboxList");
+  if (!inbox) return;
 
-  const snap = await getDocs(collection(db, "conversations"));
+  inbox.innerHTML = "Loading...";
 
-  box.innerHTML = "";
+  try {
+    const snapshot = await getDocs(collection(db, "dms"));
 
-  snap.forEach(d => {
-    const data = d.data();
+    // 🔥 FIX: handle empty safely
+    if (snapshot.empty) {
+      inbox.innerHTML = "<div style='padding:10px;'>No conversations yet</div>";
+      return;
+    }
 
-    if (!data.participants.includes(user.uid)) return;
+    inbox.innerHTML = "";
 
-    const other = data.participants.find(x => x !== user.uid);
+    snapshot.forEach(docSnap => {
+      const id = docSnap.id;
 
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerText = other + " • " + (data.lastMessage || "");
+      // only show user-related chats
+      if (!id.includes(user.uid)) return;
 
-    div.onclick = () => openChat(other);
+      const parts = id.split("_");
+      const otherUser = parts[0] === user.uid ? parts[1] : parts[0];
 
-    box.appendChild(div);
-  });
+      const div = document.createElement("div");
+      div.className = "inbox-item";
+      div.textContent = otherUser;
+
+      div.onclick = () => openChat(otherUser);
+
+      inbox.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error("Inbox error:", err);
+    inbox.innerHTML = "Failed to load inbox";
+  }
 }
