@@ -13,6 +13,13 @@ import {
 
 let user = null;
 
+/* ================= LOGGER ================= */
+function log(msg) {
+  const monitor = document.getElementById("monitor");
+  monitor.innerHTML += "<br>" + msg;
+  monitor.scrollTop = monitor.scrollHeight;
+}
+
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (u) => {
   if (!u) {
@@ -21,6 +28,8 @@ onAuthStateChanged(auth, async (u) => {
   }
 
   user = u;
+
+  log("[AUTH] Logged in as " + u.email);
 
   trackOnlineStatus();
   loadOnlineUsers();
@@ -34,6 +43,9 @@ function trackOnlineStatus() {
       name: user.email.split("@")[0],
       lastSeen: Date.now()
     });
+
+    log("[PING] online update sent");
+
   }, 5000);
 }
 
@@ -51,6 +63,8 @@ function loadOnlineUsers() {
         users.push(data);
       }
     });
+
+    log("[UPDATE] Online users: " + users.length);
 
     renderOnlineUsers(users);
   });
