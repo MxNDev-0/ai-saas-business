@@ -35,21 +35,12 @@ function startAIMonitor() {
       if (change.type !== "added") return;
 
       const e = change.doc.data();
-
       log(`Event: ${e.type}`, "ai");
-
-      if (e.type === "login_fail") {
-        log("⚠️ Failed login detected", "warn");
-      }
-
-      if (e.type === "spam") {
-        log("🚨 Spam detected", "error");
-      }
     });
   });
 }
 
-/* ================= AUTH (FIXED) ================= */
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     location.href = "index.html";
@@ -70,8 +61,8 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   log("Admin online");
-  startAIMonitor();
 
+  startAIMonitor();
   loadPosts();
   loadUsers();
   loadAds();
@@ -107,7 +98,12 @@ function loadPosts() {
       box.innerHTML += `
         <div class="item">
           <b>${p.title}</b><br>
-          <button class="small-btn" onclick="fillEdit('${d.id}', \`${p.title}\`, \`${p.content}\`)">Edit</button>
+
+          <button class="small-btn"
+            onclick="fillEdit('${d.id}', \`${encodeURIComponent(p.title)}\`, \`${encodeURIComponent(p.content)}\`)">
+            Edit
+          </button>
+
           <button class="small-btn" onclick="deletePost('${d.id}')">Delete</button>
         </div>
       `;
@@ -115,10 +111,11 @@ function loadPosts() {
   });
 }
 
+/* FIXED EDIT HANDLER (NO BREAKS) */
 window.fillEdit = (id, title, content) => {
   editPostId.value = id;
-  editPostTitle.value = title;
-  editPostContent.value = content;
+  editPostTitle.value = decodeURIComponent(title);
+  editPostContent.value = decodeURIComponent(content);
 };
 
 window.updatePost = async () => {
@@ -204,4 +201,40 @@ window.clearRejected = async () => {
 
   await batch.commit();
   log("Rejected ads cleared");
+};
+
+/* ================= 🤖 AI BLOG GENERATOR (FIXED) ================= */
+window.generateAI = async () => {
+  const topic = aiTopic.value;
+  if (!topic) return alert("Enter a topic");
+
+  log("AI generating: " + topic, "ai");
+
+  // simple placeholder (you can later connect OpenAI / backend)
+  const fakeArticle = `# ${topic}\n\nThis is an AI-generated draft about ${topic}.`;
+
+  blogTitle.value = topic;
+  blogContent.value = fakeArticle;
+
+  log("AI draft ready", "ai");
+};
+
+/* ================= ⏱ SCHEDULER (FIXED BASIC VERSION) ================= */
+window.schedulePost = async () => {
+  const title = scheduleTitle.value;
+  const content = scheduleContent.value;
+  const time = scheduleTime.value;
+
+  if (!title || !content || !time) {
+    return alert("Fill all fields");
+  }
+
+  await addDoc(collection(db, "scheduledPosts"), {
+    title,
+    content,
+    publishAt: new Date(time).getTime(),
+    createdAt: serverTimestamp()
+  });
+
+  log("Post scheduled ⏱");
 };
