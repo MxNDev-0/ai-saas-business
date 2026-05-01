@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 import {
   doc, getDoc, addDoc, collection, onSnapshot,
   deleteDoc, updateDoc, query, orderBy,
-  getDocs, writeBatch, serverTimestamp
+  getDocs, writeBatch, serverTimestamp, setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= MONITOR ================= */
@@ -24,6 +24,109 @@ function log(msg, type = "ok") {
   box.scrollTop = box.scrollHeight;
 }
 
+/* ================= AI SYSTEM (INJECTED) ================= */
+
+// 🔥 AI EVENT LOGGER (goes into your monitor automatically)
+async function aiLog(type, message, level = "ok") {
+  await addDoc(collection(db, "events"), {
+    type,
+    text: message,
+    level,
+    createdAt: serverTimestamp()
+  });
+}
+
+// 🔥 SECURITY MONITOR
+function startSecurityMonitor() {
+  onSnapshot(collection(db, "events"), (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === "added") {
+        const e = change.doc.data();
+
+        if (typeof e.text === "string") {
+
+          if (e.text.includes("hack") || e.text.includes("inject")) {
+            log("⚠️ SECURITY ALERT: suspicious activity", "error");
+            aiLog("SECURITY", "Possible hack attempt detected", "error");
+          }
+
+          if (e.text.length > 300) {
+            log("⚠️ Warning: large message detected", "warn");
+          }
+
+        }
+      }
+    });
+  });
+}
+
+// 🔥 AUTO BLOG AI (basic for now)
+window.generateAI = async () => {
+  const topic = prompt("Enter topic for AI blog");
+  if (!topic) return;
+
+  const post = {
+    title: "AI: " + topic,
+    content: "This is an AI-generated post about " + topic,
+    createdAt: serverTimestamp()
+  };
+
+  const ref = await addDoc(collection(db, "posts"), post);
+
+  log("AI blog created: " + ref.id);
+  aiLog("AI", "Generated blog: " + topic);
+};
+
+// 🔥 SCHEDULER
+window.schedulePost = async () => {
+  const title = prompt("Post title");
+  const content = prompt("Post content");
+  const time = prompt("Enter time (YYYY-MM-DD HH:MM)");
+
+  if (!title || !time) return;
+
+  await addDoc(collection(db, "scheduledPosts"), {
+    title,
+    content,
+    time,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+
+  log("Post scheduled");
+  aiLog("SCHEDULER", "Post scheduled: " + title);
+};
+
+// 🔥 AUTO RUN SCHEDULER
+function startScheduler() {
+  onSnapshot(collection(db, "scheduledPosts"), (snap) => {
+    snap.forEach(async (docSnap) => {
+      const d = docSnap.data();
+
+      if (d.status === "done") return;
+
+      const now = new Date().getTime();
+      const scheduled = new Date(d.time).getTime();
+
+      if (now >= scheduled) {
+        await addDoc(collection(db, "posts"), {
+          title: d.title,
+          content: d.content,
+          createdAt: serverTimestamp()
+        });
+
+        await setDoc(doc(db, "scheduledPosts", docSnap.id), {
+          ...d,
+          status: "done"
+        });
+
+        log("📅 Scheduled post published");
+        aiLog("SCHEDULER", "Post auto published");
+      }
+    });
+  });
+}
+
 /* ================= AUTH ================= */
 let adminUser = null;
 
@@ -40,10 +143,15 @@ onAuthStateChanged(auth, async (user) => {
   adminUser = user;
 
   log("Admin online");
+
   loadPosts();
   loadUsers();
   loadAds();
   loadRejectedAds();
+
+  // 🔥 START AI SYSTEM
+  startSecurityMonitor();
+  startScheduler();
 });
 
 /* ================= BLOG CREATE ================= */
