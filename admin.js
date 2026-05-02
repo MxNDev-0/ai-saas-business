@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= MONITOR ================= */
-function log(msg, type = "ok") {
+function log(msg, type = "ok", data = null) {
   const box = document.getElementById("monitor");
   if (!box) return;
 
@@ -20,6 +20,21 @@ function log(msg, type = "ok") {
 
   const div = document.createElement("div");
   div.style.color = color;
+
+  // ✅ CLICKABLE EVENT
+  if (type === "ai" && data) {
+    div.style.cursor = "pointer";
+    div.style.textDecoration = "underline";
+
+    div.onclick = () => {
+      if (data.postId) {
+        window.open("../blog/post.html?id=" + data.postId, "_blank");
+      } else {
+        alert("No linked content");
+      }
+    };
+  }
+
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
@@ -29,43 +44,30 @@ function log(msg, type = "ok") {
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
   try {
-    if (!user) {
-      location.href = "index.html";
-      return;
-    }
+    if (!user) return location.href = "index.html";
 
     const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists()) return location.href = "index.html";
 
-    if (!snap.exists()) {
-      alert("User not found");
-      location.href = "index.html";
-      return;
-    }
-
-    const data = snap.data();
-
-    if (data.role !== "admin") {
+    if (snap.data().role !== "admin") {
       alert("Access denied");
-      location.href = "index.html";
-      return;
+      return location.href = "index.html";
     }
 
     log("Admin online");
 
     startAIMonitor();
-
     loadPosts();
     loadUsers();
     loadAds();
     loadRejectedAds();
 
   } catch (err) {
-    console.error("AUTH ERROR:", err);
     log("Auth error: " + err.message, "error");
   }
 });
 
-/* ================= AI MONITOR ================= */
+/* ================= AI MONITOR (CLICK FIX) ================= */
 function startAIMonitor() {
   const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
 
@@ -74,70 +76,46 @@ function startAIMonitor() {
       if (change.type !== "added") return;
 
       const e = change.doc.data();
-      log(`Event: ${e.type}`, "ai");
+
+      log(`Event: ${e.type}`, "ai", e); // ✅ PASS DATA
     });
-  }, (err) => {
-    log("Event monitor error: " + err.message, "error");
   });
 }
 
 /* ================= BLOG ================= */
 window.createBlog = async () => {
-  try {
-    const title = document.getElementById("blogTitle").value;
-    const content = document.getElementById("blogContent").value;
-    const image = document.getElementById("blogImage").value;
+  const title = document.getElementById("blogTitle").value;
+  const content = document.getElementById("blogContent").value;
+  const image = document.getElementById("blogImage").value;
 
-    if (!title || !content) {
-      alert("Title and content required");
-      return;
-    }
+  if (!title || !content) return alert("Title and content required");
 
-    const ref = await addDoc(collection(db, "posts"), {
-      title,
-      content,
-      image,
-      createdAt: new Date(),              // ✅ FIXED
-      serverTime: serverTimestamp()       // ✅ ADDED
-    });
+  const ref = await addDoc(collection(db, "posts"), {
+    title,
+    content,
+    image,
+    createdAt: new Date(),
+    serverTime: serverTimestamp()
+  });
 
-    log("Blog created: " + ref.id);
-
-  } catch (err) {
-    log("Create blog error: " + err.message, "error");
-  }
+  log("Blog created: " + ref.id);
 };
 
-/* ================= POSTS (FIXED) ================= */
+/* ================= POSTS ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
 
-  if (!box) {
-    console.error("postsList not found in HTML");
-    return;
-  }
-
-  const q = query(collection(db, "posts")); // ✅ FIXED
+  const q = query(collection(db, "posts"));
 
   onSnapshot(q, (snap) => {
     box.innerHTML = "";
 
-    if (snap.empty) {
-      box.innerHTML = `<div class="item">No posts found</div>`;
-      return;
-    }
-
     const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
 
-    snap.forEach(d => {
-      docs.push({ id: d.id, ...d.data() });
-    });
-
-    docs.sort((a, b) => {
-      const aTime = a.createdAt?.seconds || 0;
-      const bTime = b.createdAt?.seconds || 0;
-      return bTime - aTime;
-    });
+    docs.sort((a, b) =>
+      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+    );
 
     docs.forEach(p => {
       const safeTitle = encodeURIComponent(p.title || "");
@@ -145,10 +123,10 @@ function loadPosts() {
 
       box.innerHTML += `
         <div class="item">
-          <b>${p.title || "Untitled"}</b><br>
+          <b>${p.title}</b><br>
 
           <button class="small-btn"
-            onclick="fillEdit('${p.id}', '${safeTitle}', '${safeContent}')">
+            onclick="fillEdit('${p.id}','${safeTitle}','${safeContent}')">
             Edit
           </button>
 
@@ -159,55 +137,40 @@ function loadPosts() {
         </div>
       `;
     });
-
-  }, (err) => {
-    console.error("POST LOAD ERROR:", err);
-    log("Posts error: " + err.message, "error");
-    box.innerHTML = `<div class="item">Failed to load posts</div>`;
   });
 }
 
 /* ================= EDIT ================= */
 window.fillEdit = (id, title, content) => {
-  try {
-    document.getElementById("editPostId").value = id;
-    document.getElementById("editPostTitle").value = decodeURIComponent(title);
-    document.getElementById("editPostContent").value = decodeURIComponent(content);
-  } catch (err) {
-    log("Edit fill error", "error");
-  }
+  document.getElementById("editPostId").value = id;
+  document.getElementById("editPostTitle").value = decodeURIComponent(title);
+  document.getElementById("editPostContent").value = decodeURIComponent(content);
 };
 
 window.updatePost = async () => {
-  try {
-    const id = document.getElementById("editPostId").value;
-    if (!id) return alert("No post selected");
+  const id = document.getElementById("editPostId").value;
+  if (!id) return alert("No post selected");
 
-    await updateDoc(doc(db, "posts", id), {
-      title: document.getElementById("editPostTitle").value,
-      content: document.getElementById("editPostContent").value
-    });
+  await updateDoc(doc(db, "posts", id), {
+    title: document.getElementById("editPostTitle").value,
+    content: document.getElementById("editPostContent").value
+  });
 
-    log("Post updated");
-
-  } catch (err) {
-    log("Update error: " + err.message, "error");
-  }
+  log("Post updated");
 };
 
+/* ================= DELETE (CONFIRM FIX) ================= */
 window.deletePost = async (id) => {
-  try {
-    await deleteDoc(doc(db, "posts", id));
-    log("Post deleted", "warn");
-  } catch (err) {
-    log("Delete error: " + err.message, "error");
-  }
+  const confirmDelete = confirm("Delete this post permanently?");
+  if (!confirmDelete) return;
+
+  await deleteDoc(doc(db, "posts", id));
+  log("Post deleted", "warn");
 };
 
 /* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("usersList");
-  if (!box) return;
 
   onSnapshot(collection(db, "onlineUsers"), snap => {
     box.innerHTML = "";
@@ -220,7 +183,6 @@ function loadUsers() {
 /* ================= ADS ================= */
 function loadAds() {
   const box = document.getElementById("upgradeList");
-  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
@@ -230,8 +192,8 @@ function loadAds() {
       box.innerHTML += `
         <div class="item">
           <b>${ad.title}</b><br>
-          <button class="small-btn" onclick="acceptAd('${d.id}')">Accept</button>
-          <button class="small-btn" onclick="rejectAd('${d.id}')">Reject</button>
+          <button onclick="acceptAd('${d.id}')">Accept</button>
+          <button onclick="rejectAd('${d.id}')">Reject</button>
         </div>
       `;
     });
@@ -251,7 +213,6 @@ window.rejectAd = async (id) => {
 /* ================= REJECTED ================= */
 function loadRejectedAds() {
   const box = document.getElementById("rejectedList");
-  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
