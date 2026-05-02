@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= MONITOR ================= */
-function log(msg, type = "ok", data = null) {
+function log(msg, type = "ok") {
   const box = document.getElementById("monitor");
   if (!box) return;
 
@@ -20,21 +20,6 @@ function log(msg, type = "ok", data = null) {
 
   const div = document.createElement("div");
   div.style.color = color;
-
-  // ✅ CLICKABLE EVENT
-  if (type === "ai" && data) {
-    div.style.cursor = "pointer";
-    div.style.textDecoration = "underline";
-
-    div.onclick = () => {
-      if (data.postId) {
-        window.open("../blog/post.html?id=" + data.postId, "_blank");
-      } else {
-        alert("No linked content");
-      }
-    };
-  }
-
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
@@ -44,30 +29,43 @@ function log(msg, type = "ok", data = null) {
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
   try {
-    if (!user) return location.href = "index.html";
+    if (!user) {
+      location.href = "index.html";
+      return;
+    }
 
     const snap = await getDoc(doc(db, "users", user.uid));
-    if (!snap.exists()) return location.href = "index.html";
 
-    if (snap.data().role !== "admin") {
+    if (!snap.exists()) {
+      alert("User not found");
+      location.href = "index.html";
+      return;
+    }
+
+    const data = snap.data();
+
+    if (data.role !== "admin") {
       alert("Access denied");
-      return location.href = "index.html";
+      location.href = "index.html";
+      return;
     }
 
     log("Admin online");
 
     startAIMonitor();
+
     loadPosts();
     loadUsers();
     loadAds();
     loadRejectedAds();
 
   } catch (err) {
+    console.error("AUTH ERROR:", err);
     log("Auth error: " + err.message, "error");
   }
 });
 
-/* ================= AI MONITOR (CLICK FIX) ================= */
+/* ================= AI MONITOR (FIXED) ================= */
 function startAIMonitor() {
   const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
 
@@ -77,103 +75,148 @@ function startAIMonitor() {
 
       const e = change.doc.data();
 
-      log(`Event: ${e.type}`, "ai", e); // ✅ PASS DATA
+      log(
+        `Event: ${e.type} | ${e.title || ""} ${e.postId ? "| ID: " + e.postId : ""}`,
+        "ai"
+      );
     });
+  }, (err) => {
+    log("Event monitor error: " + err.message, "error");
   });
 }
 
-/* ================= BLOG ================= */
+/* ================= BLOG (FIXED WITH EVENT LINK) ================= */
 window.createBlog = async () => {
-  const title = document.getElementById("blogTitle").value;
-  const content = document.getElementById("blogContent").value;
-  const image = document.getElementById("blogImage").value;
+  try {
+    const title = document.getElementById("blogTitle").value;
+    const content = document.getElementById("blogContent").value;
+    const image = document.getElementById("blogImage").value;
 
-  if (!title || !content) return alert("Title and content required");
+    if (!title || !content) {
+      alert("Title and content required");
+      return;
+    }
 
-  const ref = await addDoc(collection(db, "posts"), {
-    title,
-    content,
-    image,
-    createdAt: new Date(),
-    serverTime: serverTimestamp()
-  });
+    // ✅ Create post
+    const ref = await addDoc(collection(db, "posts"), {
+      title,
+      content,
+      image,
+      createdAt: serverTimestamp()
+    });
 
-  log("Blog created: " + ref.id);
+    log("Blog created: " + ref.id);
+
+    // ✅ 🔥 Create event with clickable target
+    await addDoc(collection(db, "events"), {
+      type: "post",
+      title: title,
+      postId: ref.id,
+      createdAt: serverTimestamp()
+    });
+
+    log("Event created for post");
+
+  } catch (err) {
+    log("Create blog error: " + err.message, "error");
+  }
 };
 
 /* ================= POSTS ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
 
-  const q = query(collection(db, "posts"));
+  if (!box) {
+    console.error("postsList not found in HTML");
+    return;
+  }
+
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
   onSnapshot(q, (snap) => {
     box.innerHTML = "";
 
-    const docs = [];
-    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    if (snap.empty) {
+      box.innerHTML = `<div class="item">No posts found</div>`;
+      return;
+    }
 
-    docs.sort((a, b) =>
-      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-    );
+    snap.forEach(d => {
+      const p = d.data();
 
-    docs.forEach(p => {
       const safeTitle = encodeURIComponent(p.title || "");
       const safeContent = encodeURIComponent(p.content || "");
 
       box.innerHTML += `
         <div class="item">
-          <b>${p.title}</b><br>
+          <b>${p.title || "Untitled"}</b><br>
 
           <button class="small-btn"
-            onclick="fillEdit('${p.id}','${safeTitle}','${safeContent}')">
+            onclick="fillEdit('${d.id}', '${safeTitle}', '${safeContent}')">
             Edit
           </button>
 
           <button class="small-btn"
-            onclick="deletePost('${p.id}')">
+            onclick="deletePost('${d.id}')">
             Delete
           </button>
         </div>
       `;
     });
+
+  }, (err) => {
+    console.error("POST LOAD ERROR:", err);
+    log("Posts error: " + err.message, "error");
+    box.innerHTML = `<div class="item">Failed to load posts</div>`;
   });
 }
 
 /* ================= EDIT ================= */
 window.fillEdit = (id, title, content) => {
-  document.getElementById("editPostId").value = id;
-  document.getElementById("editPostTitle").value = decodeURIComponent(title);
-  document.getElementById("editPostContent").value = decodeURIComponent(content);
+  try {
+    document.getElementById("editPostId").value = id;
+    document.getElementById("editPostTitle").value = decodeURIComponent(title);
+    document.getElementById("editPostContent").value = decodeURIComponent(content);
+  } catch (err) {
+    log("Edit fill error", "error");
+  }
 };
 
 window.updatePost = async () => {
-  const id = document.getElementById("editPostId").value;
-  if (!id) return alert("No post selected");
+  try {
+    const id = document.getElementById("editPostId").value;
 
-  await updateDoc(doc(db, "posts", id), {
-    title: document.getElementById("editPostTitle").value,
-    content: document.getElementById("editPostContent").value
-  });
+    if (!id) return alert("No post selected");
 
-  log("Post updated");
+    await updateDoc(doc(db, "posts", id), {
+      title: document.getElementById("editPostTitle").value,
+      content: document.getElementById("editPostContent").value
+    });
+
+    log("Post updated");
+
+  } catch (err) {
+    log("Update error: " + err.message, "error");
+  }
 };
 
-/* ================= DELETE (CONFIRM FIX) ================= */
 window.deletePost = async (id) => {
-  const confirmDelete = confirm("Delete this post permanently?");
-  if (!confirmDelete) return;
-
-  await deleteDoc(doc(db, "posts", id));
-  log("Post deleted", "warn");
+  try {
+    await deleteDoc(doc(db, "posts", id));
+    log("Post deleted", "warn");
+  } catch (err) {
+    log("Delete error: " + err.message, "error");
+  }
 };
 
 /* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("usersList");
+  if (!box) return;
 
   onSnapshot(collection(db, "onlineUsers"), snap => {
     box.innerHTML = "";
+
     snap.forEach(u => {
       box.innerHTML += `<div class="item">${u.data().email}</div>`;
     });
@@ -183,17 +226,19 @@ function loadUsers() {
 /* ================= ADS ================= */
 function loadAds() {
   const box = document.getElementById("upgradeList");
+  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
+
     snap.forEach(d => {
       const ad = d.data();
 
       box.innerHTML += `
         <div class="item">
           <b>${ad.title}</b><br>
-          <button onclick="acceptAd('${d.id}')">Accept</button>
-          <button onclick="rejectAd('${d.id}')">Reject</button>
+          <button class="small-btn" onclick="acceptAd('${d.id}')">Accept</button>
+          <button class="small-btn" onclick="rejectAd('${d.id}')">Reject</button>
         </div>
       `;
     });
@@ -213,9 +258,11 @@ window.rejectAd = async (id) => {
 /* ================= REJECTED ================= */
 function loadRejectedAds() {
   const box = document.getElementById("rejectedList");
+  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
+
     snap.forEach(d => {
       if (d.data().status === "rejected") {
         box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
