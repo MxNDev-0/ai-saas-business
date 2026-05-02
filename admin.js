@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= MONITOR ================= */
-function log(msg, type = "ok") {
+function log(msg, type = "ok", clickableData = null) {
   const box = document.getElementById("monitor");
   if (!box) return;
 
@@ -20,7 +20,19 @@ function log(msg, type = "ok") {
 
   const div = document.createElement("div");
   div.style.color = color;
+  div.style.cursor = clickableData ? "pointer" : "default";
+
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+
+  /* 🔥 CLICK TO OPEN EVENT DETAILS */
+  if (clickableData) {
+    div.onclick = () => {
+      log("---- EVENT DETAILS ----", "warn");
+      Object.keys(clickableData).forEach(k => {
+        log(`${k}: ${JSON.stringify(clickableData[k])}`);
+      });
+    };
+  }
 
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
@@ -65,7 +77,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* ================= AI MONITOR (FIXED) ================= */
+/* ================= AI MONITOR (UPGRADED) ================= */
 function startAIMonitor() {
   const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
 
@@ -75,17 +87,14 @@ function startAIMonitor() {
 
       const e = change.doc.data();
 
-      log(
-        `Event: ${e.type} | ${e.title || ""} ${e.postId ? "| ID: " + e.postId : ""}`,
-        "ai"
-      );
+      log(`Event: ${e.type}`, "ai", e); // 🔥 clickable event
     });
   }, (err) => {
     log("Event monitor error: " + err.message, "error");
   });
 }
 
-/* ================= BLOG (FIXED WITH EVENT LINK) ================= */
+/* ================= BLOG ================= */
 window.createBlog = async () => {
   try {
     const title = document.getElementById("blogTitle").value;
@@ -97,7 +106,6 @@ window.createBlog = async () => {
       return;
     }
 
-    // ✅ Create post
     const ref = await addDoc(collection(db, "posts"), {
       title,
       content,
@@ -105,17 +113,15 @@ window.createBlog = async () => {
       createdAt: serverTimestamp()
     });
 
-    log("Blog created: " + ref.id);
-
-    // ✅ 🔥 Create event with clickable target
+    /* 🔥 CREATE EVENT */
     await addDoc(collection(db, "events"), {
-      type: "post",
-      title: title,
-      postId: ref.id,
+      type: "post_created",
+      refId: ref.id,
+      title,
       createdAt: serverTimestamp()
     });
 
-    log("Event created for post");
+    log("Blog created: " + ref.id);
 
   } catch (err) {
     log("Create blog error: " + err.message, "error");
@@ -125,11 +131,6 @@ window.createBlog = async () => {
 /* ================= POSTS ================= */
 function loadPosts() {
   const box = document.getElementById("postsList");
-
-  if (!box) {
-    console.error("postsList not found in HTML");
-    return;
-  }
 
   const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
@@ -165,32 +166,31 @@ function loadPosts() {
     });
 
   }, (err) => {
-    console.error("POST LOAD ERROR:", err);
     log("Posts error: " + err.message, "error");
-    box.innerHTML = `<div class="item">Failed to load posts</div>`;
   });
 }
 
 /* ================= EDIT ================= */
 window.fillEdit = (id, title, content) => {
-  try {
-    document.getElementById("editPostId").value = id;
-    document.getElementById("editPostTitle").value = decodeURIComponent(title);
-    document.getElementById("editPostContent").value = decodeURIComponent(content);
-  } catch (err) {
-    log("Edit fill error", "error");
-  }
+  document.getElementById("editPostId").value = id;
+  document.getElementById("editPostTitle").value = decodeURIComponent(title);
+  document.getElementById("editPostContent").value = decodeURIComponent(content);
 };
 
 window.updatePost = async () => {
   try {
     const id = document.getElementById("editPostId").value;
 
-    if (!id) return alert("No post selected");
-
     await updateDoc(doc(db, "posts", id), {
       title: document.getElementById("editPostTitle").value,
       content: document.getElementById("editPostContent").value
+    });
+
+    /* 🔥 EVENT */
+    await addDoc(collection(db, "events"), {
+      type: "post_updated",
+      refId: id,
+      createdAt: serverTimestamp()
     });
 
     log("Post updated");
@@ -201,18 +201,20 @@ window.updatePost = async () => {
 };
 
 window.deletePost = async (id) => {
-  try {
-    await deleteDoc(doc(db, "posts", id));
-    log("Post deleted", "warn");
-  } catch (err) {
-    log("Delete error: " + err.message, "error");
-  }
+  await deleteDoc(doc(db, "posts", id));
+
+  await addDoc(collection(db, "events"), {
+    type: "post_deleted",
+    refId: id,
+    createdAt: serverTimestamp()
+  });
+
+  log("Post deleted", "warn");
 };
 
 /* ================= USERS ================= */
 function loadUsers() {
   const box = document.getElementById("usersList");
-  if (!box) return;
 
   onSnapshot(collection(db, "onlineUsers"), snap => {
     box.innerHTML = "";
@@ -226,7 +228,6 @@ function loadUsers() {
 /* ================= ADS ================= */
 function loadAds() {
   const box = document.getElementById("upgradeList");
-  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
@@ -247,18 +248,25 @@ function loadAds() {
 
 window.acceptAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
+
+  await addDoc(collection(db, "events"), {
+    type: "ad_accepted",
+    refId: id,
+    createdAt: serverTimestamp()
+  });
+
   log("Ad accepted");
 };
 
 window.rejectAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
+
   log("Ad rejected", "warn");
 };
 
 /* ================= REJECTED ================= */
 function loadRejectedAds() {
   const box = document.getElementById("rejectedList");
-  if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), snap => {
     box.innerHTML = "";
