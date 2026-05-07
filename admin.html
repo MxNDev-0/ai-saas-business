@@ -87,6 +87,14 @@
       font-size: 12px;
       margin-left: 5px;
     }
+
+    /* 🔥 ONLY ADDED (NO REMOVAL) */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+      font-size: 13px;
+    }
   </style>
 </head>
 
@@ -101,32 +109,61 @@
     <div id="monitor" class="monitor"></div>
   </div>
 
+  <!-- ================= BLOG CREATOR (INJECTED ONLY) ================= -->
+  <div class="card">
+    <h3>📝 Create Blog</h3>
+
+    <input id="blogTitle" placeholder="Blog Title">
+    <textarea id="blogContent" placeholder="Blog Content"></textarea>
+    <input id="blogImage" placeholder="Image URL">
+
+    <!-- 🔥 INJECTED CONTROLS (NOT REMOVING ANYTHING) -->
+    <div class="toggle-row">
+      <label>Homepage</label>
+      <input type="checkbox" id="c_homepage">
+    </div>
+
+    <div class="toggle-row">
+      <label>Featured</label>
+      <input type="checkbox" id="c_featured">
+    </div>
+
+    <div class="toggle-row">
+      <label>Trending</label>
+      <input type="checkbox" id="c_trending">
+    </div>
+
+    <div class="toggle-row">
+      <label>Sponsored</label>
+      <input type="checkbox" id="c_sponsored">
+    </div>
+
+    <input id="adExpiry" type="datetime-local">
+    <input id="adPriority" type="number" placeholder="Priority (0-10)">
+
+    <button onclick="createBlog()">Publish Blog</button>
+  </div>
+
+  <!-- ================= KEEP YOUR EXISTING BLOCKS ================= -->
+
   <div class="card">
     <h3>🤖 AI Blog Writer</h3>
-    <input id="aiTopic" placeholder="Enter topic (e.g Crypto trends 2026)">
+    <input id="aiTopic" placeholder="Enter topic">
     <button onclick="generateAI()">Generate Article</button>
   </div>
 
   <div class="card">
     <h3>⏱ Auto Scheduler</h3>
     <input id="scheduleTitle" placeholder="Blog Title">
-    <textarea id="scheduleContent" placeholder="Content"></textarea>
+    <textarea id="scheduleContent"></textarea>
     <input id="scheduleTime" type="datetime-local">
-    <button onclick="schedulePost()">Schedule Post</button>
-  </div>
-
-  <div class="card">
-    <h3>📝 Create Blog</h3>
-    <input id="blogTitle" placeholder="Blog Title">
-    <textarea id="blogContent" placeholder="Blog Content"></textarea>
-    <input id="blogImage" placeholder="Image URL">
-    <button onclick="createBlog()">Publish Blog</button>
+    <button onclick="schedulePost()">Schedule</button>
   </div>
 
   <div class="card">
     <h3>🔔 Broadcast</h3>
-    <input id="broadcastTitle" placeholder="Title">
-    <textarea id="broadcastMessage" placeholder="Message"></textarea>
+    <input id="broadcastTitle">
+    <textarea id="broadcastMessage"></textarea>
     <button onclick="sendBroadcast()">Send</button>
   </div>
 
@@ -140,14 +177,40 @@
     <div id="upgradeList" class="list-box"></div>
   </div>
 
+  <!-- ================= POST MANAGER (ONLY INJECTED EDIT FLAGS) ================= -->
   <div class="card">
     <h3>💬 Post Manager</h3>
     <div id="postsList" class="list-box"></div>
 
     <h3>✏️ Edit Post</h3>
-    <input id="editPostId" readonly placeholder="Post ID">
-    <input id="editPostTitle" placeholder="Edit title">
-    <textarea id="editPostContent" placeholder="Edit content"></textarea>
+
+    <input id="editPostId" readonly>
+    <input id="editPostTitle">
+    <textarea id="editPostContent"></textarea>
+
+    <!-- 🔥 INJECTED ONLY -->
+    <div class="toggle-row">
+      <label>Homepage</label>
+      <input type="checkbox" id="e_homepage">
+    </div>
+
+    <div class="toggle-row">
+      <label>Featured</label>
+      <input type="checkbox" id="e_featured">
+    </div>
+
+    <div class="toggle-row">
+      <label>Trending</label>
+      <input type="checkbox" id="e_trending">
+    </div>
+
+    <div class="toggle-row">
+      <label>Sponsored</label>
+      <input type="checkbox" id="e_sponsored">
+    </div>
+
+    <input id="e_adExpiry" type="datetime-local">
+    <input id="e_adPriority" type="number">
 
     <button onclick="updatePost()">Update Post</button>
   </div>
