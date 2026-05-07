@@ -1,7 +1,23 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+
+  <meta charset="UTF-8">
+
   <title>MCN Engine V17 - AI Admin Control Panel</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#5bc0be">
+  <link rel="manifest" href="./manifest.json">
+
+  <!-- IOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- ICON -->
+  <link rel="icon" href="./icons/icon-192.png">
 
   <style>
     body {
@@ -12,7 +28,9 @@
       padding: 20px;
     }
 
-    h2 { margin-bottom: 15px; }
+    h2 {
+      margin-bottom: 15px;
+    }
 
     .grid {
       display: grid;
@@ -27,7 +45,9 @@
       box-sizing: border-box;
     }
 
-    input, textarea, select {
+    input,
+    textarea,
+    select {
       width: 100%;
       padding: 10px;
       margin: 6px 0;
@@ -174,7 +194,7 @@
       placeholder="Priority (0-10)"
     >
 
-    <!-- 🔥 NEW PLACEHOLDER CONTROL -->
+    <!-- PLACEHOLDER CONTROL -->
     <div class="section-title">Featured Placeholder Slot</div>
 
     <select id="placeholderSlot">
@@ -287,9 +307,13 @@
 
     <input id="e_adExpiry" type="datetime-local">
 
-    <input id="e_adPriority" type="number" placeholder="Priority">
+    <input
+      id="e_adPriority"
+      type="number"
+      placeholder="Priority"
+    >
 
-    <!-- 🔥 PLACEHOLDER EDIT -->
+    <!-- PLACEHOLDER EDIT -->
     <div class="section-title">Placeholder Slot</div>
 
     <select id="e_placeholderSlot">
