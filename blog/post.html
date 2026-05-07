@@ -26,12 +26,10 @@
       line-height: 1.6;
     }
 
-    /* ✅ FIXED HEADER */
     .header {
       background: #1c2541;
       padding: 15px;
       text-align: center;
-
       position: fixed;
       top: 0;
       left: 0;
@@ -46,7 +44,7 @@
     }
 
     .container {
-      padding: 90px 18px 18px; /* IMPORTANT: prevents overlap */
+      padding: 90px 18px 18px;
       max-width: 750px;
       margin: auto;
     }
@@ -107,7 +105,8 @@
   <div class="loading">Loading post...</div>
 </div>
 
-<button class="back" onclick="location.href='index.html'">← Back</button>
+<!-- 🔥 FIXED BACK NAVIGATION -->
+<button class="back" onclick="goBackSmart()">← Back</button>
 
 <script>
 
@@ -116,21 +115,40 @@ function getPostId() {
   return params.get("id");
 }
 
-/* ✅ CLEAN TEXT + FIX BAD CHARACTERS + LINKS */
+/* ================= SMART BACK SYSTEM ================= */
+function goBackSmart() {
+
+  const ref = document.referrer;
+
+  // If user came from blog listing
+  if (ref && ref.includes("blog/index.html")) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  // If user came from dashboard
+  if (ref && ref.includes("dashboard.html")) {
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  // If history exists, use it
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  // fallback
+  window.location.href = "index.html";
+}
+
+/* ================= FORMAT CONTENT ================= */
 function formatContent(text) {
   if (!text) return "";
 
   return text
-    // remove broken unicode (THIS FIXES THE "?" ISSUE)
     .replace(/[\u200B-\u200D\uFEFF\uFFFD]/g, "")
-
-    // convert links into clickable anchors
-    .replace(
-      /(https?:\/\/[^\s]+)/g,
-      '<a href="$1" target="_blank">$1</a>'
-    )
-
-    // paragraph formatting
+    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')
     .split(/\n+/)
     .filter(p => p.trim() !== "")
     .map(p => `<p>${p.trim()}</p>`)
@@ -157,17 +175,6 @@ async function loadPost() {
     }
 
     document.title = post.title;
-
-    const desc = (post.content || "").substring(0, 150);
-
-    document.querySelector('meta[name="description"]').setAttribute("content", desc);
-    document.querySelector('meta[property="og:title"]').setAttribute("content", post.title);
-    document.querySelector('meta[property="og:description"]').setAttribute("content", desc);
-    document.querySelector('meta[property="og:image"]').setAttribute(
-      "content",
-      post.image || "https://via.placeholder.com/600x300"
-    );
-    document.querySelector('meta[property="og:url"]').setAttribute("content", window.location.href);
 
     document.getElementById("postContainer").innerHTML = `
       <div class="title">${post.title}</div>
