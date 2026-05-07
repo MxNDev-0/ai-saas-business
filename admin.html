@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
   <title>MCN Engine V17 - AI Admin Control Panel</title>
@@ -28,7 +27,7 @@
       box-sizing: border-box;
     }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       padding: 10px;
       margin: 6px 0;
@@ -39,7 +38,10 @@
       box-sizing: border-box;
     }
 
-    textarea { min-height: 90px; resize: none; }
+    textarea {
+      min-height: 90px;
+      resize: none;
+    }
 
     button {
       width: 100%;
@@ -53,7 +55,10 @@
       margin-top: 5px;
     }
 
-    .danger { background: red; color: white; }
+    .danger {
+      background: red;
+      color: white;
+    }
 
     .list-box {
       max-height: 220px;
@@ -86,38 +91,61 @@
       padding: 4px 6px;
       font-size: 12px;
       margin-left: 5px;
+      margin-top: 5px;
     }
 
-    /* 🔥 ONLY ADDED (NO REMOVAL) */
     .toggle-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       margin: 5px 0;
       font-size: 13px;
+      gap: 10px;
+    }
+
+    .toggle-row input {
+      width: auto;
+      margin: 0;
+    }
+
+    .section-title {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .placeholder-box {
+      background: #0b132b;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
     }
   </style>
 </head>
 
-<body>
+<body style="display:none;">
 
 <h2>👑 MCN Admin Panel V17 (AI Powered)</h2>
 
 <div class="grid">
 
+  <!-- SYSTEM -->
   <div class="card">
     <h3>🖥 System Monitor</h3>
     <div id="monitor" class="monitor"></div>
   </div>
 
-  <!-- ================= BLOG CREATOR (INJECTED ONLY) ================= -->
+  <!-- BLOG -->
   <div class="card">
+
     <h3>📝 Create Blog</h3>
 
     <input id="blogTitle" placeholder="Blog Title">
+
     <textarea id="blogContent" placeholder="Blog Content"></textarea>
+
     <input id="blogImage" placeholder="Image URL">
 
-    <!-- 🔥 INJECTED CONTROLS (NOT REMOVING ANYTHING) -->
     <div class="toggle-row">
       <label>Homepage</label>
       <input type="checkbox" id="c_homepage">
@@ -139,56 +167,104 @@
     </div>
 
     <input id="adExpiry" type="datetime-local">
-    <input id="adPriority" type="number" placeholder="Priority (0-10)">
 
-    <button onclick="createBlog()">Publish Blog</button>
+    <input
+      id="adPriority"
+      type="number"
+      placeholder="Priority (0-10)"
+    >
+
+    <!-- 🔥 NEW PLACEHOLDER CONTROL -->
+    <div class="section-title">Featured Placeholder Slot</div>
+
+    <select id="placeholderSlot">
+      <option value="">No Placeholder</option>
+      <option value="hero">Hero Banner</option>
+      <option value="featured1">Featured Slot 1</option>
+      <option value="featured2">Featured Slot 2</option>
+      <option value="sidebar">Sidebar Ad</option>
+      <option value="popup">Popup Promo</option>
+    </select>
+
+    <input
+      id="placeholderText"
+      placeholder="Placeholder Text"
+    >
+
+    <button onclick="createBlog()">
+      Publish Blog
+    </button>
+
   </div>
 
-  <!-- ================= KEEP YOUR EXISTING BLOCKS ================= -->
-
+  <!-- AI -->
   <div class="card">
     <h3>🤖 AI Blog Writer</h3>
+
     <input id="aiTopic" placeholder="Enter topic">
-    <button onclick="generateAI()">Generate Article</button>
+
+    <button onclick="generateAI()">
+      Generate Article
+    </button>
   </div>
 
+  <!-- SCHEDULER -->
   <div class="card">
     <h3>⏱ Auto Scheduler</h3>
+
     <input id="scheduleTitle" placeholder="Blog Title">
+
     <textarea id="scheduleContent"></textarea>
+
     <input id="scheduleTime" type="datetime-local">
-    <button onclick="schedulePost()">Schedule</button>
+
+    <button onclick="schedulePost()">
+      Schedule
+    </button>
   </div>
 
+  <!-- BROADCAST -->
   <div class="card">
     <h3>🔔 Broadcast</h3>
-    <input id="broadcastTitle">
+
+    <input id="broadcastTitle" placeholder="Broadcast Title">
+
     <textarea id="broadcastMessage"></textarea>
-    <button onclick="sendBroadcast()">Send</button>
+
+    <button onclick="sendBroadcast()">
+      Send
+    </button>
   </div>
 
+  <!-- USERS -->
   <div class="card">
     <h3>👥 Users</h3>
+
     <div id="usersList" class="list-box"></div>
   </div>
 
+  <!-- ADS -->
   <div class="card">
     <h3>📢 Ad Requests</h3>
+
     <div id="upgradeList" class="list-box"></div>
   </div>
 
-  <!-- ================= POST MANAGER (ONLY INJECTED EDIT FLAGS) ================= -->
+  <!-- POSTS -->
   <div class="card">
+
     <h3>💬 Post Manager</h3>
+
     <div id="postsList" class="list-box"></div>
 
     <h3>✏️ Edit Post</h3>
 
     <input id="editPostId" readonly>
+
     <input id="editPostTitle">
+
     <textarea id="editPostContent"></textarea>
 
-    <!-- 🔥 INJECTED ONLY -->
     <div class="toggle-row">
       <label>Homepage</label>
       <input type="checkbox" id="e_homepage">
@@ -210,15 +286,67 @@
     </div>
 
     <input id="e_adExpiry" type="datetime-local">
-    <input id="e_adPriority" type="number">
 
-    <button onclick="updatePost()">Update Post</button>
+    <input id="e_adPriority" type="number" placeholder="Priority">
+
+    <!-- 🔥 PLACEHOLDER EDIT -->
+    <div class="section-title">Placeholder Slot</div>
+
+    <select id="e_placeholderSlot">
+      <option value="">No Placeholder</option>
+      <option value="hero">Hero Banner</option>
+      <option value="featured1">Featured Slot 1</option>
+      <option value="featured2">Featured Slot 2</option>
+      <option value="sidebar">Sidebar Ad</option>
+      <option value="popup">Popup Promo</option>
+    </select>
+
+    <input
+      id="e_placeholderText"
+      placeholder="Placeholder Text"
+    >
+
+    <button onclick="updatePost()">
+      Update Post
+    </button>
+
   </div>
 
+  <!-- REJECTED -->
   <div class="card">
     <h3>❌ Rejected Ads</h3>
+
     <div id="rejectedList" class="list-box"></div>
-    <button class="danger" onclick="clearRejected()">Clear Rejected</button>
+
+    <button class="danger" onclick="clearRejected()">
+      Clear Rejected
+    </button>
+  </div>
+
+  <!-- FEATURE CONTROL -->
+  <div class="card">
+
+    <h3>⭐ Homepage Feature Control</h3>
+
+    <div class="placeholder-box">
+
+      <p>
+        Use the checkboxes while creating/editing posts:
+      </p>
+
+      <ul>
+        <li>✅ Homepage</li>
+        <li>✅ Featured</li>
+        <li>✅ Trending</li>
+        <li>✅ Sponsored</li>
+      </ul>
+
+      <p>
+        Your index page can now automatically filter posts.
+      </p>
+
+    </div>
+
   </div>
 
 </div>
