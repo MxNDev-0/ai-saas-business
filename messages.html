@@ -1,81 +1,170 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Messages</title>
+  <title>MCN Engine Messages</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    body { margin:0; font-family:Arial; background:#0b132b; color:#fff; }
+
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b132b;
+      color: #fff;
+    }
 
     .navbar {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:relative;
-      background:#1c2541;
-      padding:12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #1c2541;
+      padding: 12px;
     }
 
     .back-btn {
-      position:absolute;
-      left:10px;
+      position: absolute;
+      left: 10px;
     }
 
     .menu-btn {
-      position:absolute;
-      right:10px;
+      position: absolute;
+      right: 10px;
     }
 
     .chat-box {
-      height: calc(100vh - 140px);
-      overflow-y:auto;
-      padding:10px;
+      height: calc(100vh - 200px);
+      overflow-y: auto;
+      padding: 10px;
     }
 
-    .msg { padding:8px; margin:5px 0; border-radius:8px; }
-    .me { background:#5bc0be; color:#000; margin-left:auto; }
-    .them { background:#1c2541; }
+    .msg {
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 10px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .me {
+      background: #5bc0be;
+      color: #000;
+      margin-left: auto;
+    }
+
+    .them {
+      background: #1c2541;
+    }
 
     .input {
-      position:fixed;
-      bottom:0;
-      width:100%;
-      display:flex;
-      padding:10px;
-      background:#1c2541;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: #1c2541;
+      box-sizing: border-box;
     }
 
-    input { flex:1; padding:10px; }
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #5bc0be;
+      color: #000;
+      font-weight: bold;
+    }
+
+    #menu {
+      display: none;
+      padding: 10px;
+      background: #1c2541;
+    }
+
+    #inboxList {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .item {
+      padding: 10px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      background: #16213e;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <button class="back-btn" onclick="goBack()">←</button>
+
+  <button class="back-btn" onclick="goBack()">
+    ←
+  </button>
+
   <h3>Messages</h3>
-  <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+
+  <button class="menu-btn" onclick="toggleMenu()">
+    ⋮
+  </button>
+
 </div>
 
-<div id="menu" style="display:none; padding:10px;">
-  <button onclick="deleteChat()">Delete Chat</button>
+<div id="menu">
+  <button onclick="deleteChat()">
+    Delete Chat
+  </button>
 </div>
+
+<div id="inboxList"></div>
 
 <div id="chatBox" class="chat-box"></div>
 
 <div class="input">
-  <input id="msgInput">
-  <button onclick="sendMsg()">Send</button>
+
+  <input
+    id="msgInput"
+    placeholder="Type message..."
+  >
+
+  <button onclick="sendMsg()">
+    Send
+  </button>
+
 </div>
 
 <script type="module" src="messages.js"></script>
 
 <script>
-function goBack(){ location.href="dashboard.html"; }
-function toggleMenu(){
-  const m = document.getElementById("menu");
-  m.style.display = m.style.display === "none" ? "block" : "none";
+
+function goBack() {
+  location.href = "dashboard.html";
 }
+
+function toggleMenu() {
+
+  const m = document.getElementById("menu");
+
+  m.style.display =
+    m.style.display === "block"
+      ? "none"
+      : "block";
+}
+
 </script>
 
 </body>
