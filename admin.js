@@ -132,6 +132,8 @@ function loadPosts() {
 
   const box = document.getElementById("postsList");
 
+  if (!box) return;
+
   const q = query(
     collection(db, "posts"),
     orderBy("createdAt", "desc")
@@ -142,44 +144,124 @@ function loadPosts() {
     box.innerHTML = "";
 
     if (snap.empty) {
-      box.innerHTML = `<div class="item">No posts yet</div>`;
+
+      box.innerHTML = `
+        <div class="item">
+          No posts yet
+        </div>
+      `;
+
       return;
     }
 
-    snap.forEach(d => {
+    snap.forEach((d) => {
 
       const p = d.data();
 
+      const featured =
+        p.visibility?.featured ? "⭐ FEATURED" : "";
+
+      const published =
+        p.admin?.approved !== false;
+
       box.innerHTML += `
+
         <div class="item">
 
-          <b>${p.title || "Untitled"}</b>
+          <b>${p.title || "Untitled Post"}</b>
 
           <br><br>
 
-          F:${p.visibility?.featured ? "✔" : "✖"} |
-          T:${p.visibility?.trending ? "✔" : "✖"} |
-          H:${p.visibility?.homepage ? "✔" : "✖"} |
-          S:${p.sponsored?.isSponsored ? "✔" : "✖"}
+          ${featured}
+
+          <br>
+
+          Homepage:
+          ${p.visibility?.homepage ? "✔" : "✖"}
+
+          |
+
+          Trending:
+          ${p.visibility?.trending ? "✔" : "✖"}
+
+          |
+
+          Sponsored:
+          ${p.sponsored?.isSponsored ? "✔" : "✖"}
 
           <br><br>
 
-          <button class="small-btn"
+          Status:
+          <span style="
+            color:${published ? "#00ff88" : "orange"};
+            font-weight:bold;
+          ">
+            ${published ? "PUBLISHED" : "HIDDEN"}
+          </span>
+
+          <br><br>
+
+          <button
+            class="small-btn"
             onclick="fillEdit('${d.id}')">
+
             Edit
+
           </button>
 
-          <button class="small-btn"
+          <button
+            class="small-btn"
+            onclick="togglePost('${d.id}', ${published})">
+
+            ${published ? "Hide" : "Publish"}
+
+          </button>
+
+          <button
+            class="small-btn"
+            style="background:red;color:white;"
             onclick="deletePost('${d.id}')">
+
             Delete
+
           </button>
 
         </div>
       `;
     });
 
+  }, (err) => {
+
+    console.error(err);
+
+    log("Failed loading posts", "error");
   });
 }
+
+/* ================= TOGGLE POST ================= */
+window.togglePost = async (id, currentState) => {
+
+  try {
+
+    await updateDoc(doc(db, "posts", id), {
+
+      "admin.approved": !currentState
+
+    });
+
+    log(
+      currentState
+        ? "Post hidden"
+        : "Post published"
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("Toggle failed", "error");
+  }
+};
 
 /* ================= EDIT ================= */
 window.fillEdit = async (id) => {
