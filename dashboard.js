@@ -1,307 +1,276 @@
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
-  doc, getDoc, addDoc, collection, onSnapshot,
-  deleteDoc, updateDoc, query, orderBy,
-  getDocs, writeBatch, serverTimestamp
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
+  doc,
+  getDoc,
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= AUTH GATE (NEW - SAFE INJECTION) ================= */
-let authReady = false;
+/* ================= USER STATE ================= */
+let currentUser = null;
 
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
-
-  authReady = true;
 
   if (!user) {
 
-    // store intended destination
     if (!sessionStorage.getItem("redirectAfterLogin")) {
-      sessionStorage.setItem("redirectAfterLogin", window.location.href);
+      sessionStorage.setItem(
+        "redirectAfterLogin",
+        window.location.href
+      );
     }
 
-    // hide dashboard immediately (prevent flash)
-    document.body.style.display = "none";
-
-    window.location.replace("index.html?login=required");
+    window.location.href = "index.html?login=required";
     return;
   }
 
+  currentUser = user;
+
   try {
 
-    const snap = await getDoc(doc(db, "users", user.uid));
+    const snap = await getDoc(
+      doc(db, "users", user.uid)
+    );
+
+    if (!snap.exists()) {
+      alert("User profile not found");
+      window.location.href = "index.html";
+      return;
+    }
+
+    const userData = snap.data();
+
+    console.log("Dashboard Loaded:", userData);
+
+    loadNotifications();
+    loadLivePrices();
+
+  } catch (err) {
+
+    console.error(err);
+    alert("Dashboard failed to load");
+  }
+});
+
+/* ================= LIVE PRICE SYSTEM ================= */
+async function loadLivePrices() {
+
+  const box = document.getElementById("priceBox");
+
+  if (!box) return;
+
+  try {
+
+    const prices = [
+      {
+        name: "Bitcoin",
+        symbol: "BTC",
+        price: "$103,240"
+      },
+      {
+        name: "Ethereum",
+        symbol: "ETH",
+        price: "$4,920"
+      },
+      {
+        name: "Solana",
+        symbol: "SOL",
+        price: "$182"
+      }
+    ];
+
+    box.innerHTML = "";
+
+    prices.forEach(p => {
+
+      box.innerHTML += `
+        <div style="
+          padding:10px;
+          margin-bottom:8px;
+          background:#0b132b;
+          border-radius:8px;
+        ">
+          <b>${p.name}</b>
+          (${p.symbol})
+          <br>
+          <span style="color:#5bc0be;">
+            ${p.price}
+          </span>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    box.innerHTML =
+      "⚠️ Failed to load prices";
+  }
+}
+
+/* ================= NOTIFICATIONS ================= */
+function loadNotifications() {
+
+  const panel =
+    document.getElementById("notifPanel");
+
+  if (!panel) return;
+
+  const q = query(
+    collection(db, "notifications"),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  onSnapshot(q, (snap) => {
+
+    panel.innerHTML = "";
+
+    if (snap.empty) {
+
+      panel.innerHTML = `
+        <button>
+          No notifications
+        </button>
+      `;
+
+      return;
+    }
+
+    snap.forEach(d => {
+
+      const n = d.data();
+
+      panel.innerHTML += `
+        <button>
+          ${n.title || "Update"}
+        </button>
+      `;
+    });
+
+  }, (err) => {
+
+    console.error(err);
+
+    panel.innerHTML = `
+      <button>
+        Notification error
+      </button>
+    `;
+  });
+}
+
+/* ================= TOGGLE NOTIFICATION ================= */
+window.toggleNotif = function () {
+
+  const panel =
+    document.getElementById("notifPanel");
+
+  panel.classList.toggle("active");
+};
+
+/* ================= LOGOUT ================= */
+window.logout = async function () {
+
+  try {
+
+    await signOut(auth);
+
+    window.location.href =
+      "index.html";
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert("Logout failed");
+  }
+};
+
+/* ================= ROUTING ================= */
+window.goHome = function () {
+  window.location.href = "dashboard.html";
+};
+
+window.goProfile = function () {
+  window.location.href = "profile.html";
+};
+
+window.goMessages = function () {
+  window.location.href = "messages.html";
+};
+
+window.goAdSpace = function () {
+  window.location.href = "ads.html";
+};
+
+window.goBlog = function () {
+  window.location.href = "blog/index.html";
+};
+
+window.goFaq = function () {
+  window.location.href = "faq.html";
+};
+
+window.goAbout = function () {
+  window.location.href = "about.html";
+};
+
+window.goContact = function () {
+  window.location.href = "contact.html";
+};
+
+window.goDMCA = function () {
+  window.location.href = "dmca.html";
+};
+
+window.goAdmin = async function () {
+
+  if (!currentUser) return;
+
+  try {
+
+    const snap = await getDoc(
+      doc(db, "users", currentUser.uid)
+    );
 
     if (!snap.exists()) {
       alert("User not found");
-      window.location.href = "index.html";
       return;
     }
 
     const data = snap.data();
 
     if (data.role !== "admin") {
-      alert("Access denied");
-      window.location.href = "index.html";
+      alert("Admin only");
       return;
     }
 
-    // allow UI only after auth success
-    document.body.style.display = "block";
-
-    log("Admin online");
-
-    startAIMonitor();
-
-    loadPosts();
-    loadUsers();
-    loadAds();
-    loadRejectedAds();
+    window.location.href = "admin.html";
 
   } catch (err) {
-    console.error("AUTH ERROR:", err);
-    log("Auth error: " + err.message, "error");
-  }
-});
 
-/* ================= MONITOR ================= */
-function log(msg, type = "ok", clickableData = null) {
-  const box = document.getElementById("monitor");
-  if (!box) return;
+    console.error(err);
 
-  const color =
-    type === "error" ? "red" :
-    type === "warn" ? "orange" :
-    type === "ai" ? "#00c3ff" :
-    "#00ff88";
-
-  const div = document.createElement("div");
-  div.style.color = color;
-  div.style.cursor = clickableData ? "pointer" : "default";
-
-  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-
-  if (clickableData) {
-    div.onclick = () => {
-      log("---- EVENT DETAILS ----", "warn");
-      Object.keys(clickableData).forEach(k => {
-        log(`${k}: ${JSON.stringify(clickableData[k])}`);
-      });
-    };
-  }
-
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-/* ================= AI MONITOR ================= */
-function startAIMonitor() {
-  const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-
-  onSnapshot(q, (snap) => {
-    snap.docChanges().forEach(change => {
-      if (change.type !== "added") return;
-
-      const e = change.doc.data();
-
-      log(`Event: ${e.type}`, "ai", e);
-    });
-  }, (err) => {
-    log("Event monitor error: " + err.message, "error");
-  });
-}
-
-/* ================= BLOG ================= */
-window.createBlog = async () => {
-  try {
-    const title = document.getElementById("blogTitle").value;
-    const content = document.getElementById("blogContent").value;
-    const image = document.getElementById("blogImage").value;
-
-    if (!title || !content) {
-      alert("Title and content required");
-      return;
-    }
-
-    const ref = await addDoc(collection(db, "posts"), {
-      title,
-      content,
-      image,
-      createdAt: serverTimestamp()
-    });
-
-    await addDoc(collection(db, "events"), {
-      type: "post_created",
-      refId: ref.id,
-      title,
-      createdAt: serverTimestamp()
-    });
-
-    log("Blog created: " + ref.id);
-
-  } catch (err) {
-    log("Create blog error: " + err.message, "error");
+    alert("Admin check failed");
   }
 };
 
-/* ================= POSTS ================= */
-function loadPosts() {
-  const box = document.getElementById("postsList");
+/* ================= DONATE ================= */
+window.donate = function () {
 
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-
-  onSnapshot(q, (snap) => {
-    box.innerHTML = "";
-
-    if (snap.empty) {
-      box.innerHTML = `<div class="item">No posts found</div>`;
-      return;
-    }
-
-    snap.forEach(d => {
-      const p = d.data();
-
-      const safeTitle = encodeURIComponent(p.title || "");
-      const safeContent = encodeURIComponent(p.content || "");
-
-      box.innerHTML += `
-        <div class="item">
-          <b>${p.title || "Untitled"}</b><br>
-
-          <button class="small-btn"
-            onclick="fillEdit('${d.id}', '${safeTitle}', '${safeContent}')">
-            Edit
-          </button>
-
-          <button class="small-btn"
-            onclick="deletePost('${d.id}')">
-            Delete
-          </button>
-        </div>
-      `;
-    });
-
-  }, (err) => {
-    log("Posts error: " + err.message, "error");
-  });
-}
-
-/* ================= EDIT ================= */
-window.fillEdit = (id, title, content) => {
-  document.getElementById("editPostId").value = id;
-  document.getElementById("editPostTitle").value = decodeURIComponent(title);
-  document.getElementById("editPostContent").value = decodeURIComponent(content);
-};
-
-window.updatePost = async () => {
-  try {
-    const id = document.getElementById("editPostId").value;
-
-    await updateDoc(doc(db, "posts", id), {
-      title: document.getElementById("editPostTitle").value,
-      content: document.getElementById("editPostContent").value
-    });
-
-    await addDoc(collection(db, "events"), {
-      type: "post_updated",
-      refId: id,
-      createdAt: serverTimestamp()
-    });
-
-    log("Post updated");
-
-  } catch (err) {
-    log("Update error: " + err.message, "error");
-  }
-};
-
-window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
-
-  await addDoc(collection(db, "events"), {
-    type: "post_deleted",
-    refId: id,
-    createdAt: serverTimestamp()
-  });
-
-  log("Post deleted", "warn");
-};
-
-/* ================= USERS ================= */
-function loadUsers() {
-  const box = document.getElementById("usersList");
-
-  onSnapshot(collection(db, "onlineUsers"), snap => {
-    box.innerHTML = "";
-
-    snap.forEach(u => {
-      box.innerHTML += `<div class="item">${u.data().email}</div>`;
-    });
-  });
-}
-
-/* ================= ADS ================= */
-function loadAds() {
-  const box = document.getElementById("upgradeList");
-
-  onSnapshot(collection(db, "adRequests"), snap => {
-    box.innerHTML = "";
-
-    snap.forEach(d => {
-      const ad = d.data();
-
-      box.innerHTML += `
-        <div class="item">
-          <b>${ad.title}</b><br>
-          <button class="small-btn" onclick="acceptAd('${d.id}')">Accept</button>
-          <button class="small-btn" onclick="rejectAd('${d.id}')">Reject</button>
-        </div>
-      `;
-    });
-  });
-}
-
-window.acceptAd = async (id) => {
-  await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
-
-  await addDoc(collection(db, "events"), {
-    type: "ad_accepted",
-    refId: id,
-    createdAt: serverTimestamp()
-  });
-
-  log("Ad accepted");
-};
-
-window.rejectAd = async (id) => {
-  await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
-
-  log("Ad rejected", "warn");
-};
-
-/* ================= REJECTED ================= */
-function loadRejectedAds() {
-  const box = document.getElementById("rejectedList");
-
-  onSnapshot(collection(db, "adRequests"), snap => {
-    box.innerHTML = "";
-
-    snap.forEach(d => {
-      if (d.data().status === "rejected") {
-        box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
-      }
-    });
-  });
-}
-
-window.clearRejected = async () => {
-  const snap = await getDocs(collection(db, "adRequests"));
-  const batch = writeBatch(db);
-
-  snap.forEach(d => {
-    if (d.data().status === "rejected") batch.delete(d.ref);
-  });
-
-  await batch.commit();
-  log("Rejected ads cleared");
+  alert(
+    "Donation system coming soon 🚀"
+  );
 };
