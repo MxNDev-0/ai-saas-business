@@ -1,256 +1,307 @@
 import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-import {
-  collection,
-  getDoc,
-  setDoc,
-  doc,
-  onSnapshot,
-  serverTimestamp,
-  addDoc,
-  updateDoc,
-  query,
-  orderBy,
-  where
+  doc, getDoc, addDoc, collection, onSnapshot,
+  deleteDoc, updateDoc, query, orderBy,
+  getDocs, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= GLOBAL STATE ================= */
-let user = null;
-let userData = null;
-let lastBTC = null;
-let lastETH = null;
+/* ================= AUTH GATE (NEW - SAFE INJECTION) ================= */
+let authReady = false;
 
-window.userData = null;
+onAuthStateChanged(auth, async (user) => {
 
-/* ================= AUTH ================= */
-onAuthStateChanged(auth, async (u) => {
-  if (!u) return location.href = "index.html";
+  authReady = true;
 
-  user = u;
+  if (!user) {
 
-  await ensureUser();
-  await loadUser();
+    // store intended destination
+    if (!sessionStorage.getItem("redirectAfterLogin")) {
+      sessionStorage.setItem("redirectAfterLogin", window.location.href);
+    }
 
-  loadPrices();
-  loadNotifications();
-  loadBroadcasts();
-  loadChat();
-  startLiveSystem();
+    // hide dashboard immediately (prevent flash)
+    document.body.style.display = "none";
 
-  console.log("Dashboard ready");
-});
-
-/* ================= USER ================= */
-async function ensureUser() {
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      email: user.email,
-      username: user.email.split("@")[0],
-      role: "user"
-    });
-  }
-}
-
-async function loadUser() {
-  const snap = await getDoc(doc(db, "users", user.uid));
-  if (snap.exists()) {
-    userData = snap.data();
-    window.userData = userData;
-  }
-}
-
-/* ================= BROADCAST ================= */
-function loadBroadcasts() {
-  const box = document.getElementById("broadcastBox");
-  if (!box) return;
-
-  const q = query(
-    collection(db, "broadcasts"),
-    where("active", "==", true),
-    orderBy("createdAt", "desc")
-  );
-
-  onSnapshot(q, (snapshot) => {
-    box.innerHTML = "";
-
-    snapshot.forEach(docSnap => {
-      const d = docSnap.data();
-
-      box.innerHTML += `
-        <div class="item">
-          🔔 <b>${d.title}</b><br>
-          ${d.message}
-        </div>
-      `;
-    });
-  });
-}
-
-/* ================= PRICES ================= */
-async function loadPrices() {
-  const box = document.getElementById("priceBox");
-  if (!box) return;
-
-  try {
-    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd");
-    const data = await res.json();
-
-    box.innerHTML = `
-      BTC: $${data.bitcoin.usd}<br>
-      ETH: $${data.ethereum.usd}
-    `;
-  } catch {
-    box.innerText = "Failed to load prices";
-  }
-}
-
-function startLiveSystem() {
-  setInterval(loadPrices, 30000);
-}
-
-/* ================= NOTIFICATIONS (FIXED CLICK) ================= */
-function loadNotifications() {
-  const panel = document.getElementById("notifPanel");
-  if (!panel) return;
-
-  onSnapshot(collection(db, "notifications", user.uid, "items"), (snap) => {
-    let html = "";
-
-    snap.forEach(d => {
-      const data = d.data();
-
-      html += `
-        <div 
-          onclick="openNotification('${data.url || ""}')"
-          style="padding:10px;border-bottom:1px solid #222;cursor:pointer;">
-          
-          🔔 ${data.text}
-        </div>
-      `;
-    });
-
-    panel.innerHTML = html;
-  });
-}
-
-/* 🔥 CLICK HANDLER */
-window.openNotification = function (url) {
-  if (!url) {
-    alert("No link attached to this notification");
+    window.location.replace("index.html?login=required");
     return;
   }
 
-  window.location.href = url;
-};
-
-/* 🔥 TOGGLE NOTIFICATION PANEL */
-window.toggleNotif = function () {
-  const panel = document.getElementById("notifPanel");
-  if (!panel) return;
-
-  panel.classList.toggle("active");
-};
-
-/* ================= CHAT SYSTEM ================= */
-window.sendChat = async () => {
-  const input = document.getElementById("chatInput");
-  if (!input || !input.value.trim()) return;
-
   try {
-    await addDoc(collection(db, "events"), {
-      type: "chat",
-      text: input.value,
-      uid: user.uid,
-      username: userData?.username || user.email,
-      role: userData?.role || "user",
+
+    const snap = await getDoc(doc(db, "users", user.uid));
+
+    if (!snap.exists()) {
+      alert("User not found");
+      window.location.href = "index.html";
+      return;
+    }
+
+    const data = snap.data();
+
+    if (data.role !== "admin") {
+      alert("Access denied");
+      window.location.href = "index.html";
+      return;
+    }
+
+    // allow UI only after auth success
+    document.body.style.display = "block";
+
+    log("Admin online");
+
+    startAIMonitor();
+
+    loadPosts();
+    loadUsers();
+    loadAds();
+    loadRejectedAds();
+
+  } catch (err) {
+    console.error("AUTH ERROR:", err);
+    log("Auth error: " + err.message, "error");
+  }
+});
+
+/* ================= MONITOR ================= */
+function log(msg, type = "ok", clickableData = null) {
+  const box = document.getElementById("monitor");
+  if (!box) return;
+
+  const color =
+    type === "error" ? "red" :
+    type === "warn" ? "orange" :
+    type === "ai" ? "#00c3ff" :
+    "#00ff88";
+
+  const div = document.createElement("div");
+  div.style.color = color;
+  div.style.cursor = clickableData ? "pointer" : "default";
+
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+
+  if (clickableData) {
+    div.onclick = () => {
+      log("---- EVENT DETAILS ----", "warn");
+      Object.keys(clickableData).forEach(k => {
+        log(`${k}: ${JSON.stringify(clickableData[k])}`);
+      });
+    };
+  }
+
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ================= AI MONITOR ================= */
+function startAIMonitor() {
+  const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+
+  onSnapshot(q, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type !== "added") return;
+
+      const e = change.doc.data();
+
+      log(`Event: ${e.type}`, "ai", e);
+    });
+  }, (err) => {
+    log("Event monitor error: " + err.message, "error");
+  });
+}
+
+/* ================= BLOG ================= */
+window.createBlog = async () => {
+  try {
+    const title = document.getElementById("blogTitle").value;
+    const content = document.getElementById("blogContent").value;
+    const image = document.getElementById("blogImage").value;
+
+    if (!title || !content) {
+      alert("Title and content required");
+      return;
+    }
+
+    const ref = await addDoc(collection(db, "posts"), {
+      title,
+      content,
+      image,
       createdAt: serverTimestamp()
     });
 
-    input.value = "";
+    await addDoc(collection(db, "events"), {
+      type: "post_created",
+      refId: ref.id,
+      title,
+      createdAt: serverTimestamp()
+    });
+
+    log("Blog created: " + ref.id);
+
   } catch (err) {
-    console.error(err);
+    log("Create blog error: " + err.message, "error");
   }
 };
 
-function loadChat() {
-  const box = document.getElementById("chatBox");
-  if (!box) return;
+/* ================= POSTS ================= */
+function loadPosts() {
+  const box = document.getElementById("postsList");
 
-  onSnapshot(
-    query(collection(db, "events"), orderBy("createdAt", "asc")),
-    (snap) => {
-      box.innerHTML = "";
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
-      snap.forEach(docSnap => {
-        const m = docSnap.data();
+  onSnapshot(q, (snap) => {
+    box.innerHTML = "";
 
-        if (m.type !== "chat") return;
-
-        box.innerHTML += `
-          <div class="item">
-            <b>${m.username}</b><br>
-            ${m.text}
-          </div>
-        `;
-      });
-
-      box.scrollTop = box.scrollHeight;
+    if (snap.empty) {
+      box.innerHTML = `<div class="item">No posts found</div>`;
+      return;
     }
-  );
+
+    snap.forEach(d => {
+      const p = d.data();
+
+      const safeTitle = encodeURIComponent(p.title || "");
+      const safeContent = encodeURIComponent(p.content || "");
+
+      box.innerHTML += `
+        <div class="item">
+          <b>${p.title || "Untitled"}</b><br>
+
+          <button class="small-btn"
+            onclick="fillEdit('${d.id}', '${safeTitle}', '${safeContent}')">
+            Edit
+          </button>
+
+          <button class="small-btn"
+            onclick="deletePost('${d.id}')">
+            Delete
+          </button>
+        </div>
+      `;
+    });
+
+  }, (err) => {
+    log("Posts error: " + err.message, "error");
+  });
 }
 
-/* ================= MENU ================= */
-window.toggleMenu = function () {
-  document.getElementById("menu")?.classList.toggle("active");
+/* ================= EDIT ================= */
+window.fillEdit = (id, title, content) => {
+  document.getElementById("editPostId").value = id;
+  document.getElementById("editPostTitle").value = decodeURIComponent(title);
+  document.getElementById("editPostContent").value = decodeURIComponent(content);
 };
 
-window.logout = async function () {
-  await signOut(auth);
-  location.href = "index.html";
-};
+window.updatePost = async () => {
+  try {
+    const id = document.getElementById("editPostId").value;
 
-/* ================= NAVIGATION ================= */
-window.goHome = () => location.href = "dashboard.html";
-window.goProfile = () => location.href = "profile.html";
-window.goMessages = () => location.href = "messages.html";
-window.goAdSpace = () => location.href = "ads.html";
-window.goBlog = () => location.href = "blog/index.html";
-window.goFaq = () => location.href = "faq.html";
-window.goAbout = () => location.href = "about.html";
+    await updateDoc(doc(db, "posts", id), {
+      title: document.getElementById("editPostTitle").value,
+      content: document.getElementById("editPostContent").value
+    });
 
-/* 🔥 NEW: CONTACT BUTTON */
-window.contact = function () {
-  window.location.href = "mailto:contact@mcnengine.com";
-};
+    await addDoc(collection(db, "events"), {
+      type: "post_updated",
+      refId: id,
+      createdAt: serverTimestamp()
+    });
 
-window.goAdmin = () => {
-  if (!window.userData || window.userData.role !== "admin") {
-    alert("Admin only");
-    return;
+    log("Post updated");
+
+  } catch (err) {
+    log("Update error: " + err.message, "error");
   }
-  location.href = "admin.html";
 };
 
-/* ================= 💰 DONATE ================= */
-window.donate = function () {
-  window.open("https://paystack.com/pay/mcnengine-support", "_blank");
+window.deletePost = async (id) => {
+  await deleteDoc(doc(db, "posts", id));
+
+  await addDoc(collection(db, "events"), {
+    type: "post_deleted",
+    refId: id,
+    createdAt: serverTimestamp()
+  });
+
+  log("Post deleted", "warn");
 };
+
+/* ================= USERS ================= */
+function loadUsers() {
+  const box = document.getElementById("usersList");
+
+  onSnapshot(collection(db, "onlineUsers"), snap => {
+    box.innerHTML = "";
+
+    snap.forEach(u => {
+      box.innerHTML += `<div class="item">${u.data().email}</div>`;
+    });
+  });
+}
 
 /* ================= ADS ================= */
-let currentAd = 0;
+function loadAds() {
+  const box = document.getElementById("upgradeList");
 
-setInterval(() => {
-  const slider = document.getElementById("adsSlider");
-  if (!slider) return;
+  onSnapshot(collection(db, "adRequests"), snap => {
+    box.innerHTML = "";
 
-  currentAd = (currentAd + 1) % slider.children.length;
-  slider.style.transform = `translateX(-${currentAd * 100}%)`;
-}, 3000);
+    snap.forEach(d => {
+      const ad = d.data();
+
+      box.innerHTML += `
+        <div class="item">
+          <b>${ad.title}</b><br>
+          <button class="small-btn" onclick="acceptAd('${d.id}')">Accept</button>
+          <button class="small-btn" onclick="rejectAd('${d.id}')">Reject</button>
+        </div>
+      `;
+    });
+  });
+}
+
+window.acceptAd = async (id) => {
+  await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
+
+  await addDoc(collection(db, "events"), {
+    type: "ad_accepted",
+    refId: id,
+    createdAt: serverTimestamp()
+  });
+
+  log("Ad accepted");
+};
+
+window.rejectAd = async (id) => {
+  await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
+
+  log("Ad rejected", "warn");
+};
+
+/* ================= REJECTED ================= */
+function loadRejectedAds() {
+  const box = document.getElementById("rejectedList");
+
+  onSnapshot(collection(db, "adRequests"), snap => {
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+      if (d.data().status === "rejected") {
+        box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
+      }
+    });
+  });
+}
+
+window.clearRejected = async () => {
+  const snap = await getDocs(collection(db, "adRequests"));
+  const batch = writeBatch(db);
+
+  snap.forEach(d => {
+    if (d.data().status === "rejected") batch.delete(d.ref);
+  });
+
+  await batch.commit();
+  log("Rejected ads cleared");
+};
