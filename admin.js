@@ -2,21 +2,31 @@ import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
-  doc, getDoc, addDoc, collection, onSnapshot,
-  deleteDoc, updateDoc, query, orderBy,
-  getDocs, writeBatch, serverTimestamp
+  doc,
+  getDoc,
+  addDoc,
+  collection,
+  onSnapshot,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
+  getDocs,
+  writeBatch,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= MONITOR (UNCHANGED) ================= */
-function log(msg, type = "ok", clickableData = null) {
+/* ================= MONITOR ================= */
+function log(msg, type = "ok") {
   const box = document.getElementById("monitor");
   if (!box) return;
 
   const color =
-    type === "error" ? "red" :
-    type === "warn" ? "orange" :
-    type === "ai" ? "#00c3ff" :
-    "#00ff88";
+    type === "error"
+      ? "red"
+      : type === "warn"
+      ? "orange"
+      : "#00ff88";
 
   const div = document.createElement("div");
   div.style.color = color;
@@ -26,133 +36,351 @@ function log(msg, type = "ok", clickableData = null) {
   box.scrollTop = box.scrollHeight;
 }
 
-/* ================= AUTH (UNCHANGED) ================= */
+/* ================= ADMIN AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return location.href = "index.html";
 
-  const snap = await getDoc(doc(db, "users", user.uid));
-
-  if (!snap.exists() || snap.data().role !== "admin") {
-    alert("Access denied");
+  if (!user) {
     location.href = "index.html";
     return;
   }
 
-  log("Admin online");
+  try {
 
-  loadPosts();
+    const snap = await getDoc(doc(db, "users", user.uid));
+
+    if (!snap.exists()) {
+      alert("User not found");
+      location.href = "index.html";
+      return;
+    }
+
+    const data = snap.data();
+
+    if (data.role !== "admin") {
+      alert("Admin access only");
+      location.href = "dashboard.html";
+      return;
+    }
+
+    log("Admin online");
+
+    loadPosts();
+    loadUsers();
+    loadAds();
+    loadRejectedAds();
+
+  } catch (err) {
+
+    console.error(err);
+    alert("Admin auth failed");
+  }
 });
 
-/* ================= CREATE BLOG (ONLY INJECTED FIELDS) ================= */
+/* ================= CREATE BLOG ================= */
 window.createBlog = async () => {
-  const post = {
-    title: blogTitle.value,
-    content: blogContent.value,
-    image: blogImage.value,
-    createdAt: serverTimestamp(),
 
-    visibility: {
-      homepage: c_homepage.checked,
-      featured: c_featured.checked,
-      trending: c_trending.checked,
-      dashboard: true
-    },
+  try {
 
-    sponsored: {
-      isSponsored: c_sponsored.checked,
-      expiresAt: adExpiry.value ? new Date(adExpiry.value).getTime() : null,
-      priority: Number(adPriority.value || 0)
-    },
+    const post = {
+      title: blogTitle.value,
+      content: blogContent.value,
+      image: blogImage.value,
+      createdAt: serverTimestamp(),
 
-    metrics: { impressions: 0, clicks: 0 },
+      visibility: {
+        homepage: c_homepage.checked,
+        featured: c_featured.checked,
+        trending: c_trending.checked,
+        dashboard: true
+      },
 
-    admin: { approved: true }
-  };
+      sponsored: {
+        isSponsored: c_sponsored.checked,
+        expiresAt: adExpiry.value
+          ? new Date(adExpiry.value).getTime()
+          : null,
+        priority: Number(adPriority.value || 0)
+      },
 
-  const ref = await addDoc(collection(db, "posts"), post);
+      metrics: {
+        impressions: 0,
+        clicks: 0
+      },
 
-  log("Blog created: " + ref.id);
+      admin: {
+        approved: true
+      }
+    };
+
+    const ref = await addDoc(collection(db, "posts"), post);
+
+    log("Blog created: " + ref.id);
+
+    blogTitle.value = "";
+    blogContent.value = "";
+    blogImage.value = "";
+
+  } catch (err) {
+
+    console.error(err);
+    log("Create failed", "error");
+  }
 };
 
-/* ================= POSTS (UNCHANGED LOGIC + INJECT DISPLAY FLAGS) ================= */
+/* ================= POSTS ================= */
 function loadPosts() {
+
   const box = document.getElementById("postsList");
 
-  onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), snap => {
+  const q = query(
+    collection(db, "posts"),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(q, (snap) => {
+
     box.innerHTML = "";
 
+    if (snap.empty) {
+      box.innerHTML = `<div class="item">No posts yet</div>`;
+      return;
+    }
+
     snap.forEach(d => {
+
       const p = d.data();
 
       box.innerHTML += `
         <div class="item">
-          <b>${p.title}</b><br>
+
+          <b>${p.title || "Untitled"}</b>
+
+          <br><br>
 
           F:${p.visibility?.featured ? "✔" : "✖"} |
           T:${p.visibility?.trending ? "✔" : "✖"} |
           H:${p.visibility?.homepage ? "✔" : "✖"} |
           S:${p.sponsored?.isSponsored ? "✔" : "✖"}
 
-          <br>
+          <br><br>
 
-          <button class="small-btn" onclick="fillEdit('${d.id}')">Edit</button>
-          <button class="small-btn" onclick="deletePost('${d.id}')">Delete</button>
+          <button class="small-btn"
+            onclick="fillEdit('${d.id}')">
+            Edit
+          </button>
+
+          <button class="small-btn"
+            onclick="deletePost('${d.id}')">
+            Delete
+          </button>
+
+        </div>
+      `;
+    });
+
+  });
+}
+
+/* ================= EDIT ================= */
+window.fillEdit = async (id) => {
+
+  const snap = await getDoc(doc(db, "posts", id));
+
+  if (!snap.exists()) {
+    alert("Post not found");
+    return;
+  }
+
+  const p = snap.data();
+
+  editPostId.value = id;
+  editPostTitle.value = p.title || "";
+  editPostContent.value = p.content || "";
+
+  e_homepage.checked = p.visibility?.homepage || false;
+  e_featured.checked = p.visibility?.featured || false;
+  e_trending.checked = p.visibility?.trending || false;
+  e_sponsored.checked = p.sponsored?.isSponsored || false;
+
+  e_adPriority.value = p.sponsored?.priority || 0;
+
+  e_adExpiry.value = p.sponsored?.expiresAt
+    ? new Date(p.sponsored.expiresAt)
+        .toISOString()
+        .slice(0, 16)
+    : "";
+};
+
+/* ================= UPDATE POST ================= */
+window.updatePost = async () => {
+
+  try {
+
+    const id = editPostId.value;
+
+    await updateDoc(doc(db, "posts", id), {
+
+      title: editPostTitle.value,
+      content: editPostContent.value,
+
+      visibility: {
+        homepage: e_homepage.checked,
+        featured: e_featured.checked,
+        trending: e_trending.checked,
+        dashboard: true
+      },
+
+      sponsored: {
+        isSponsored: e_sponsored.checked,
+        expiresAt: e_adExpiry.value
+          ? new Date(e_adExpiry.value).getTime()
+          : null,
+        priority: Number(e_adPriority.value || 0)
+      }
+    });
+
+    log("Post updated");
+
+  } catch (err) {
+
+    console.error(err);
+    log("Update failed", "error");
+  }
+};
+
+/* ================= DELETE ================= */
+window.deletePost = async (id) => {
+
+  try {
+
+    await deleteDoc(doc(db, "posts", id));
+
+    log("Post deleted", "warn");
+
+  } catch (err) {
+
+    console.error(err);
+    log("Delete failed", "error");
+  }
+};
+
+/* ================= USERS ================= */
+function loadUsers() {
+
+  const box = document.getElementById("usersList");
+
+  onSnapshot(collection(db, "users"), (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+
+      const u = d.data();
+
+      box.innerHTML += `
+        <div class="item">
+          ${u.email || "Unknown User"}
         </div>
       `;
     });
   });
 }
 
-/* ================= EDIT (INJECTED ONLY) ================= */
-window.fillEdit = async (id) => {
-  const snap = await getDoc(doc(db, "posts", id));
-  const p = snap.data();
+/* ================= ADS ================= */
+function loadAds() {
 
-  editPostId.value = id;
-  editPostTitle.value = p.title;
-  editPostContent.value = p.content;
+  const box = document.getElementById("upgradeList");
 
-  e_homepage.checked = p.visibility?.homepage;
-  e_featured.checked = p.visibility?.featured;
-  e_trending.checked = p.visibility?.trending;
-  e_sponsored.checked = p.sponsored?.isSponsored;
+  onSnapshot(collection(db, "adRequests"), (snap) => {
 
-  e_adExpiry.value = p.sponsored?.expiresAt
-    ? new Date(p.sponsored.expiresAt).toISOString().slice(0,16)
-    : "";
+    box.innerHTML = "";
 
-  e_adPriority.value = p.sponsored?.priority || 0;
+    snap.forEach(d => {
+
+      const ad = d.data();
+
+      if (ad.status === "rejected") return;
+
+      box.innerHTML += `
+        <div class="item">
+
+          <b>${ad.title || "Untitled Ad"}</b>
+
+          <br><br>
+
+          <button class="small-btn"
+            onclick="acceptAd('${d.id}')">
+            Accept
+          </button>
+
+          <button class="small-btn"
+            onclick="rejectAd('${d.id}')">
+            Reject
+          </button>
+
+        </div>
+      `;
+    });
+  });
+}
+
+window.acceptAd = async (id) => {
+
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "accepted"
+  });
+
+  log("Ad accepted");
 };
 
-/* ================= UPDATE (INJECTED ONLY) ================= */
-window.updatePost = async () => {
-  const id = editPostId.value;
+window.rejectAd = async (id) => {
 
-  await updateDoc(doc(db, "posts", id), {
-    title: editPostTitle.value,
-    content: editPostContent.value,
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "rejected"
+  });
 
-    visibility: {
-      homepage: e_homepage.checked,
-      featured: e_featured.checked,
-      trending: e_trending.checked,
-      dashboard: true
-    },
+  log("Ad rejected", "warn");
+};
 
-    sponsored: {
-      isSponsored: e_sponsored.checked,
-      expiresAt: e_adExpiry.value ? new Date(e_adExpiry.value).getTime() : null,
-      priority: Number(e_adPriority.value || 0)
+/* ================= REJECTED ADS ================= */
+function loadRejectedAds() {
+
+  const box = document.getElementById("rejectedList");
+
+  onSnapshot(collection(db, "adRequests"), (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+
+      const ad = d.data();
+
+      if (ad.status === "rejected") {
+
+        box.innerHTML += `
+          <div class="item">
+            ❌ ${ad.title}
+          </div>
+        `;
+      }
+    });
+  });
+}
+
+window.clearRejected = async () => {
+
+  const snap = await getDocs(collection(db, "adRequests"));
+
+  const batch = writeBatch(db);
+
+  snap.forEach(d => {
+
+    if (d.data().status === "rejected") {
+      batch.delete(d.ref);
     }
   });
 
-  log("Post updated");
-};
+  await batch.commit();
 
-/* ================= DELETE (UNCHANGED) ================= */
-window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
-  log("Deleted");
+  log("Rejected ads cleared");
 };
-
-/* ================= EVERYTHING ELSE REMAINS YOUR ORIGINAL FILE ================= */
