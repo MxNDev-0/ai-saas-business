@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Trending — MCN Engine</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#5bc0be">
+
+  <style>
+    body{
+      margin:0;
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+      padding:20px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:20px;
+    }
+
+    .back-btn{
+      background:#1c2541;
+      color:#5bc0be;
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    h1{
+      margin:0;
+      color:#5bc0be;
+    }
+
+    .card{
+      background:linear-gradient(145deg,#1c2541,#141b2e);
+      padding:18px;
+      border-radius:18px;
+      margin-bottom:16px;
+      border:1px solid rgba(255,255,255,0.05);
+    }
+
+    .tag{
+      color:#5bc0be;
+      font-size:13px;
+      margin-bottom:8px;
+      display:block;
+    }
+
+    p{
+      color:#ccc;
+      line-height:1.6;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <button class="back-btn" onclick="goBack()">
+    ← Back
+  </button>
+
+  <h1>Trending</h1>
+</div>
+
+<div class="card">
+  <span class="tag">🔥 Trending</span>
+
+  <h2>Welcome to Trending</h2>
+
+  <p>
+    This page will show trending posts,
+    latest updates, popular guides,
+    and hot opportunities from MCN Engine.
+  </p>
+</div>
+
+<div class="card">
+  <span class="tag">🚀 Coming Soon</span>
+
+  <h2>Trending Feed System</h2>
+
+  <p>
+    Future updates will automatically load
+    trending posts here from your backend.
+  </p>
+</div>
+
+<script>
+function goBack(){
+  window.history.back();
+}
+</script>
+
+</body>
+</html>
