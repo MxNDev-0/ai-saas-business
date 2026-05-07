@@ -145,12 +145,7 @@ function loadPosts() {
 
     if (snap.empty) {
 
-      box.innerHTML = `
-        <div class="item">
-          No posts yet
-        </div>
-      `;
-
+      box.innerHTML = `<div class="item">No posts yet</div>`;
       return;
     }
 
@@ -165,7 +160,6 @@ function loadPosts() {
         p.admin?.approved !== false;
 
       box.innerHTML += `
-
         <div class="item">
 
           <b>${p.title || "Untitled Post"}</b>
@@ -201,29 +195,20 @@ function loadPosts() {
 
           <br><br>
 
-          <button
-            class="small-btn"
+          <button class="small-btn"
             onclick="fillEdit('${d.id}')">
-
             Edit
-
           </button>
 
-          <button
-            class="small-btn"
+          <button class="small-btn"
             onclick="togglePost('${d.id}', ${published})">
-
             ${published ? "Hide" : "Publish"}
-
           </button>
 
-          <button
-            class="small-btn"
+          <button class="small-btn"
             style="background:red;color:white;"
             onclick="deletePost('${d.id}')">
-
             Delete
-
           </button>
 
         </div>
@@ -231,9 +216,7 @@ function loadPosts() {
     });
 
   }, (err) => {
-
     console.error(err);
-
     log("Failed loading posts", "error");
   });
 }
@@ -244,21 +227,14 @@ window.togglePost = async (id, currentState) => {
   try {
 
     await updateDoc(doc(db, "posts", id), {
-
       "admin.approved": !currentState
-
     });
 
-    log(
-      currentState
-        ? "Post hidden"
-        : "Post published"
-    );
+    log(!currentState ? "Post published" : "Post hidden");
 
   } catch (err) {
 
     console.error(err);
-
     log("Toggle failed", "error");
   }
 };
@@ -275,21 +251,19 @@ window.fillEdit = async (id) => {
 
   const p = snap.data();
 
-  editPostId.value = id;
-  editPostTitle.value = p.title || "";
-  editPostContent.value = p.content || "";
+  document.getElementById("editPostId").value = id;
+  document.getElementById("editPostTitle").value = p.title || "";
+  document.getElementById("editPostContent").value = p.content || "";
 
-  e_homepage.checked = p.visibility?.homepage || false;
-  e_featured.checked = p.visibility?.featured || false;
-  e_trending.checked = p.visibility?.trending || false;
-  e_sponsored.checked = p.sponsored?.isSponsored || false;
+  document.getElementById("e_homepage").checked = p.visibility?.homepage || false;
+  document.getElementById("e_featured").checked = p.visibility?.featured || false;
+  document.getElementById("e_trending").checked = p.visibility?.trending || false;
+  document.getElementById("e_sponsored").checked = p.sponsored?.isSponsored || false;
 
-  e_adPriority.value = p.sponsored?.priority || 0;
+  document.getElementById("e_adPriority").value = p.sponsored?.priority || 0;
 
-  e_adExpiry.value = p.sponsored?.expiresAt
-    ? new Date(p.sponsored.expiresAt)
-        .toISOString()
-        .slice(0, 16)
+  document.getElementById("e_adExpiry").value = p.sponsored?.expiresAt
+    ? new Date(p.sponsored.expiresAt).toISOString().slice(0, 16)
     : "";
 };
 
@@ -298,33 +272,32 @@ window.updatePost = async () => {
 
   try {
 
-    const id = editPostId.value;
+    const id = document.getElementById("editPostId").value;
 
     await updateDoc(doc(db, "posts", id), {
 
-      title: editPostTitle.value,
-      content: editPostContent.value,
+      title: document.getElementById("editPostTitle").value,
+      content: document.getElementById("editPostContent").value,
 
       visibility: {
-        homepage: e_homepage.checked,
-        featured: e_featured.checked,
-        trending: e_trending.checked,
+        homepage: document.getElementById("e_homepage").checked,
+        featured: document.getElementById("e_featured").checked,
+        trending: document.getElementById("e_trending").checked,
         dashboard: true
       },
 
       sponsored: {
-        isSponsored: e_sponsored.checked,
-        expiresAt: e_adExpiry.value
-          ? new Date(e_adExpiry.value).getTime()
+        isSponsored: document.getElementById("e_sponsored").checked,
+        expiresAt: document.getElementById("e_adExpiry").value
+          ? new Date(document.getElementById("e_adExpiry").value).getTime()
           : null,
-        priority: Number(e_adPriority.value || 0)
+        priority: Number(document.getElementById("e_adPriority").value || 0)
       }
     });
 
     log("Post updated");
 
   } catch (err) {
-
     console.error(err);
     log("Update failed", "error");
   }
@@ -336,7 +309,6 @@ window.deletePost = async (id) => {
   try {
 
     await deleteDoc(doc(db, "posts", id));
-
     log("Post deleted", "warn");
 
   } catch (err) {
