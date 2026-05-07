@@ -1,108 +1,79 @@
-const CACHE_NAME = "mcn-engine-v5";
+const CACHE_NAME = "mcn-engine-v6";
 
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./offline.html",
   "./dashboard.html",
+  "./messages.html",
   "./manifest.json",
   "./assets/logo.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
 
-// ================= INSTALL =================
+/* ================= INSTALL ================= */
 self.addEventListener("install", event => {
+
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      try {
-        await cache.addAll(STATIC_ASSETS);
-        console.log("✅ Static assets cached");
-      } catch (err) {
-        console.log("❌ Cache install failed:", err);
-      }
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(STATIC_ASSETS))
   );
 });
 
-// ================= ACTIVATE =================
+/* ================= ACTIVATE ================= */
 self.addEventListener("activate", event => {
+
   event.waitUntil(
     caches.keys().then(keys => {
+
       return Promise.all(
         keys.map(key => {
+
           if (key !== CACHE_NAME) {
-            console.log("🗑 Removing old cache:", key);
             return caches.delete(key);
           }
         })
       );
+
     }).then(() => self.clients.claim())
   );
 });
 
-// ================= FETCH =================
+/* ================= FETCH ================= */
 self.addEventListener("fetch", event => {
 
-  // Ignore unsupported requests
-  if (
-    event.request.method !== "GET" ||
-    event.request.url.startsWith("chrome-extension")
-  ) {
-    return;
-  }
+  if (event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
 
-      // ✅ Return cached asset immediately
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+    caches.match(event.request)
+      .then(cacheRes => {
 
-      // ✅ Otherwise fetch from network
-      return fetch(event.request)
-        .then(networkResponse => {
+        return cacheRes || fetch(event.request)
+          .then(fetchRes => {
 
-          // Prevent broken responses from caching
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== "basic"
-          ) {
-            return networkResponse;
-          }
+            const cloned = fetchRes.clone();
 
-          const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, cloned);
+              });
 
-          // Save successful responses
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
+            return fetchRes;
+          })
+          .catch(async () => {
+
+            if (
+              event.request.destination === "document"
+            ) {
+
+              return await caches.match("./offline.html")
+                || await caches.match("./index.html");
+            }
           });
-
-          return networkResponse;
-        })
-        .catch(async () => {
-
-          // ================= OFFLINE FALLBACK =================
-
-          // HTML pages
-          if (event.request.destination === "document") {
-            return (
-              await caches.match("./offline.html")
-            ) || (
-              await caches.match("./index.html")
-            );
-          }
-
-          // Images fallback
-          if (event.request.destination === "image") {
-            return caches.match("./assets/logo.png");
-          }
-
-        });
-    })
+      })
   );
 });
