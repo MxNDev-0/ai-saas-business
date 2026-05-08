@@ -118,10 +118,13 @@
       font-size: 13px;
       font-weight: bold;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
     }
 
-    /* ================= DISCOVER (CLEAN UI) ================= */
-    #discoverBox .card {
+    /* ================= DISCOVER ================= */
+    #discoverBox .card,
+    #featuredBox .card,
+    #trendingBox .card {
       cursor: pointer;
       padding: 10px;
     }
@@ -129,6 +132,8 @@
     #discoverBox img {
       width: 100%;
       border-radius: 8px;
+      margin-bottom: 8px;
+      loading: lazy;
     }
 
     .card-title {
@@ -181,7 +186,6 @@
   <button onclick="goFaq()">❓ FAQ</button>
   <button onclick="goAbout()">ℹ️ About</button>
 
-  <!-- 🔥 INJECTED -->
   <button onclick="goContact()">📩 Contact</button>
   <button onclick="goDMCA()">⚖️ DMCA</button>
 
@@ -205,9 +209,11 @@
     <div class="ads-container">
       <div class="ads-slider" id="adsSlider">
 
-        <div class="ad"><div class="ad-box">🚀 Promote your project here</div></div>
-        <div class="ad"><div class="ad-box">💰 Buy ad space on MCN Engine</div></div>
-        <div class="ad"><div class="ad-box">📢 Your ad here</div></div>
+        <div class="ad">
+          <div class="ad-box">
+            🚀 Loading sponsored ads...
+          </div>
+        </div>
 
       </div>
     </div>
@@ -219,80 +225,321 @@
     <div id="priceBox">Loading...</div>
   </div>
 
+  <!-- FEATURED -->
+  <div class="card">
+    <h4>⭐ Featured Posts</h4>
+    <div id="featuredBox">Loading featured posts...</div>
+  </div>
+
+  <!-- TRENDING -->
+  <div class="card">
+    <h4>🔥 Trending Posts</h4>
+    <div id="trendingBox">Loading trending posts...</div>
+  </div>
+
   <!-- DISCOVER -->
   <div class="card">
-
-  <h4>⭐ Featured Posts</h4>
-  <div id="featuredBox"></div>
-
-  <h4>🔥 Trending Posts</h4>
-  <div id="trendingBox"></div>
-
-  <h4>📰 Discover Feed</h4>
-  <div id="discoverBox">Loading feed...</div>
+    <h4>📰 Discover Feed</h4>
+    <div id="discoverBox">Loading feed...</div>
+  </div>
 
 </div>
 
-<!-- JS -->
+<!-- EXISTING DASHBOARD SYSTEM -->
 <script type="module" src="dashboard.js"></script>
 
-<script>
-/* ================= MENU TOGGLE FIX ================= */
+<!-- NEW FIRESTORE BLOG SYSTEM -->
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* ================= MENU ================= */
 window.toggleMenu = function () {
   document.getElementById("menu").classList.toggle("active");
 };
 
-/* ================= DISCOVER FIXED (NO 404 CRASH) ================= */
+/* ================= OPEN POST ================= */
+window.openPost = function(id) {
+
+  window.location.href =
+    "post.html?id=" + encodeURIComponent(id);
+};
+
+/* ================= DISCOVER ================= */
 async function loadDiscover() {
-  const box = document.getElementById("discoverBox");
+
+  const box =
+    document.getElementById("discoverBox");
 
   try {
-    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
 
-    if (!res.ok) throw new Error("API error");
+    const q = query(
+      collection(db, "posts"),
+      where("admin.approved", "==", true),
+      where("visibility.dashboard", "==", true),
+      orderBy("order", "asc"),
+      limit(20)
+    );
 
-    const data = await res.json();
+    const snap = await getDocs(q);
 
-    if (!Array.isArray(data) || data.length === 0) {
-      box.innerHTML = "No new posts yet 🚀";
+    if (snap.empty) {
+
+      box.innerHTML =
+        "No posts available";
+
       return;
     }
 
     box.innerHTML = "";
 
-    data.forEach(post => {
-      box.innerHTML += `
-        <div class="card" onclick="openPost('${post.id}')">
-          ${post.image ? `<img src="${post.image}">` : ""}
+    snap.forEach((docSnap) => {
 
-          <div class="card-title">${post.title}</div>
-          <div class="card-text">${(post.content || "").substring(0,120)}...</div>
+      const post = docSnap.data();
+
+      const featured =
+        post.visibility?.featured;
+
+      const trending =
+        post.visibility?.trending;
+
+      const sponsored =
+        post.sponsored?.isSponsored;
+
+      box.innerHTML += `
+
+        <div
+          class="card"
+          onclick="openPost('${docSnap.id}')"
+        >
+
+          ${
+            post.image
+            ? `
+              <img
+                src="${post.image}"
+                loading="lazy"
+                alt="${post.title}"
+              >
+            `
+            : ""
+          }
+
+          <div class="card-title">
+
+            ${featured ? "⭐ " : ""}
+            ${trending ? "🔥 " : ""}
+            ${sponsored ? "💰 " : ""}
+
+            ${post.title}
+
+          </div>
+
+          <div class="card-text">
+            ${(post.content || "").substring(0,120)}...
+          </div>
+
         </div>
       `;
     });
 
   } catch (err) {
-    box.innerHTML = "⚠️ Discover feed unavailable";
+
+    console.error(err);
+
+    box.innerHTML =
+      "⚠️ Failed to load discover feed";
   }
 }
 
-/* ================= ROUTING FIX ================= */
-function openPost(id) {
-  window.location.href = "blog/post.html?id=" + encodeURIComponent(id);
+/* ================= FEATURED ================= */
+async function loadFeatured() {
+
+  const box =
+    document.getElementById("featuredBox");
+
+  try {
+
+    const q = query(
+      collection(db, "posts"),
+      where("visibility.featured", "==", true),
+      limit(5)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+
+      box.innerHTML =
+        "No featured posts";
+      return;
+    }
+
+    box.innerHTML = "";
+
+    snap.forEach((docSnap) => {
+
+      const p = docSnap.data();
+
+      box.innerHTML += `
+        <div
+          class="card"
+          onclick="openPost('${docSnap.id}')"
+        >
+          <b>⭐ ${p.title}</b>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    box.innerHTML =
+      "⚠️ Featured failed";
+  }
+}
+
+/* ================= TRENDING ================= */
+async function loadTrending() {
+
+  const box =
+    document.getElementById("trendingBox");
+
+  try {
+
+    const q = query(
+      collection(db, "posts"),
+      where("visibility.trending", "==", true),
+      limit(5)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+
+      box.innerHTML =
+        "No trending posts";
+      return;
+    }
+
+    box.innerHTML = "";
+
+    snap.forEach((docSnap) => {
+
+      const p = docSnap.data();
+
+      box.innerHTML += `
+        <div
+          class="card"
+          onclick="openPost('${docSnap.id}')"
+        >
+          <b>🔥 ${p.title}</b>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    box.innerHTML =
+      "⚠️ Trending failed";
+  }
+}
+
+/* ================= SPONSORED ADS ================= */
+async function loadSponsoredAds() {
+
+  try {
+
+    const q = query(
+      collection(db, "posts"),
+      where("sponsored.isSponsored", "==", true),
+      limit(10)
+    );
+
+    const snap = await getDocs(q);
+
+    const slider =
+      document.getElementById("adsSlider");
+
+    if (!slider) return;
+
+    slider.innerHTML = "";
+
+    if (snap.empty) {
+
+      slider.innerHTML = `
+        <div class="ad">
+          <div class="ad-box">
+            🚀 No sponsored ads yet
+          </div>
+        </div>
+      `;
+
+      return;
+    }
+
+    snap.forEach((docSnap) => {
+
+      const post = docSnap.data();
+
+      slider.innerHTML += `
+
+        <div class="ad">
+
+          <div
+            class="ad-box"
+            onclick="openPost('${docSnap.id}')"
+          >
+
+            💰 ${post.title}
+
+          </div>
+
+        </div>
+      `;
+    });
+
+  } catch(err) {
+
+    console.error(err);
+  }
 }
 
 /* ================= INIT ================= */
 loadDiscover();
+loadFeatured();
+loadTrending();
+loadSponsoredAds();
 
-/* ================= ADS SLIDER FIX (CENTER + PAUSE) ================= */
+/* ================= ADS SLIDER ================= */
 let index = 0;
 
 setInterval(() => {
-  const slider = document.getElementById("adsSlider");
-  if (!slider) return;
 
-  index = (index + 1) % slider.children.length;
-  slider.style.transform = `translateX(-${index * 100}%)`;
+  const slider =
+    document.getElementById("adsSlider");
+
+  if (!slider || !slider.children.length)
+    return;
+
+  index =
+    (index + 1) % slider.children.length;
+
+  slider.style.transform =
+    `translateX(-${index * 100}%)`;
+
 }, 3500);
 
 </script>
