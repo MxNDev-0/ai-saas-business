@@ -133,7 +133,6 @@
       width: 100%;
       border-radius: 8px;
       margin-bottom: 8px;
-      loading: lazy;
     }
 
     .card-title {
@@ -248,7 +247,7 @@
 <!-- EXISTING DASHBOARD SYSTEM -->
 <script type="module" src="dashboard.js"></script>
 
-<!-- NEW FIRESTORE BLOG SYSTEM -->
+<!-- FIRESTORE BLOG SYSTEM -->
 <script type="module">
 
 import { db } from "./firebase.js";
@@ -381,6 +380,7 @@ async function loadFeatured() {
 
       box.innerHTML =
         "No featured posts";
+
       return;
     }
 
@@ -429,6 +429,7 @@ async function loadTrending() {
 
       box.innerHTML =
         "No trending posts";
+
       return;
     }
 
