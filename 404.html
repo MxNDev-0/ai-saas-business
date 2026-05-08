@@ -2,9 +2,17 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <script>
-location.replace("/index.html");
+
+const path = location.pathname.split("/")[1];
+
+location.replace(
+  "/" + path + "/index.html"
+);
+
 </script>
+
 </head>
 <body></body>
 </html>
