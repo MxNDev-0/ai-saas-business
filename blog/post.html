@@ -92,6 +92,12 @@
       padding: 50px;
       opacity: 0.7;
     }
+
+    .meta {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 
@@ -105,92 +111,183 @@
   <div class="loading">Loading post...</div>
 </div>
 
-<!-- 🔥 FIXED BACK NAVIGATION -->
 <button class="back" onclick="goBackSmart()">← Back</button>
 
 <script>
 
+/* ================= GET POST ID ================= */
 function getPostId() {
-  const params = new URLSearchParams(window.location.search);
+
+  const params =
+    new URLSearchParams(window.location.search);
+
   return params.get("id");
 }
 
-/* ================= SMART BACK SYSTEM ================= */
+/* ================= SMART BACK ================= */
 function goBackSmart() {
 
   const ref = document.referrer;
 
-  // If user came from blog listing
-  if (ref && ref.includes("blog/index.html")) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  // If user came from dashboard
   if (ref && ref.includes("dashboard.html")) {
     window.location.href = "dashboard.html";
     return;
   }
 
-  // If history exists, use it
   if (window.history.length > 1) {
     window.history.back();
     return;
   }
 
-  // fallback
   window.location.href = "index.html";
 }
 
 /* ================= FORMAT CONTENT ================= */
 function formatContent(text) {
+
   if (!text) return "";
 
   return text
+
     .replace(/[\u200B-\u200D\uFEFF\uFFFD]/g, "")
-    .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')
+
+    .replace(
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank">$1</a>'
+    )
+
     .split(/\n+/)
+
     .filter(p => p.trim() !== "")
+
     .map(p => `<p>${p.trim()}</p>`)
+
     .join("");
 }
 
+/* ================= LOAD POST ================= */
 async function loadPost() {
+
   const id = getPostId();
 
   if (!id) {
-    document.getElementById("postContainer").innerHTML = "<p>Invalid post.</p>";
+
+    document.getElementById(
+      "postContainer"
+    ).innerHTML = "<p>Invalid post.</p>";
+
     return;
   }
 
   try {
-    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-    const data = await res.json();
 
-    const post = data.find(p => p.id === id);
+    /* ================= PERFORMANCE FIX ================= */
+    const res =
+      await fetch(`/blog/post/${id}`);
 
-    if (!post) {
-      document.getElementById("postContainer").innerHTML = "<p>Post not found.</p>";
+    if (!res.ok) {
+      throw new Error("Post fetch failed");
+    }
+
+    const post =
+      await res.json();
+
+    if (!post || !post.title) {
+
+      document.getElementById(
+        "postContainer"
+      ).innerHTML = "<p>Post not found.</p>";
+
       return;
     }
 
+    /* ================= SEO ================= */
     document.title = post.title;
 
-    document.getElementById("postContainer").innerHTML = `
-      <div class="title">${post.title}</div>
-      ${post.image ? `<img class="image" src="${post.image}">` : ""}
-      <div class="content">${formatContent(post.content)}</div>
+    document.querySelector(
+      'meta[name="description"]'
+    ).setAttribute(
+      "content",
+      (post.content || "").substring(0, 150)
+    );
+
+    document.querySelector(
+      'meta[property="og:title"]'
+    ).setAttribute(
+      "content",
+      post.title
+    );
+
+    document.querySelector(
+      'meta[property="og:description"]'
+    ).setAttribute(
+      "content",
+      (post.content || "").substring(0, 150)
+    );
+
+    if (post.image) {
+
+      document.querySelector(
+        'meta[property="og:image"]'
+      ).setAttribute(
+        "content",
+        post.image
+      );
+    }
+
+    /* ================= RENDER ================= */
+    document.getElementById(
+      "postContainer"
+    ).innerHTML = `
+
+      <div class="title">
+        ${post.title}
+      </div>
+
+      <div class="meta">
+        MCN Engine • Published Post
+      </div>
+
+      ${
+        post.image
+        ? `
+          <img
+            class="image"
+            src="${post.image}"
+            loading="lazy"
+            alt="${post.title}"
+          >
+        `
+        : ""
+      }
+
+      <div class="content">
+
+        ${formatContent(post.content)}
+
+      </div>
     `;
 
-    fetch(`https://mxm-backend.onrender.com/blog/view/${post.id}`, {
+    /* ================= VIEW COUNT ================= */
+    fetch(`/blog/view/${id}`, {
       method: "POST"
     });
 
   } catch (err) {
-    document.getElementById("postContainer").innerHTML = "<p>Error loading post.</p>";
+
+    console.error(err);
+
+    document.getElementById(
+      "postContainer"
+    ).innerHTML = `
+      <p>
+        Error loading post.
+      </p>
+    `;
   }
 }
 
+/* ================= INIT ================= */
 loadPost();
 
 </script>
