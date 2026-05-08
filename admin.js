@@ -16,13 +16,15 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= STATE (NEW FEATURES) ================= */
+/* ================= STATE ================= */
 let lastSnapshot = null;
 let autosaveTimer = null;
 
 /* ================= MONITOR ================= */
 function log(msg, type = "ok") {
+
   const box = document.getElementById("monitor");
+
   if (!box) return;
 
   const color =
@@ -31,10 +33,14 @@ function log(msg, type = "ok") {
     "#00ff88";
 
   const div = document.createElement("div");
+
   div.style.color = color;
-  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+
+  div.textContent =
+    `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
+
   box.scrollTop = box.scrollHeight;
 }
 
@@ -71,10 +77,12 @@ onAuthStateChanged(auth, async (user) => {
     loadAds();
     loadRejectedAds();
 
-    initAutosave(); // NEW
+    initAutosave();
 
   } catch (err) {
+
     console.error(err);
+
     alert("Admin auth failed");
   }
 });
@@ -84,10 +92,23 @@ window.createBlog = async () => {
 
   try {
 
+    const title = document.getElementById("blogTitle").value.trim();
+
+    const content = document.getElementById("blogContent").value.trim();
+
+    const image = document.getElementById("blogImage").value.trim();
+
+    if (!title || !content) {
+      alert("Title and content required");
+      return;
+    }
+
     const post = {
-      title: blogTitle.value,
-      content: blogContent.value,
-      image: blogImage.value,
+
+      title,
+      content,
+      image,
+
       createdAt: serverTimestamp(),
 
       visibility: {
@@ -99,8 +120,16 @@ window.createBlog = async () => {
 
       sponsored: {
         isSponsored: c_sponsored.checked,
-        expiresAt: adExpiry.value ? new Date(adExpiry.value).getTime() : null,
+        expiresAt: adExpiry.value
+          ? new Date(adExpiry.value).getTime()
+          : null,
+
         priority: Number(adPriority.value || 0)
+      },
+
+      placeholder: {
+        slot: placeholderSlot.value || "",
+        text: placeholderText.value || ""
       },
 
       metrics: {
@@ -115,12 +144,21 @@ window.createBlog = async () => {
       order: 0
     };
 
-    const ref = await addDoc(collection(db, "posts"), post);
+    const ref = await addDoc(
+      collection(db, "posts"),
+      post
+    );
 
     log("Blog created: " + ref.id);
 
+    blogTitle.value = "";
+    blogContent.value = "";
+    blogImage.value = "";
+
   } catch (err) {
+
     console.error(err);
+
     log("Create failed", "error");
   }
 };
@@ -130,32 +168,73 @@ function loadPosts() {
 
   const box = document.getElementById("postsList");
 
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  const q = query(
+    collection(db, "posts"),
+    orderBy("createdAt", "desc")
+  );
 
   onSnapshot(q, (snap) => {
 
     box.innerHTML = "";
 
+    if (snap.empty) {
+
+      box.innerHTML = `
+        <div class="item">
+          No posts yet
+        </div>
+      `;
+
+      return;
+    }
+
     snap.forEach((d) => {
 
       const p = d.data();
-      const published = p.admin?.approved !== false;
+
+      const published =
+        p.admin?.approved !== false;
 
       box.innerHTML += `
+
         <div class="item">
 
-          <b>${p.title}</b><br><br>
-
-          Status: ${published ? "PUBLISHED" : "HIDDEN"}<br><br>
-
-          <button onclick="fillEdit('${d.id}')">Edit</button>
-          <button onclick="togglePost('${d.id}', ${published})">Toggle</button>
-          <button onclick="deletePost('${d.id}')">Delete</button>
+          <b>${p.title || "Untitled"}</b>
 
           <br><br>
 
-          <button onclick="moveUp('${d.id}', ${p.order || 0})">⬆</button>
-          <button onclick="moveDown('${d.id}', ${p.order || 0})">⬇</button>
+          <small>
+            ID: ${d.id}
+          </small>
+
+          <br><br>
+
+          Status:
+          ${published ? "PUBLISHED" : "HIDDEN"}
+
+          <br><br>
+
+          <button onclick="fillEdit('${d.id}')">
+            Edit
+          </button>
+
+          <button onclick="togglePost('${d.id}', ${published})">
+            Toggle
+          </button>
+
+          <button onclick="deletePost('${d.id}')">
+            Delete
+          </button>
+
+          <br><br>
+
+          <button onclick="moveUp('${d.id}', ${p.order || 0})">
+            ⬆
+          </button>
+
+          <button onclick="moveDown('${d.id}', ${p.order || 0})">
+            ⬇
+          </button>
 
         </div>
       `;
@@ -164,7 +243,7 @@ function loadPosts() {
   });
 }
 
-/* ================= EDIT + SNAPSHOT ================= */
+/* ================= EDIT POST ================= */
 window.fillEdit = async (id) => {
 
   const snap = await getDoc(doc(db, "posts", id));
@@ -173,35 +252,60 @@ window.fillEdit = async (id) => {
 
   const p = snap.data();
 
-  /* SAVE SNAPSHOT FOR UNDO */
-  lastSnapshot = { id, data: p };
+  lastSnapshot = {
+    id,
+    data: p
+  };
 
   editPostId.value = id;
+
   editPostTitle.value = p.title || "";
+
   editPostContent.value = p.content || "";
 
-  e_homepage.checked = p.visibility?.homepage || false;
-  e_featured.checked = p.visibility?.featured || false;
-  e_trending.checked = p.visibility?.trending || false;
-  e_sponsored.checked = p.sponsored?.isSponsored || false;
+  e_homepage.checked =
+    p.visibility?.homepage || false;
 
-  e_adPriority.value = p.sponsored?.priority || 0;
+  e_featured.checked =
+    p.visibility?.featured || false;
 
-  e_adExpiry.value = p.sponsored?.expiresAt
-    ? new Date(p.sponsored.expiresAt).toISOString().slice(0, 16)
-    : "";
+  e_trending.checked =
+    p.visibility?.trending || false;
 
-  updatePreview(); // NEW
+  e_sponsored.checked =
+    p.sponsored?.isSponsored || false;
+
+  e_adPriority.value =
+    p.sponsored?.priority || 0;
+
+  e_adExpiry.value =
+    p.sponsored?.expiresAt
+      ? new Date(p.sponsored.expiresAt)
+          .toISOString()
+          .slice(0, 16)
+      : "";
+
+  e_placeholderSlot.value =
+    p.placeholder?.slot || "";
+
+  e_placeholderText.value =
+    p.placeholder?.text || "";
+
+  updatePreview();
 };
 
-/* ================= LIVE PREVIEW (NEW) ================= */
+/* ================= LIVE PREVIEW ================= */
 function updatePreview() {
 
-  let preview = document.getElementById("livePreview");
+  let preview =
+    document.getElementById("livePreview");
 
   if (!preview) {
+
     preview = document.createElement("div");
+
     preview.id = "livePreview";
+
     preview.style.cssText = `
       position:fixed;
       right:10px;
@@ -214,17 +318,25 @@ function updatePreview() {
       font-size:12px;
       z-index:9999;
     `;
+
     document.body.appendChild(preview);
   }
 
   preview.innerHTML = `
-    <b>Preview</b><br><br>
-    ${editPostTitle.value}<br><br>
+
+    <b>Preview</b>
+
+    <br><br>
+
+    ${editPostTitle.value}
+
+    <br><br>
+
     ${editPostContent.value?.slice(0, 80)}...
   `;
 }
 
-/* ================= AUTOSAVE (NEW) ================= */
+/* ================= AUTOSAVE ================= */
 function initAutosave() {
 
   const inputs = [
@@ -249,19 +361,21 @@ function initAutosave() {
           content: editPostContent.value
         };
 
-        localStorage.setItem("postDraft", JSON.stringify(draft));
+        localStorage.setItem(
+          "postDraft",
+          JSON.stringify(draft)
+        );
 
         log("Draft autosaved");
 
         updatePreview();
 
       }, 800);
-
     });
   });
 }
 
-/* ================= UNDO (NEW) ================= */
+/* ================= UNDO ================= */
 window.undoUpdate = async () => {
 
   if (!lastSnapshot) {
@@ -274,40 +388,86 @@ window.undoUpdate = async () => {
   await updateDoc(doc(db, "posts", id), data);
 
   log("Undo successful");
-
 };
 
 /* ================= UPDATE POST ================= */
 window.updatePost = async () => {
 
-  const id = editPostId.value;
+  try {
 
-  const oldSnap = await getDoc(doc(db, "posts", id));
-  lastSnapshot = { id, data: oldSnap.data() };
+    const id = editPostId.value;
 
-  await updateDoc(doc(db, "posts", id), {
-
-    title: editPostTitle.value,
-    content: editPostContent.value,
-
-    visibility: {
-      homepage: e_homepage.checked,
-      featured: e_featured.checked,
-      trending: e_trending.checked,
-      dashboard: true
-    },
-
-    sponsored: {
-      isSponsored: e_sponsored.checked,
-      expiresAt: e_adExpiry.value ? new Date(e_adExpiry.value).getTime() : null,
-      priority: Number(e_adPriority.value || 0)
+    if (!id) {
+      alert("No post selected");
+      return;
     }
-  });
 
-  log("Post updated");
+    const oldSnap = await getDoc(doc(db, "posts", id));
+
+    lastSnapshot = {
+      id,
+      data: oldSnap.data()
+    };
+
+    await updateDoc(doc(db, "posts", id), {
+
+      title: editPostTitle.value,
+
+      content: editPostContent.value,
+
+      visibility: {
+        homepage: e_homepage.checked,
+        featured: e_featured.checked,
+        trending: e_trending.checked,
+        dashboard: true
+      },
+
+      sponsored: {
+        isSponsored: e_sponsored.checked,
+
+        expiresAt: e_adExpiry.value
+          ? new Date(e_adExpiry.value).getTime()
+          : null,
+
+        priority: Number(e_adPriority.value || 0)
+      },
+
+      placeholder: {
+        slot: e_placeholderSlot.value,
+        text: e_placeholderText.value
+      }
+    });
+
+    log("Post updated");
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("Update failed", "error");
+  }
 };
 
-/* ================= FEATURED ORDER (NEW) ================= */
+/* ================= TOGGLE POST ================= */
+window.togglePost = async (id, published) => {
+
+  try {
+
+    await updateDoc(doc(db, "posts", id), {
+      "admin.approved": !published
+    });
+
+    log("Post toggled");
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("Toggle failed", "error");
+  }
+};
+
+/* ================= FEATURE ORDER ================= */
 window.moveUp = async (id, order) => {
 
   await updateDoc(doc(db, "posts", id), {
@@ -328,30 +488,128 @@ window.moveDown = async (id, order) => {
 
 /* ================= DELETE ================= */
 window.deletePost = async (id) => {
+
   await deleteDoc(doc(db, "posts", id));
+
   log("Deleted", "warn");
 };
 
-/* ================= USERS / ADS (UNCHANGED) ================= */
-function loadUsers() { /* unchanged */ }
-function loadAds() { /* unchanged */ }
-function loadRejectedAds() { /* unchanged */ }
+/* ================= USERS ================= */
+function loadUsers() {
 
+  const box = document.getElementById("usersList");
+
+  if (!box) return;
+
+  onSnapshot(collection(db, "users"), (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach((d) => {
+
+      const u = d.data();
+
+      box.innerHTML += `
+        <div class="item">
+          ${u.email || "Unknown User"}
+        </div>
+      `;
+    });
+  });
+}
+
+/* ================= ADS ================= */
+function loadAds() {
+
+  const box = document.getElementById("upgradeList");
+
+  if (!box) return;
+
+  onSnapshot(collection(db, "adRequests"), (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach((d) => {
+
+      const ad = d.data();
+
+      box.innerHTML += `
+        <div class="item">
+
+          <b>${ad.title || "Ad Request"}</b>
+
+          <br><br>
+
+          Status: ${ad.status || "pending"}
+
+          <br><br>
+
+          <button onclick="acceptAd('${d.id}')">
+            Accept
+          </button>
+
+          <button onclick="rejectAd('${d.id}')">
+            Reject
+          </button>
+
+        </div>
+      `;
+    });
+  });
+}
+
+/* ================= REJECTED ADS ================= */
+function loadRejectedAds() {
+
+  const box = document.getElementById("rejectedList");
+
+  if (!box) return;
+
+  onSnapshot(collection(db, "adRequests"), (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach((d) => {
+
+      const ad = d.data();
+
+      if (ad.status !== "rejected") return;
+
+      box.innerHTML += `
+        <div class="item">
+          ${ad.title || "Rejected Ad"}
+        </div>
+      `;
+    });
+  });
+}
+
+/* ================= ACCEPT / REJECT ================= */
 window.acceptAd = async (id) => {
-  await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
+
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "accepted"
+  });
 };
 
 window.rejectAd = async (id) => {
-  await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
+
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "rejected"
+  });
 };
 
+/* ================= CLEAR REJECTED ================= */
 window.clearRejected = async () => {
 
-  const snap = await getDocs(collection(db, "adRequests"));
+  const snap = await getDocs(
+    collection(db, "adRequests")
+  );
 
   const batch = writeBatch(db);
 
   snap.forEach(d => {
+
     if (d.data().status === "rejected") {
       batch.delete(d.ref);
     }
