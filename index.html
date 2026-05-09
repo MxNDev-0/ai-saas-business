@@ -564,8 +564,9 @@ function getCategoryColor(cat) {
 
 async function loadFeed() {
 
-  const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-
+  const res = await fetch(
+  "https://mxm-backend.onrender.com/blog/latest?limit=6"
+);
   const posts = await res.json();
 
   const feed = document.getElementById("feed");
