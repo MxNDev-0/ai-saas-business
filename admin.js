@@ -17,16 +17,17 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= STABILITY CORE v2 ================= */
+/* ================= MCN ADMIN AI v3 CORE ================= */
 
-function safeLog(msg, type = "ok") {
+let systemHealth = 100;
+let errorCount = 0;
+let warningCount = 0;
+
+function aiLog(msg, type = "ok") {
 
   const box = document.getElementById("monitor");
 
-  if (!box) {
-    console.warn("[MONITOR MISSING]", msg);
-    return;
-  }
+  if (!box) return;
 
   const color =
     type === "error" ? "red" :
@@ -40,32 +41,112 @@ function safeLog(msg, type = "ok") {
 
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
+
+  if (type === "error") {
+    errorCount++;
+    systemHealth -= 8;
+  }
+
+  if (type === "warn") {
+    warningCount++;
+    systemHealth -= 2;
+  }
+
+  updateHealthUI();
 }
 
-const log = safeLog;
+const log = aiLog;
 
-/* SAFE DOM GET */
-function safeGet(id) {
+/* ================= HEALTH UI ================= */
+function updateHealthUI() {
+
+  let box = document.getElementById("healthBox");
+
+  if (!box) {
+
+    box = document.createElement("div");
+
+    box.id = "healthBox";
+
+    box.style.cssText = `
+      position:fixed;
+      top:10px;
+      right:10px;
+      background:#1c2541;
+      color:#fff;
+      padding:10px;
+      border-radius:8px;
+      font-size:12px;
+      z-index:999999;
+      width:180px;
+    `;
+
+    document.body.appendChild(box);
+  }
+
+  systemHealth = Math.max(0, Math.min(100, systemHealth));
+
+  box.innerHTML = `
+    <b>🧠 MCN AI Health</b><br><br>
+    Health: ${systemHealth}%<br>
+    Errors: ${errorCount}<br>
+    Warnings: ${warningCount}
+  `;
+
+  if (systemHealth < 40) {
+    box.style.background = "darkred";
+  } else if (systemHealth < 70) {
+    box.style.background = "orange";
+  } else {
+    box.style.background = "#1c2541";
+  }
+}
+
+/* ================= SAFE GET ================= */
+function safeGet(id, fallback = null) {
 
   const el = document.getElementById(id);
 
   if (!el) {
-    safeLog(`Missing UI element: ${id}`, "warn");
+    aiLog(`Missing UI: ${id}`, "warn");
+    return fallback;
   }
 
   return el;
 }
 
-/* SAFE RUN WRAPPER */
+/* ================= AUTO REPAIR FIRESTORE ================= */
+async function ensureDoc(path, defaultData) {
+
+  try {
+
+    const snap = await getDoc(doc(db, ...path.split("/")));
+
+    if (!snap.exists()) {
+
+      aiLog(`Auto-repair: ${path}`, "warn");
+
+      await setDoc(doc(db, ...path.split("/")), {
+        ...defaultData,
+        repairedAt: Date.now()
+      });
+
+      systemHealth += 5;
+    }
+
+  } catch (err) {
+    aiLog(`Repair failed: ${path}`, "error");
+  }
+}
+
+/* ================= SAFE RUN ================= */
 async function safeRun(fn, label) {
 
   try {
     return await fn();
-
   } catch (err) {
-
     console.error(err);
-    safeLog(`${label} failed: ${err.message}`, "error");
+    aiLog(`${label} failed: ${err.message}`, "error");
   }
 }
 
@@ -74,26 +155,17 @@ let lastSnapshot = null;
 let autosaveTimer = null;
 
 /* ================= MAINTENANCE MODE ================= */
-
 async function loadMaintenanceMode() {
 
   await safeRun(async () => {
 
+    await ensureDoc("system/maintenance", {
+      enabled: false,
+      mode: "soft",
+      message: "System maintenance"
+    });
+
     const snap = await getDoc(doc(db, "system", "maintenance"));
-
-    if (!snap.exists()) {
-
-      safeLog("Maintenance doc missing → creating default", "warn");
-
-      await setDoc(doc(db, "system", "maintenance"), {
-        enabled: false,
-        mode: "soft",
-        message: "System maintenance",
-        updatedAt: Date.now()
-      });
-
-      return;
-    }
 
     const data = snap.data();
 
@@ -102,6 +174,8 @@ async function loadMaintenanceMode() {
     if (toggle) {
       toggle.checked = data.enabled === true;
     }
+
+    aiLog("Maintenance loaded");
 
   }, "loadMaintenanceMode");
 }
@@ -119,7 +193,7 @@ window.saveMaintenanceMode = async function () {
       updatedAt: Date.now()
     });
 
-    safeLog(enabled ? "Maintenance enabled" : "Maintenance disabled");
+    aiLog(enabled ? "Maintenance enabled" : "Maintenance disabled");
 
   }, "saveMaintenanceMode");
 };
@@ -150,7 +224,11 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    safeLog("Admin online");
+    aiLog("Admin online");
+
+    systemHealth = 100;
+    errorCount = 0;
+    warningCount = 0;
 
     loadMaintenanceMode();
 
@@ -162,7 +240,6 @@ onAuthStateChanged(auth, async (user) => {
     initAutosave();
 
   } catch (err) {
-
     console.error(err);
     alert("Admin auth failed");
   }
@@ -183,50 +260,33 @@ window.createBlog = async () => {
     }
 
     const post = {
-
       title,
       content,
       image,
-
       createdAt: serverTimestamp(),
-
       visibility: {
         homepage: c_homepage.checked,
         featured: c_featured.checked,
         trending: c_trending.checked,
         dashboard: true
       },
-
       sponsored: {
         isSponsored: c_sponsored.checked,
         expiresAt: adExpiry.value ? new Date(adExpiry.value).getTime() : null,
         priority: Number(adPriority.value || 0)
       },
-
       placeholder: {
         slot: placeholderSlot.value || "",
         text: placeholderText.value || ""
       },
-
-      metrics: {
-        impressions: 0,
-        clicks: 0
-      },
-
-      admin: {
-        approved: true
-      },
-
+      metrics: { impressions: 0, clicks: 0 },
+      admin: { approved: true },
       order: 0
     };
 
     const ref = await addDoc(collection(db, "posts"), post);
 
-    safeLog("Blog created: " + ref.id);
-
-    blogTitle.value = "";
-    blogContent.value = "";
-    blogImage.value = "";
+    aiLog("Blog created: " + ref.id);
 
   }, "createBlog");
 };
@@ -253,11 +313,9 @@ function loadPosts() {
           <b>${p.title || "Untitled"}</b>
 
           <br><br>
-
           <small>ID: ${d.id}</small>
 
           <br><br>
-
           Status: ${published ? "PUBLISHED" : "HIDDEN"}
 
           <br><br>
@@ -266,47 +324,10 @@ function loadPosts() {
           <button onclick="togglePost('${d.id}', ${published})">Toggle</button>
           <button onclick="deletePost('${d.id}')">Delete</button>
 
-          <br><br>
-
-          <button onclick="moveUp('${d.id}', ${p.order || 0})">⬆</button>
-          <button onclick="moveDown('${d.id}', ${p.order || 0})">⬇</button>
-
         </div>
       `;
     });
 
-  });
-}
-
-/* ================= AUTOSAVE ================= */
-function initAutosave() {
-
-  const inputs = ["editPostTitle", "editPostContent"];
-
-  inputs.forEach(id => {
-
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.addEventListener("input", () => {
-
-      clearTimeout(autosaveTimer);
-
-      autosaveTimer = setTimeout(() => {
-
-        const draft = {
-          title: editPostTitle.value,
-          content: editPostContent.value
-        };
-
-        localStorage.setItem("postDraft", JSON.stringify(draft));
-
-        safeLog("Draft autosaved");
-
-        updatePreview();
-
-      }, 800);
-    });
   });
 }
 
@@ -353,7 +374,6 @@ function loadAds() {
           <b>${ad.title || "Ad Request"}</b>
 
           <br><br>
-
           Status: ${ad.status || "pending"}
 
           <br><br>
@@ -415,5 +435,5 @@ window.clearRejected = async () => {
 
   await batch.commit();
 
-  safeLog("Cleared rejected ads");
+  aiLog("Cleared rejected ads");
 };
