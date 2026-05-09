@@ -9,21 +9,23 @@ import {
   doc,
   getDoc,
   setDoc,
-  addDoc,
+  updateDoc,
   deleteDoc,
 
   collection,
+
+  addDoc,
 
   query,
   orderBy,
 
   onSnapshot,
 
-  updateDoc,
-
   serverTimestamp,
 
-  getDocs
+  getDocs,
+
+  increment
 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -45,14 +47,11 @@ let typingTimeout = null;
 
 /* ================= DOM ================= */
 
-const inboxScreen =
-document.getElementById("inboxScreen");
+const inboxList =
+document.getElementById("inboxList");
 
 const chatScreen =
 document.getElementById("chatScreen");
-
-const inboxList =
-document.getElementById("inboxList");
 
 const chatBox =
 document.getElementById("chatBox");
@@ -62,6 +61,12 @@ document.getElementById("msgInput");
 
 const searchInput =
 document.getElementById("searchInput");
+
+const typingIndicator =
+document.getElementById("typingIndicator");
+
+const voiceBtn =
+document.getElementById("voiceBtn");
 
 /* ================= AUTH ================= */
 
@@ -78,14 +83,20 @@ onAuthStateChanged(auth, async (user) => {
 
   loadInbox();
 
+  setupSearch();
+
   setupTypingSystem();
+
+  setupVoiceSystem();
 
   const params =
   new URLSearchParams(location.search);
 
-  const uid = params.get("uid");
+  const uid =
+  params.get("uid");
 
   if (uid) {
+
     openChat(uid);
   }
 
@@ -102,54 +113,62 @@ function createChatId(a, b) {
 
 /* ================= OPEN CHAT ================= */
 
-window.openChat = async function(uid) {
+window.openChat =
+async function(uid) {
 
   currentTargetUser = uid;
 
   currentChatId =
-  createChatId(currentUser.uid, uid);
-
-  inboxScreen.classList.add("hidden");
+  createChatId(
+    currentUser.uid,
+    uid
+  );
 
   chatScreen.classList.add("active");
 
   const userSnap =
-  await getDoc(doc(db, "users", uid));
+  await getDoc(
+    doc(db, "users", uid)
+  );
 
   if (userSnap.exists()) {
 
-    const data = userSnap.data();
+    const u =
+    userSnap.data();
 
     document.getElementById(
       "chatUsername"
     ).textContent =
-      data.username || "User";
+      u.username || "User";
 
     document.getElementById(
       "chatAvatar"
     ).src =
-      data.avatar ||
+      u.avatar ||
       "https://via.placeholder.com/100";
   }
 
-  await createInboxIfMissing(uid);
+  await createChatIfMissing(uid);
 
   loadMessages();
 
-  markMessagesSeen();
+  resetUnread();
+
+  monitorTyping();
 };
 
 /* ================= CLOSE CHAT ================= */
 
-window.closeChat = function() {
+window.closeChat =
+function() {
 
-  chatScreen.classList.remove("active");
-
-  inboxScreen.classList.remove("hidden");
-
-  currentTargetUser = null;
+  chatScreen.classList.remove(
+    "active"
+  );
 
   currentChatId = null;
+
+  currentTargetUser = null;
 
   if (unsubscribeMessages) {
     unsubscribeMessages();
@@ -158,12 +177,13 @@ window.closeChat = function() {
 
 /* ================= CREATE CHAT ================= */
 
-async function createInboxIfMissing(uid) {
+async function createChatIfMissing(uid) {
 
   const ref =
   doc(db, "dms", currentChatId);
 
-  const snap = await getDoc(ref);
+  const snap =
+  await getDoc(ref);
 
   if (!snap.exists()) {
 
@@ -184,6 +204,8 @@ async function createInboxIfMissing(uid) {
 
       lastSender: "",
 
+      typing: "",
+
       unread: {}
     });
   }
@@ -203,29 +225,51 @@ function loadInbox() {
 
       snap.forEach((docSnap) => {
 
-        const data = docSnap.data();
+        const data =
+        docSnap.data();
 
         if (
           !data.members ||
-          !data.members.includes(currentUser.uid)
+          !data.members.includes(
+            currentUser.uid
+          )
         ) return;
 
         chats.push({
           id: docSnap.id,
           ...data
         });
+
       });
 
       chats.sort((a, b) => {
 
-        const aTime =
+        const at =
         a.updatedAt?.seconds || 0;
 
-        const bTime =
+        const bt =
         b.updatedAt?.seconds || 0;
 
-        return bTime - aTime;
+        return bt - at;
       });
+
+      if (!chats.length) {
+
+        inboxList.innerHTML = `
+
+          <div
+            style="
+              padding:30px;
+              text-align:center;
+              opacity:.6;
+            "
+          >
+            No conversations yet
+          </div>
+        `;
+
+        return;
+      }
 
       for (const chat of chats) {
 
@@ -239,17 +283,23 @@ function loadInbox() {
           doc(db, "users", other)
         );
 
-        if (!userSnap.exists()) continue;
+        if (!userSnap.exists()) {
+          continue;
+        }
 
-        const u = userSnap.data();
+        const u =
+        userSnap.data();
 
         const unread =
-          chat.unread?.[currentUser.uid] || 0;
+        chat.unread?.[
+          currentUser.uid
+        ] || 0;
 
         const div =
         document.createElement("div");
 
-        div.className = "chat-item";
+        div.className =
+        "chat-item";
 
         div.innerHTML = `
 
@@ -274,7 +324,10 @@ function loadInbox() {
           <div class="chat-info">
 
             <div class="chat-name">
-              ${u.username || "User"}
+              ${
+                u.username ||
+                "User"
+              }
             </div>
 
             <div class="chat-preview">
@@ -290,15 +343,15 @@ function loadInbox() {
 
           <div class="chat-meta">
 
-            <div class="time">
+            <div class="chat-time">
 
               ${
                 chat.updatedAt?.seconds
                 ? new Date(
                     chat.updatedAt.seconds * 1000
                   ).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit"
+                    hour:"2-digit",
+                    minute:"2-digit"
                   })
                 : ""
               }
@@ -322,7 +375,9 @@ function loadInbox() {
         () => openChat(other);
 
         inboxList.appendChild(div);
+
       }
+
     }
   );
 }
@@ -343,7 +398,10 @@ function loadMessages() {
       currentChatId,
       "messages"
     ),
-    orderBy("createdAt", "asc")
+    orderBy(
+      "createdAt",
+      "asc"
+    )
   );
 
   unsubscribeMessages =
@@ -353,20 +411,22 @@ function loadMessages() {
 
     snap.forEach(async (docSnap) => {
 
-      const m = docSnap.data();
+      const m =
+      docSnap.data();
 
       const div =
       document.createElement("div");
 
       div.className =
-        "msg " +
-        (
-          m.senderId === currentUser.uid
-          ? "me"
-          : "them"
-        );
+      "msg " +
+      (
+        m.senderId === currentUser.uid
+        ? "me"
+        : "them"
+      );
 
       /* TEXT */
+
       if (m.type === "text") {
 
         div.innerHTML = `
@@ -376,9 +436,13 @@ function loadMessages() {
           <div class="meta">
 
             ${
-              m.seen
-              ? "Seen"
-              : "Sent"
+              m.senderId === currentUser.uid
+              ? (
+                  m.seen
+                  ? "Seen"
+                  : "Sent"
+                )
+              : ""
             }
 
           </div>
@@ -386,11 +450,16 @@ function loadMessages() {
       }
 
       /* IMAGE */
-      else if (m.type === "image") {
+
+      else if (
+        m.type === "image"
+      ) {
 
         div.innerHTML = `
 
-          <img src="${m.fileUrl}">
+          <img
+            src="${m.fileUrl}"
+          >
 
           <div class="meta">
             Photo
@@ -399,12 +468,19 @@ function loadMessages() {
       }
 
       /* VOICE */
-      else if (m.type === "voice") {
+
+      else if (
+        m.type === "voice"
+      ) {
 
         div.innerHTML = `
 
           <audio controls>
-            <source src="${m.fileUrl}">
+
+            <source
+              src="${m.fileUrl}"
+            >
+
           </audio>
 
           <div class="meta">
@@ -415,15 +491,19 @@ function loadMessages() {
 
       chatBox.appendChild(div);
 
-      /* SEEN */
+      /* MARK SEEN */
+
       if (
+
         m.senderId !== currentUser.uid &&
         !m.seen
+
       ) {
 
         try {
 
           await updateDoc(
+
             doc(
               db,
               "dms",
@@ -431,12 +511,14 @@ function loadMessages() {
               "messages",
               docSnap.id
             ),
+
             {
               seen: true
             }
+
           );
 
-        } catch(e) {}
+        } catch(e){}
       }
 
     });
@@ -451,29 +533,32 @@ function loadMessages() {
   });
 }
 
-/* ================= SEND MESSAGE ================= */
+/* ================= SEND ================= */
 
-window.sendMsg = async function() {
-
-  if (!msgInput.value.trim()) return;
-
-  if (!currentChatId) return;
+window.sendMsg =
+async function() {
 
   const text =
   msgInput.value.trim();
 
+  if (!text) return;
+
+  if (!currentChatId) return;
+
   msgInput.value = "";
 
   await addDoc(
+
     collection(
       db,
       "dms",
       currentChatId,
       "messages"
     ),
+
     {
 
-      type: "text",
+      type:"text",
 
       text,
 
@@ -483,18 +568,21 @@ window.sendMsg = async function() {
       receiverId:
       currentTargetUser,
 
-      seen: false,
+      seen:false,
 
       createdAt:
       serverTimestamp()
     }
+
   );
 
   await updateDoc(
+
     doc(db, "dms", currentChatId),
+
     {
 
-      lastMessage: text,
+      lastMessage:text,
 
       lastSender:
       currentUser.uid,
@@ -502,37 +590,41 @@ window.sendMsg = async function() {
       updatedAt:
       serverTimestamp(),
 
-      [`unread.${currentTargetUser}`]:
-      incrementValue(1)
-    }
-  );
+      typing:"",
 
+      [`unread.${currentTargetUser}`]:
+      increment(1)
+
+    }
+
+  );
 };
 
-/* ================= INCREMENT ================= */
+/* ================= SEARCH ================= */
 
-function incrementValue(n) {
+function setupSearch() {
 
-  return {
-    __op: "Increment",
-    operand: n
-  };
-}
+  searchInput.addEventListener(
+    "input",
+    () => {
 
-/* ================= SEEN ================= */
+      const value =
+      searchInput.value
+      .toLowerCase();
 
-async function markMessagesSeen() {
+      document
+      .querySelectorAll(".chat-item")
+      .forEach(el => {
 
-  try {
-
-    await updateDoc(
-      doc(db, "dms", currentChatId),
-      {
-        [`unread.${currentUser.uid}`]: 0
-      }
-    );
-
-  } catch(e) {}
+        el.style.display =
+        el.innerText
+        .toLowerCase()
+        .includes(value)
+          ? "flex"
+          : "none";
+      });
+    }
+  );
 }
 
 /* ================= TYPING ================= */
@@ -546,14 +638,23 @@ function setupTypingSystem() {
       if (!currentChatId) return;
 
       await updateDoc(
-        doc(db, "dms", currentChatId),
+
+        doc(
+          db,
+          "dms",
+          currentChatId
+        ),
+
         {
           typing:
           currentUser.uid
         }
+
       );
 
-      clearTimeout(typingTimeout);
+      clearTimeout(
+        typingTimeout
+      );
 
       typingTimeout =
       setTimeout(async () => {
@@ -561,22 +662,109 @@ function setupTypingSystem() {
         try {
 
           await updateDoc(
-            doc(db, "dms", currentChatId),
+
+            doc(
+              db,
+              "dms",
+              currentChatId
+            ),
+
             {
-              typing: ""
+              typing:""
             }
+
           );
 
-        } catch(e) {}
+        } catch(e){}
 
       }, 1500);
+
     }
   );
 }
 
-/* ================= FILE PICKER ================= */
+/* ================= MONITOR TYPING ================= */
 
-window.pickFile = function() {
+function monitorTyping() {
+
+  onSnapshot(
+
+    doc(
+      db,
+      "dms",
+      currentChatId
+    ),
+
+    async (snap) => {
+
+      if (!snap.exists()) {
+        return;
+      }
+
+      const data =
+      snap.data();
+
+      if (
+        data.typing &&
+        data.typing !== currentUser.uid
+      ) {
+
+        const userSnap =
+        await getDoc(
+          doc(
+            db,
+            "users",
+            data.typing
+          )
+        );
+
+        if (userSnap.exists()) {
+
+          typingIndicator.textContent =
+          `${
+            userSnap.data().username ||
+            "Someone"
+          } is typing...`;
+        }
+
+      } else {
+
+        typingIndicator.textContent =
+        "";
+      }
+
+    }
+  );
+}
+
+/* ================= RESET UNREAD ================= */
+
+async function resetUnread() {
+
+  try {
+
+    await updateDoc(
+
+      doc(
+        db,
+        "dms",
+        currentChatId
+      ),
+
+      {
+        [`unread.${currentUser.uid}`]:
+        0
+      }
+
+    );
+
+  } catch(e){}
+}
+
+/* ================= FILE UPLOAD ================= */
+
+window.pickFile =
+function() {
 
   document.getElementById(
     "fileInput"
@@ -585,7 +773,8 @@ window.pickFile = function() {
 
 document.getElementById(
   "fileInput"
-).onchange = async (e) => {
+).onchange =
+async (e) => {
 
   const file =
   e.target.files[0];
@@ -595,7 +784,10 @@ document.getElementById(
   const form =
   new FormData();
 
-  form.append("file", file);
+  form.append(
+    "file",
+    file
+  );
 
   form.append(
     "upload_preset",
@@ -604,26 +796,31 @@ document.getElementById(
 
   const res =
   await fetch(
+
     "https://api.cloudinary.com/v1_1/demo/upload",
+
     {
-      method: "POST",
-      body: form
+      method:"POST",
+      body:form
     }
+
   );
 
   const data =
   await res.json();
 
   await addDoc(
+
     collection(
       db,
       "dms",
       currentChatId,
       "messages"
     ),
+
     {
 
-      type: "image",
+      type:"image",
 
       fileUrl:
       data.secure_url,
@@ -634,84 +831,113 @@ document.getElementById(
       receiverId:
       currentTargetUser,
 
+      seen:false,
+
       createdAt:
       serverTimestamp()
+
     }
+
   );
 
   await updateDoc(
-    doc(db, "dms", currentChatId),
+
+    doc(
+      db,
+      "dms",
+      currentChatId
+    ),
+
     {
 
       lastMessage:
       "📷 Photo",
 
       updatedAt:
-      serverTimestamp()
+      serverTimestamp(),
+
+      [`unread.${currentTargetUser}`]:
+      increment(1)
+
     }
+
   );
 };
 
 /* ================= VOICE ================= */
 
-const voiceBtn =
-document.getElementById("voiceBtn");
+function setupVoiceSystem() {
 
-let recording = false;
+  let recording = false;
 
-voiceBtn.onclick =
-async function() {
+  voiceBtn.onclick =
+  async function() {
 
-  if (!recording) {
+    if (!recording) {
 
-    const stream =
-    await navigator
-    .mediaDevices
-    .getUserMedia({
-      audio: true
-    });
+      const stream =
+      await navigator
+      .mediaDevices
+      .getUserMedia({
+        audio:true
+      });
 
-    mediaRecorder =
-    new MediaRecorder(stream);
+      mediaRecorder =
+      new MediaRecorder(
+        stream
+      );
 
-    audioChunks = [];
+      audioChunks = [];
 
-    mediaRecorder.ondataavailable =
-    e => {
+      mediaRecorder
+      .ondataavailable =
+      e => {
 
-      audioChunks.push(e.data);
-    };
+        audioChunks.push(
+          e.data
+        );
+      };
 
-    mediaRecorder.onstop =
-    uploadVoice;
+      mediaRecorder.onstop =
+      uploadVoice;
 
-    mediaRecorder.start();
+      mediaRecorder.start();
 
-    recording = true;
+      recording = true;
 
-    voiceBtn.innerHTML = "⏹";
+      voiceBtn.innerHTML =
+      "⏹";
 
-  } else {
+    } else {
 
-    mediaRecorder.stop();
+      mediaRecorder.stop();
 
-    recording = false;
+      recording = false;
 
-    voiceBtn.innerHTML = "🎤";
-  }
-};
+      voiceBtn.innerHTML =
+      "🎤";
+    }
+
+  };
+}
 
 async function uploadVoice() {
 
   const blob =
-  new Blob(audioChunks, {
-    type: "audio/webm"
-  });
+  new Blob(
+    audioChunks,
+    {
+      type:"audio/webm"
+    }
+  );
 
   const form =
   new FormData();
 
-  form.append("file", blob);
+  form.append(
+    "file",
+    blob
+  );
 
   form.append(
     "upload_preset",
@@ -720,26 +946,31 @@ async function uploadVoice() {
 
   const res =
   await fetch(
+
     "https://api.cloudinary.com/v1_1/demo/upload",
+
     {
-      method: "POST",
-      body: form
+      method:"POST",
+      body:form
     }
+
   );
 
   const data =
   await res.json();
 
   await addDoc(
+
     collection(
       db,
       "dms",
       currentChatId,
       "messages"
     ),
+
     {
 
-      type: "voice",
+      type:"voice",
 
       fileUrl:
       data.secure_url,
@@ -750,25 +981,40 @@ async function uploadVoice() {
       receiverId:
       currentTargetUser,
 
+      seen:false,
+
       createdAt:
       serverTimestamp()
+
     }
+
   );
 
   await updateDoc(
-    doc(db, "dms", currentChatId),
+
+    doc(
+      db,
+      "dms",
+      currentChatId
+    ),
+
     {
 
       lastMessage:
       "🎤 Voice message",
 
       updatedAt:
-      serverTimestamp()
+      serverTimestamp(),
+
+      [`unread.${currentTargetUser}`]:
+      increment(1)
+
     }
+
   );
 }
 
-/* ================= DELETE CHAT ================= */
+/* ================= DELETE ================= */
 
 window.deleteChat =
 async function() {
@@ -777,19 +1023,21 @@ async function() {
 
   const yes =
   confirm(
-    "Delete this chat?"
+    "Delete chat?"
   );
 
   if (!yes) return;
 
   const snap =
   await getDocs(
+
     collection(
       db,
       "dms",
       currentChatId,
       "messages"
     )
+
   );
 
   const promises = [];
@@ -801,7 +1049,9 @@ async function() {
     );
   });
 
-  await Promise.all(promises);
+  await Promise.all(
+    promises
+  );
 
   closeChat();
 };
@@ -812,33 +1062,9 @@ window.startCall =
 function() {
 
   alert(
-    "MCN Voice/Video system coming in future upgrade"
+    "MCN Voice & Video calls coming soon"
   );
 };
-
-/* ================= SEARCH ================= */
-
-searchInput.addEventListener(
-  "input",
-  () => {
-
-    const value =
-    searchInput.value
-      .toLowerCase();
-
-    document
-      .querySelectorAll(".chat-item")
-      .forEach(el => {
-
-        el.style.display =
-          el.innerText
-          .toLowerCase()
-          .includes(value)
-          ? "flex"
-          : "none";
-      });
-  }
-);
 
 /* ================= ENTER SEND ================= */
 
@@ -846,8 +1072,12 @@ msgInput.addEventListener(
   "keypress",
   (e) => {
 
-    if (e.key === "Enter") {
+    if (
+      e.key === "Enter"
+    ) {
+
       sendMsg();
     }
+
   }
 );
