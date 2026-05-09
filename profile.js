@@ -9,262 +9,196 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let currentUser = null;
 
-/* ================= LOGGER ================= */
-function log(msg) {
+/* ================= MONITOR ================= */
 
-  const monitor =
+function log(msg){
+
+  const box =
     document.getElementById("monitor");
 
-  monitor.innerHTML += "<br>" + msg;
+  if(!box) return;
 
-  monitor.scrollTop =
-    monitor.scrollHeight;
+  box.innerHTML += `
+    <div>
+      [${new Date().toLocaleTimeString()}]
+      ${msg}
+    </div>
+  `;
+
+  box.scrollTop = box.scrollHeight;
 }
 
 /* ================= AUTH ================= */
-onAuthStateChanged(auth, async (user) => {
 
-  if (!user) {
+onAuthStateChanged(auth, async(user)=>{
+
+  if(!user){
     location.href = "index.html";
     return;
   }
 
   currentUser = user;
 
-  log("[AUTH] " + user.email);
+  log("Authenticated");
 
-  await createUserProfile(user);
-
-  trackPresence();
-
-  loadOnlineUsers();
+  await loadProfile();
 });
 
-/* ================= CREATE PROFILE ================= */
-async function createUserProfile(user) {
+/* ================= LOAD PROFILE ================= */
 
-  try {
+async function loadProfile(){
+
+  try{
 
     const ref =
-      doc(db, "users", user.uid);
+      doc(db, "users", currentUser.uid);
 
     const snap =
       await getDoc(ref);
 
-    if (!snap.exists()) {
+    /* CREATE PROFILE IF MISSING */
+
+    if(!snap.exists()){
 
       await setDoc(ref, {
 
-        uid: user.uid,
+        uid: currentUser.uid,
 
-        email: user.email,
+        email: currentUser.email,
 
         username:
-          user.email.split("@")[0],
+          currentUser.email.split("@")[0],
 
-        photoURL: "",
+        bio: "",
 
-        bio: "MCN Engine User",
-
-        followers: 0,
-
-        following: 0,
+        avatar: "",
 
         role: "user",
 
-        online: true,
-
-        lastSeen: Date.now(),
-
-        createdAt: Date.now()
-      });
-
-      log("[PROFILE] Created");
-
-    } else {
-
-      await updateDoc(ref, {
+        followers: 0,
+        following: 0,
+        posts: 0,
 
         online: true,
 
-        lastSeen: Date.now()
+        createdAt: serverTimestamp()
       });
 
-      log("[PROFILE] Updated");
+      log("New profile created");
+
+      return loadProfile();
     }
 
-  } catch (err) {
+    const data = snap.data();
+
+    renderProfile(data);
+
+    log("Profile loaded");
+
+  }catch(err){
 
     console.error(err);
 
-    log("[ERROR] profile setup failed");
+    log("Profile failed");
   }
 }
 
-/* ================= ONLINE TRACKING ================= */
-function trackPresence() {
+/* ================= RENDER ================= */
 
-  setInterval(async () => {
+function renderProfile(data){
 
-    if (!currentUser) return;
+  avatar.src =
+    data.avatar ||
+    "https://via.placeholder.com/150";
 
-    try {
+  username.textContent =
+    data.username || "Unknown";
 
-      await updateDoc(
-        doc(db, "users", currentUser.uid),
-        {
-          online: true,
-          lastSeen: Date.now()
-        }
-      );
+  email.textContent =
+    data.email || "";
 
-      log("[PING] online");
+  bio.textContent =
+    data.bio || "No bio yet";
 
-    } catch (err) {
+  postsCount.textContent =
+    data.posts || 0;
 
-      console.error(err);
-    }
+  followersCount.textContent =
+    data.followers || 0;
 
-  }, 15000);
+  followingCount.textContent =
+    data.following || 0;
+
+  /* EDIT FIELDS */
+
+  editUsername.value =
+    data.username || "";
+
+  editAvatar.value =
+    data.avatar || "";
+
+  editBio.value =
+    data.bio || "";
 }
 
-/* ================= ONLINE USERS ================= */
-function loadOnlineUsers() {
+/* ================= TOGGLE EDIT ================= */
 
-  const q = query(
-    collection(db, "users"),
-    where("online", "==", true)
-  );
+window.toggleEdit = function(){
 
-  onSnapshot(q, (snap) => {
+  const card =
+    document.getElementById("editCard");
 
-    const users = [];
+  card.style.display =
+    card.style.display === "none"
+      ? "block"
+      : "none";
+};
 
-    snap.forEach((docSnap) => {
+/* ================= SAVE PROFILE ================= */
 
-      const data = docSnap.data();
+window.saveProfile = async function(){
 
-      const now = Date.now();
+  try{
 
-      if (
-        now - (data.lastSeen || 0)
-        < 30000
-      ) {
-        users.push(data);
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+
+        username:
+          editUsername.value.trim(),
+
+        avatar:
+          editAvatar.value.trim(),
+
+        bio:
+          editBio.value.trim(),
+
+        online: true
       }
-    });
-
-    log(
-      "[USERS] "
-      + users.length
-      + " online"
     );
 
-    renderUsers(users);
-  });
-}
+    log("Profile updated");
 
-/* ================= RENDER USERS ================= */
-function renderUsers(users) {
+    await loadProfile();
 
-  const box =
-    document.getElementById("onlineUsers");
+    alert("Profile saved");
 
-  box.innerHTML = "";
+  }catch(err){
 
-  users.forEach((u) => {
+    console.error(err);
 
-    if (u.uid === currentUser.uid)
-      return;
-
-    const row =
-      document.createElement("div");
-
-    row.className = "user-row";
-
-    row.innerHTML = `
-
-      <div class="user-left">
-
-        <span class="dot"></span>
-
-        <div>
-
-          <div>
-            ${u.username || "user"}
-          </div>
-
-          <small style="
-            opacity:0.7;
-          ">
-            ${u.bio || ""}
-          </small>
-
-        </div>
-
-      </div>
-
-      <div class="user-actions">
-
-        <button
-          onclick="openDM('${u.uid}')"
-        >
-          ✉️ DM
-        </button>
-
-      </div>
-    `;
-
-    box.appendChild(row);
-  });
-}
-
-/* ================= MONITOR ================= */
-window.sendMonitorMsg = function () {
-
-  const input =
-    document.getElementById("monitorInput");
-
-  if (!input.value.trim())
-    return;
-
-  log("[CMD] " + input.value);
-
-  input.value = "";
+    log("Save failed");
+  }
 };
 
-/* ================= OPEN DM ================= */
-window.openDM = function(uid) {
+/* ================= OPEN MESSAGES ================= */
 
-  location.href =
-    "user.html?uid=" + uid;
+window.openMessages = function(){
+
+  location.href = "messages.html";
 };
-
-/* ================= OFFLINE CLEANUP ================= */
-window.addEventListener(
-  "beforeunload",
-  async () => {
-
-    if (!currentUser) return;
-
-    try {
-
-      await updateDoc(
-        doc(db, "users", currentUser.uid),
-        {
-          online: false,
-          lastSeen: Date.now()
-        }
-      );
-
-    } catch (err) {}
-});
