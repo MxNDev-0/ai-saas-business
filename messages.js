@@ -8,662 +8,262 @@ import {
   doc,
   getDoc,
   setDoc,
-  updateDoc,
   addDoc,
-  deleteDoc,
   collection,
   onSnapshot,
   query,
   orderBy,
   serverTimestamp,
-  getDocs,
-  where
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* =========================================
-   MCN ENGINE DM SYSTEM V2
-========================================= */
+/* ================= STATE ================= */
 
-let currentUser = null;
-
-let currentChatId = null;
-
-let currentTargetUser = null;
-
-let unsubscribeMessages = null;
-
-let unsubscribeTyping = null;
-
-/* ================= ELEMENTS ================= */
-
-const chatBox =
-  document.getElementById("chatBox");
-
-const inboxList =
-  document.getElementById("inboxList");
-
-const msgInput =
-  document.getElementById("msgInput");
+let user = null;
+let chatId = null;
+let targetUser = null;
 
 /* ================= AUTH ================= */
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async (u) => {
 
-  if (!user) {
-
+  if (!u) {
     location.href = "index.html";
-
     return;
   }
 
-  currentUser = user;
+  user = u;
 
   loadInbox();
 
-  const params =
-    new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.search);
 
-  const uid =
-    params.get("uid");
-
-  if (uid) {
-    openChat(uid);
+  if (params.get("uid")) {
+    openChat(params.get("uid"));
   }
 });
 
-/* ================= USER HELPERS ================= */
-
-async function getUserData(uid) {
-
-  try {
-
-    const snap =
-      await getDoc(doc(db, "users", uid));
-
-    if (!snap.exists()) {
-
-      return {
-        username: "Unknown User",
-        avatar: ""
-      };
-    }
-
-    return snap.data();
-
-  } catch {
-
-    return {
-      username: "Unknown User",
-      avatar: ""
-    };
-  }
-}
-
 /* ================= CHAT ID ================= */
 
-function createChatId(uid1, uid2) {
-
-  return [uid1, uid2]
-    .sort()
-    .join("_");
+function makeChatId(a, b) {
+  return [a, b].sort().join("_");
 }
 
 /* ================= OPEN CHAT ================= */
 
-async function openChat(otherUid) {
+async function openChat(uid) {
 
-  currentTargetUser = otherUid;
+  targetUser = uid;
 
-  currentChatId =
-    createChatId(
-      currentUser.uid,
-      otherUid
-    );
+  chatId = makeChatId(user.uid, uid);
 
-  inboxList.style.display = "none";
+  const snap = await getDoc(doc(db, "users", uid));
 
-  const otherUser =
-    await getUserData(otherUid);
-
-  document.querySelector("h3").textContent =
-    otherUser.username || "Messages";
-
-  await ensureChatDocument(otherUid);
+  document.getElementById("chatUsername").textContent =
+    snap.exists() ? snap.data().username : "User";
 
   loadMessages();
-
-  listenTyping();
-
-  markInboxRead();
 }
 
-/* ================= ENSURE CHAT ================= */
+/* ================= INBOX ================= */
 
-async function ensureChatDocument(otherUid) {
+function loadInbox() {
 
-  const chatRef =
-    doc(db, "dms", currentChatId);
+  onSnapshot(collection(db, "dms"), async (snap) => {
 
-  const snap =
-    await getDoc(chatRef);
+    const box = document.getElementById("inboxList");
 
-  if (!snap.exists()) {
+    box.innerHTML = "";
 
-    await setDoc(chatRef, {
-
-      members: [
-        currentUser.uid,
-        otherUid
-      ],
-
-      createdAt: serverTimestamp(),
-
-      lastMessage: "",
-
-      lastMessageTime: serverTimestamp(),
-
-      typing: {},
-
-      unread: {
-        [currentUser.uid]: 0,
-        [otherUid]: 0
-      }
-    });
-  }
-}
-
-/* ================= LOAD INBOX ================= */
-
-async function loadInbox() {
-
-  inboxList.innerHTML =
-    `<div style="padding:10px;">
-      Loading inbox...
-    </div>`;
-
-  const q =
-    query(collection(db, "dms"));
-
-  onSnapshot(q, async (snap) => {
-
-    inboxList.innerHTML = "";
-
-    let found = false;
-
-    for (const d of snap.docs) {
+    snap.forEach(async (d) => {
 
       const data = d.data();
 
-      if (
-        !data.members ||
-        !data.members.includes(currentUser.uid)
-      ) continue;
+      if (!data.members.includes(user.uid)) return;
 
-      found = true;
+      const other = data.members.find(x => x !== user.uid);
 
-      const otherUid =
-        data.members.find(
-          x => x !== currentUser.uid
-        );
+      const u = await getDoc(doc(db, "users", other));
 
-      const otherUser =
-        await getUserData(otherUid);
+      const name = u.exists() ? u.data().username : "User";
 
-      const unread =
-        data.unread?.[currentUser.uid] || 0;
-
-      const div =
-        document.createElement("div");
+      const div = document.createElement("div");
 
       div.className = "item";
 
-      div.innerHTML = `
+      div.textContent = name;
 
-        <div style="
-          display:flex;
-          align-items:center;
-          gap:10px;
-        ">
+      div.onclick = () => openChat(other);
 
-          <img
-            src="${
-              otherUser.photoURL ||
-              otherUser.avatar ||
-              'https://via.placeholder.com/40'
-            }"
-            style="
-              width:40px;
-              height:40px;
-              border-radius:50%;
-              object-fit:cover;
-            "
-          >
+      box.appendChild(div);
+    });
 
-          <div style="flex:1;">
-
-            <div style="
-              font-weight:bold;
-            ">
-              ${
-                otherUser.username ||
-                otherUser.name ||
-                "User"
-              }
-            </div>
-
-            <div style="
-              font-size:12px;
-              opacity:0.7;
-              margin-top:3px;
-            ">
-              ${
-                data.lastMessage ||
-                "No messages yet"
-              }
-            </div>
-
-          </div>
-
-          ${
-            unread > 0
-              ? `
-                <div style="
-                  min-width:22px;
-                  height:22px;
-                  background:#5bc0be;
-                  color:#000;
-                  border-radius:50%;
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                  font-size:11px;
-                  font-weight:bold;
-                ">
-                  ${unread}
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-      `;
-
-      div.onclick = () =>
-        openChat(otherUid);
-
-      inboxList.appendChild(div);
-    }
-
-    if (!found) {
-
-      inboxList.innerHTML = `
-        <div style="
-          padding:20px;
-          text-align:center;
-          opacity:0.7;
-        ">
-          No conversations yet
-        </div>
-      `;
-    }
   });
 }
 
-/* ================= LOAD MESSAGES ================= */
+/* ================= MESSAGES ================= */
 
 function loadMessages() {
 
-  if (unsubscribeMessages)
-    unsubscribeMessages();
-
-  const q =
+  onSnapshot(
     query(
-      collection(
-        db,
-        "dms",
-        currentChatId,
-        "messages"
-      ),
-      orderBy("createdAt", "asc")
-    );
+      collection(db, "dms", chatId, "messages"),
+      orderBy("createdAt")
+    ),
+    (snap) => {
 
-  unsubscribeMessages =
-    onSnapshot(q, async (snap) => {
+      const box = document.getElementById("chatBox");
 
-      chatBox.innerHTML = "";
+      box.innerHTML = "";
 
-      for (const docSnap of snap.docs) {
+      snap.forEach(d => {
 
-        const m = docSnap.data();
+        const m = d.data();
 
-        const isMe =
-          m.senderId === currentUser.uid;
-
-        const div =
-          document.createElement("div");
+        const div = document.createElement("div");
 
         div.className =
           "msg " +
-          (isMe ? "me" : "them");
+          (m.senderId === user.uid ? "me" : "them");
 
-        let status = "";
+        if (m.type === "image") {
 
-        if (isMe) {
+          div.innerHTML = `
+            <img src="${m.fileUrl}" style="width:100%;border-radius:10px;">
+          `;
 
-          status =
-            m.seen
-              ? "✓✓ Seen"
-              : "✓ Sent";
+        } else if (m.type === "voice") {
+
+          div.innerHTML = `
+            <audio controls src="${m.fileUrl}"></audio>
+          `;
+
+        } else {
+
+          div.textContent = m.text;
         }
 
-        div.innerHTML = `
+        box.appendChild(div);
+      });
 
-          ${
-            m.type === "image"
-              ? `
-                <img
-                  src="${m.fileUrl}"
-                  style="
-                    width:100%;
-                    border-radius:10px;
-                    margin-bottom:6px;
-                  "
-                >
-              `
-              : ""
-          }
-
-          ${
-            m.text || ""
-          }
-
-          <div style="
-            font-size:10px;
-            opacity:0.7;
-            margin-top:5px;
-          ">
-            ${status}
-          </div>
-        `;
-
-        chatBox.appendChild(div);
-
-        if (
-          !isMe &&
-          m.seen !== true
-        ) {
-
-          try {
-
-            await updateDoc(
-              doc(
-                db,
-                "dms",
-                currentChatId,
-                "messages",
-                docSnap.id
-              ),
-              {
-                seen: true
-              }
-            );
-
-          } catch {}
-        }
-      }
-
-      setTimeout(() => {
-        chatBox.scrollTop =
-          chatBox.scrollHeight;
-      }, 50);
-    });
+      box.scrollTop = box.scrollHeight;
+    }
+  );
 }
 
-/* ================= SEND MESSAGE ================= */
+/* ================= SEND ================= */
 
 window.sendMsg = async function () {
 
-  try {
+  const input = document.getElementById("msgInput");
 
-    if (
-      !msgInput.value.trim()
-    ) return;
+  if (!input.value.trim()) return;
 
-    if (
-      !currentChatId
-    ) return;
+  await addDoc(collection(db, "dms", chatId, "messages"), {
 
-    const text =
-      msgInput.value.trim();
+    text: input.value,
 
-    const me =
-      await getUserData(currentUser.uid);
+    senderId: user.uid,
 
-    await addDoc(
-      collection(
-        db,
-        "dms",
-        currentChatId,
-        "messages"
-      ),
-      {
+    type: "text",
 
-        text,
+    createdAt: serverTimestamp()
 
-        type: "text",
+  });
 
-        senderId:
-          currentUser.uid,
-
-        senderName:
-          me.username || "User",
-
-        senderPhoto:
-          me.photoURL || "",
-
-        createdAt:
-          serverTimestamp(),
-
-        seen: false
-      }
-    );
-
-    await updateDoc(
-      doc(db, "dms", currentChatId),
-      {
-
-        lastMessage: text,
-
-        lastMessageTime:
-          serverTimestamp(),
-
-        [`unread.${currentTargetUser}`]:
-          incrementSafe(1),
-
-        [`typing.${currentUser.uid}`]:
-          false
-      }
-    );
-
-    msgInput.value = "";
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Send failed");
-  }
+  input.value = "";
 };
 
-/* ================= TYPING ================= */
+/* ================= IMAGE UPLOAD ================= */
 
-msgInput.addEventListener(
-  "input",
-  async () => {
+window.pickFile = function () {
+  document.getElementById("fileInput").click();
+};
 
-    if (!currentChatId) return;
+document.getElementById("fileInput").onchange = async (e) => {
 
-    try {
+  const file = e.target.files[0];
 
-      await updateDoc(
-        doc(db, "dms", currentChatId),
-        {
-          [`typing.${currentUser.uid}`]:
-            msgInput.value.length > 0
-        }
-      );
+  if (!file) return;
 
-    } catch {}
-  }
-);
+  const form = new FormData();
 
-/* ================= LISTEN TYPING ================= */
+  form.append("file", file);
 
-function listenTyping() {
+  form.append("upload_preset", "ml_default");
 
-  if (unsubscribeTyping)
-    unsubscribeTyping();
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/demo/upload",
+    { method: "POST", body: form }
+  );
 
-  unsubscribeTyping =
-    onSnapshot(
-      doc(db, "dms", currentChatId),
-      (snap) => {
+  const data = await res.json();
 
-        if (!snap.exists()) return;
+  await addDoc(collection(db, "dms", chatId, "messages"), {
 
-        const data =
-          snap.data();
+    fileUrl: data.secure_url,
 
-        const typing =
-          data.typing?.[
-            currentTargetUser
-          ];
+    type: "image",
 
-        let el =
-          document.getElementById(
-            "typingIndicator"
-          );
+    senderId: user.uid,
 
-        if (!el) {
+    createdAt: serverTimestamp()
 
-          el =
-            document.createElement("div");
+  });
+};
 
-          el.id =
-            "typingIndicator";
+/* ================= VOICE ================= */
 
-          el.style.cssText = `
-            padding:10px;
-            font-size:12px;
-            opacity:0.7;
-          `;
+let recorder;
+let chunks = [];
 
-          chatBox.parentNode.insertBefore(
-            el,
-            chatBox
-          );
-        }
+window.startVoice = async function () {
 
-        el.textContent =
-          typing
-            ? "Typing..."
-            : "";
-      }
-    );
-}
+  const stream =
+    await navigator.mediaDevices.getUserMedia({ audio: true });
 
-/* ================= READ RESET ================= */
+  recorder = new MediaRecorder(stream);
 
-async function markInboxRead() {
+  recorder.start();
 
-  try {
+  recorder.ondataavailable = e => chunks.push(e.data);
 
-    await updateDoc(
-      doc(db, "dms", currentChatId),
-      {
-        [`unread.${currentUser.uid}`]:
-          0
-      }
+  recorder.onstop = async () => {
+
+    const blob = new Blob(chunks, { type: "audio/webm" });
+
+    const form = new FormData();
+
+    form.append("file", blob);
+
+    form.append("upload_preset", "ml_default");
+
+    const res = await fetch(
+      "https://api.cloudinary.com/v1_1/demo/upload",
+      { method: "POST", body: form }
     );
 
-  } catch {}
-}
+    const data = await res.json();
 
-/* ================= SAFE INCREMENT ================= */
+    await addDoc(collection(db, "dms", chatId, "messages"), {
 
-function incrementSafe(num) {
+      fileUrl: data.secure_url,
 
-  return Number(num || 0);
-}
+      type: "voice",
 
-/* ================= ENTER SEND ================= */
+      senderId: user.uid,
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+      createdAt: serverTimestamp()
 
-    msgInput.addEventListener(
-      "keypress",
-      (e) => {
+    });
+  };
+};
 
-        if (e.key === "Enter") {
-          sendMsg();
-        }
-      }
-    );
-  }
-);
+window.stopVoice = () => recorder.stop();
 
-/* ================= DELETE CHAT ================= */
+/* ================= CALL (FUTURE) ================= */
 
-window.deleteChat = async function () {
-
-  if (!currentChatId) return;
-
-  const ok =
-    confirm(
-      "Delete this conversation?"
-    );
-
-  if (!ok) return;
-
-  try {
-
-    const snap =
-      await getDocs(
-        collection(
-          db,
-          "dms",
-          currentChatId,
-          "messages"
-        )
-      );
-
-    for (const d of snap.docs) {
-
-      await deleteDoc(
-        doc(
-          db,
-          "dms",
-          currentChatId,
-          "messages",
-          d.id
-        )
-      );
-    }
-
-    await deleteDoc(
-      doc(db, "dms", currentChatId)
-    );
-
-    alert("Chat deleted");
-
-    location.reload();
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Delete failed");
-  }
+window.startCall = function () {
+  alert("Call system coming in MCN Engine V18");
 };
