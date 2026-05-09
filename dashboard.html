@@ -374,7 +374,7 @@ async function loadFeatured() {
     const q = query(
       collection(db, "posts"),
       where("visibility.featured", "==", true),
-      limit(5)
+      limit(3)
     );
 
     const snap = await getDocs(q);
