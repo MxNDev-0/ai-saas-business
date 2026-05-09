@@ -13,7 +13,8 @@ import {
   orderBy,
   getDocs,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
@@ -24,7 +25,6 @@ let autosaveTimer = null;
 function log(msg, type = "ok") {
 
   const box = document.getElementById("monitor");
-
   if (!box) return;
 
   const color =
@@ -35,14 +35,64 @@ function log(msg, type = "ok") {
   const div = document.createElement("div");
 
   div.style.color = color;
-
-  div.textContent =
-    `[${new Date().toLocaleTimeString()}] ${msg}`;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
-
   box.scrollTop = box.scrollHeight;
 }
+
+/* ================= MAINTENANCE MODE ================= */
+async function loadMaintenanceMode() {
+
+  try {
+
+    const snap = await getDoc(doc(db, "system", "maintenance"));
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+
+    const toggle = document.getElementById("maintenanceToggle");
+
+    if (!toggle) {
+      log("Maintenance toggle not found", "warn");
+      return;
+    }
+
+    toggle.checked = data.enabled === true;
+
+  } catch (err) {
+
+    console.error(err);
+    log("Maintenance load failed", "error");
+  }
+}
+
+window.saveMaintenanceMode = async function () {
+
+  try {
+
+    const toggle = document.getElementById("maintenanceToggle");
+
+    if (!toggle) {
+      log("Toggle missing", "error");
+      return;
+    }
+
+    const enabled = toggle.checked;
+
+    await setDoc(doc(db, "system", "maintenance"), {
+      enabled,
+      updatedAt: Date.now()
+    });
+
+    log(enabled ? "Maintenance enabled" : "Maintenance disabled");
+
+  } catch (err) {
+
+    console.error(err);
+    log("Maintenance save failed", "error");
+  }
+};
 
 /* ================= ADMIN AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
@@ -72,6 +122,8 @@ onAuthStateChanged(auth, async (user) => {
 
     log("Admin online");
 
+    loadMaintenanceMode(); // ✅ FIXED POSITION
+
     loadPosts();
     loadUsers();
     loadAds();
@@ -82,7 +134,6 @@ onAuthStateChanged(auth, async (user) => {
   } catch (err) {
 
     console.error(err);
-
     alert("Admin auth failed");
   }
 });
@@ -93,9 +144,7 @@ window.createBlog = async () => {
   try {
 
     const title = document.getElementById("blogTitle").value.trim();
-
     const content = document.getElementById("blogContent").value.trim();
-
     const image = document.getElementById("blogImage").value.trim();
 
     if (!title || !content) {
@@ -120,10 +169,7 @@ window.createBlog = async () => {
 
       sponsored: {
         isSponsored: c_sponsored.checked,
-        expiresAt: adExpiry.value
-          ? new Date(adExpiry.value).getTime()
-          : null,
-
+        expiresAt: adExpiry.value ? new Date(adExpiry.value).getTime() : null,
         priority: Number(adPriority.value || 0)
       },
 
@@ -144,10 +190,7 @@ window.createBlog = async () => {
       order: 0
     };
 
-    const ref = await addDoc(
-      collection(db, "posts"),
-      post
-    );
+    const ref = await addDoc(collection(db, "posts"), post);
 
     log("Blog created: " + ref.id);
 
@@ -158,7 +201,6 @@ window.createBlog = async () => {
   } catch (err) {
 
     console.error(err);
-
     log("Create failed", "error");
   }
 };
@@ -168,73 +210,45 @@ function loadPosts() {
 
   const box = document.getElementById("postsList");
 
-  const q = query(
-    collection(db, "posts"),
-    orderBy("createdAt", "desc")
-  );
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
   onSnapshot(q, (snap) => {
 
     box.innerHTML = "";
 
     if (snap.empty) {
-
-      box.innerHTML = `
-        <div class="item">
-          No posts yet
-        </div>
-      `;
-
+      box.innerHTML = `<div class="item">No posts yet</div>`;
       return;
     }
 
     snap.forEach((d) => {
 
       const p = d.data();
-
-      const published =
-        p.admin?.approved !== false;
+      const published = p.admin?.approved !== false;
 
       box.innerHTML += `
-
         <div class="item">
 
           <b>${p.title || "Untitled"}</b>
 
           <br><br>
 
-          <small>
-            ID: ${d.id}
-          </small>
+          <small>ID: ${d.id}</small>
 
           <br><br>
 
-          Status:
-          ${published ? "PUBLISHED" : "HIDDEN"}
+          Status: ${published ? "PUBLISHED" : "HIDDEN"}
 
           <br><br>
 
-          <button onclick="fillEdit('${d.id}')">
-            Edit
-          </button>
-
-          <button onclick="togglePost('${d.id}', ${published})">
-            Toggle
-          </button>
-
-          <button onclick="deletePost('${d.id}')">
-            Delete
-          </button>
+          <button onclick="fillEdit('${d.id}')">Edit</button>
+          <button onclick="togglePost('${d.id}', ${published})">Toggle</button>
+          <button onclick="deletePost('${d.id}')">Delete</button>
 
           <br><br>
 
-          <button onclick="moveUp('${d.id}', ${p.order || 0})">
-            ⬆
-          </button>
-
-          <button onclick="moveDown('${d.id}', ${p.order || 0})">
-            ⬇
-          </button>
+          <button onclick="moveUp('${d.id}', ${p.order || 0})">⬆</button>
+          <button onclick="moveDown('${d.id}', ${p.order || 0})">⬇</button>
 
         </div>
       `;
@@ -243,112 +257,14 @@ function loadPosts() {
   });
 }
 
-/* ================= EDIT POST ================= */
-window.fillEdit = async (id) => {
-
-  const snap = await getDoc(doc(db, "posts", id));
-
-  if (!snap.exists()) return;
-
-  const p = snap.data();
-
-  lastSnapshot = {
-    id,
-    data: p
-  };
-
-  editPostId.value = id;
-
-  editPostTitle.value = p.title || "";
-
-  editPostContent.value = p.content || "";
-
-  e_homepage.checked =
-    p.visibility?.homepage || false;
-
-  e_featured.checked =
-    p.visibility?.featured || false;
-
-  e_trending.checked =
-    p.visibility?.trending || false;
-
-  e_sponsored.checked =
-    p.sponsored?.isSponsored || false;
-
-  e_adPriority.value =
-    p.sponsored?.priority || 0;
-
-  e_adExpiry.value =
-    p.sponsored?.expiresAt
-      ? new Date(p.sponsored.expiresAt)
-          .toISOString()
-          .slice(0, 16)
-      : "";
-
-  e_placeholderSlot.value =
-    p.placeholder?.slot || "";
-
-  e_placeholderText.value =
-    p.placeholder?.text || "";
-
-  updatePreview();
-};
-
-/* ================= LIVE PREVIEW ================= */
-function updatePreview() {
-
-  let preview =
-    document.getElementById("livePreview");
-
-  if (!preview) {
-
-    preview = document.createElement("div");
-
-    preview.id = "livePreview";
-
-    preview.style.cssText = `
-      position:fixed;
-      right:10px;
-      bottom:10px;
-      width:250px;
-      background:#1c2541;
-      padding:10px;
-      color:white;
-      border-radius:8px;
-      font-size:12px;
-      z-index:9999;
-    `;
-
-    document.body.appendChild(preview);
-  }
-
-  preview.innerHTML = `
-
-    <b>Preview</b>
-
-    <br><br>
-
-    ${editPostTitle.value}
-
-    <br><br>
-
-    ${editPostContent.value?.slice(0, 80)}...
-  `;
-}
-
 /* ================= AUTOSAVE ================= */
 function initAutosave() {
-loadMaintenanceMode();
 
-  const inputs = [
-    "editPostTitle",
-    "editPostContent"
-  ];
+  const inputs = ["editPostTitle", "editPostContent"];
 
   inputs.forEach(id => {
 
     const el = document.getElementById(id);
-
     if (!el) return;
 
     el.addEventListener("input", () => {
@@ -362,10 +278,7 @@ loadMaintenanceMode();
           content: editPostContent.value
         };
 
-        localStorage.setItem(
-          "postDraft",
-          JSON.stringify(draft)
-        );
+        localStorage.setItem("postDraft", JSON.stringify(draft));
 
         log("Draft autosaved");
 
@@ -376,130 +289,10 @@ loadMaintenanceMode();
   });
 }
 
-/* ================= UNDO ================= */
-window.undoUpdate = async () => {
-
-  if (!lastSnapshot) {
-    log("Nothing to undo", "warn");
-    return;
-  }
-
-  const { id, data } = lastSnapshot;
-
-  await updateDoc(doc(db, "posts", id), data);
-
-  log("Undo successful");
-};
-
-/* ================= UPDATE POST ================= */
-window.updatePost = async () => {
-
-  try {
-
-    const id = editPostId.value;
-
-    if (!id) {
-      alert("No post selected");
-      return;
-    }
-
-    const oldSnap = await getDoc(doc(db, "posts", id));
-
-    lastSnapshot = {
-      id,
-      data: oldSnap.data()
-    };
-
-    await updateDoc(doc(db, "posts", id), {
-
-      title: editPostTitle.value,
-
-      content: editPostContent.value,
-
-      visibility: {
-        homepage: e_homepage.checked,
-        featured: e_featured.checked,
-        trending: e_trending.checked,
-        dashboard: true
-      },
-
-      sponsored: {
-        isSponsored: e_sponsored.checked,
-
-        expiresAt: e_adExpiry.value
-          ? new Date(e_adExpiry.value).getTime()
-          : null,
-
-        priority: Number(e_adPriority.value || 0)
-      },
-
-      placeholder: {
-        slot: e_placeholderSlot.value,
-        text: e_placeholderText.value
-      }
-    });
-
-    log("Post updated");
-
-  } catch (err) {
-
-    console.error(err);
-
-    log("Update failed", "error");
-  }
-};
-
-/* ================= TOGGLE POST ================= */
-window.togglePost = async (id, published) => {
-
-  try {
-
-    await updateDoc(doc(db, "posts", id), {
-      "admin.approved": !published
-    });
-
-    log("Post toggled");
-
-  } catch (err) {
-
-    console.error(err);
-
-    log("Toggle failed", "error");
-  }
-};
-
-/* ================= FEATURE ORDER ================= */
-window.moveUp = async (id, order) => {
-
-  await updateDoc(doc(db, "posts", id), {
-    order: order - 1
-  });
-
-  log("Moved up");
-};
-
-window.moveDown = async (id, order) => {
-
-  await updateDoc(doc(db, "posts", id), {
-    order: order + 1
-  });
-
-  log("Moved down");
-};
-
-/* ================= DELETE ================= */
-window.deletePost = async (id) => {
-
-  await deleteDoc(doc(db, "posts", id));
-
-  log("Deleted", "warn");
-};
-
 /* ================= USERS ================= */
 function loadUsers() {
 
   const box = document.getElementById("usersList");
-
   if (!box) return;
 
   onSnapshot(collection(db, "users"), (snap) => {
@@ -523,7 +316,6 @@ function loadUsers() {
 function loadAds() {
 
   const box = document.getElementById("upgradeList");
-
   if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), (snap) => {
@@ -545,13 +337,8 @@ function loadAds() {
 
           <br><br>
 
-          <button onclick="acceptAd('${d.id}')">
-            Accept
-          </button>
-
-          <button onclick="rejectAd('${d.id}')">
-            Reject
-          </button>
+          <button onclick="acceptAd('${d.id}')">Accept</button>
+          <button onclick="rejectAd('${d.id}')">Reject</button>
 
         </div>
       `;
@@ -563,7 +350,6 @@ function loadAds() {
 function loadRejectedAds() {
 
   const box = document.getElementById("rejectedList");
-
   if (!box) return;
 
   onSnapshot(collection(db, "adRequests"), (snap) => {
@@ -587,30 +373,21 @@ function loadRejectedAds() {
 
 /* ================= ACCEPT / REJECT ================= */
 window.acceptAd = async (id) => {
-
-  await updateDoc(doc(db, "adRequests", id), {
-    status: "accepted"
-  });
+  await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
 };
 
 window.rejectAd = async (id) => {
-
-  await updateDoc(doc(db, "adRequests", id), {
-    status: "rejected"
-  });
+  await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
 };
 
 /* ================= CLEAR REJECTED ================= */
 window.clearRejected = async () => {
 
-  const snap = await getDocs(
-    collection(db, "adRequests")
-  );
+  const snap = await getDocs(collection(db, "adRequests"));
 
   const batch = writeBatch(db);
 
   snap.forEach(d => {
-
     if (d.data().status === "rejected") {
       batch.delete(d.ref);
     }
@@ -619,65 +396,4 @@ window.clearRejected = async () => {
   await batch.commit();
 
   log("Cleared");
-};
-
-/* ================= MAINTENANCE MODE ================= */
-
-import {
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-async function loadMaintenanceMode() {
-
-  try {
-
-    const snap = await getDoc(
-      doc(db, "system", "maintenance")
-    );
-
-    if (!snap.exists()) return;
-
-    const data = snap.data();
-
-    document.getElementById(
-      "maintenanceToggle"
-    ).checked = data.enabled === true;
-
-  } catch (err) {
-
-    console.error(err);
-
-    log("Maintenance load failed", "error");
-  }
-}
-
-window.saveMaintenanceMode = async function () {
-
-  try {
-
-    const enabled =
-      document.getElementById(
-        "maintenanceToggle"
-      ).checked;
-
-    await setDoc(
-      doc(db, "system", "maintenance"),
-      {
-        enabled,
-        updatedAt: Date.now()
-      }
-    );
-
-    log(
-      enabled
-        ? "Maintenance enabled"
-        : "Maintenance disabled"
-    );
-
-  } catch (err) {
-
-    console.error(err);
-
-    log("Maintenance save failed", "error");
-  }
 };
