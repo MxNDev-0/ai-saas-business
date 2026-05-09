@@ -246,7 +246,7 @@ window.sendMonitorMsg = function () {
 window.openDM = function(uid) {
 
   location.href =
-    "messages.html?uid=" + uid;
+    "user.html?uid=" + uid;
 };
 
 /* ================= OFFLINE CLEANUP ================= */
