@@ -5,86 +5,222 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   collection,
+  query,
+  where,
   onSnapshot,
-  addDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-let user = null;
+let currentUser = null;
 
-/* LOGGER */
+/* ================= LOGGER ================= */
 function log(msg) {
-  const monitor = document.getElementById("monitor");
+
+  const monitor =
+    document.getElementById("monitor");
+
   monitor.innerHTML += "<br>" + msg;
-  monitor.scrollTop = monitor.scrollHeight;
+
+  monitor.scrollTop =
+    monitor.scrollHeight;
 }
 
-/* AUTH */
-onAuthStateChanged(auth, async (u) => {
-  if (!u) {
+/* ================= AUTH ================= */
+onAuthStateChanged(auth, async (user) => {
+
+  if (!user) {
     location.href = "index.html";
     return;
   }
 
-  user = u;
+  currentUser = user;
 
-  log("[AUTH] " + u.email);
+  log("[AUTH] " + user.email);
 
-  trackOnlineStatus();
+  await createUserProfile(user);
+
+  trackPresence();
+
   loadOnlineUsers();
 });
 
-/* ONLINE TRACK */
-function trackOnlineStatus() {
-  setInterval(async () => {
-    await addDoc(collection(db, "presence"), {
-      uid: user.uid,
-      name: user.email.split("@")[0],
-      lastSeen: Date.now()
-    });
+/* ================= CREATE PROFILE ================= */
+async function createUserProfile(user) {
 
-    log("[PING] active");
+  try {
 
-  }, 5000);
+    const ref =
+      doc(db, "users", user.uid);
+
+    const snap =
+      await getDoc(ref);
+
+    if (!snap.exists()) {
+
+      await setDoc(ref, {
+
+        uid: user.uid,
+
+        email: user.email,
+
+        username:
+          user.email.split("@")[0],
+
+        photoURL: "",
+
+        bio: "MCN Engine User",
+
+        followers: 0,
+
+        following: 0,
+
+        role: "user",
+
+        online: true,
+
+        lastSeen: Date.now(),
+
+        createdAt: Date.now()
+      });
+
+      log("[PROFILE] Created");
+
+    } else {
+
+      await updateDoc(ref, {
+
+        online: true,
+
+        lastSeen: Date.now()
+      });
+
+      log("[PROFILE] Updated");
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("[ERROR] profile setup failed");
+  }
 }
 
-/* LOAD USERS */
+/* ================= ONLINE TRACKING ================= */
+function trackPresence() {
+
+  setInterval(async () => {
+
+    if (!currentUser) return;
+
+    try {
+
+      await updateDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          online: true,
+          lastSeen: Date.now()
+        }
+      );
+
+      log("[PING] online");
+
+    } catch (err) {
+
+      console.error(err);
+    }
+
+  }, 15000);
+}
+
+/* ================= ONLINE USERS ================= */
 function loadOnlineUsers() {
-  onSnapshot(collection(db, "presence"), (snap) => {
+
+  const q = query(
+    collection(db, "users"),
+    where("online", "==", true)
+  );
+
+  onSnapshot(q, (snap) => {
 
     const users = [];
-    const now = Date.now();
 
-    snap.forEach(doc => {
-      const data = doc.data();
-      if (now - data.lastSeen < 10000) users.push(data);
+    snap.forEach((docSnap) => {
+
+      const data = docSnap.data();
+
+      const now = Date.now();
+
+      if (
+        now - (data.lastSeen || 0)
+        < 30000
+      ) {
+        users.push(data);
+      }
     });
 
-    log("[USERS] " + users.length + " online");
+    log(
+      "[USERS] "
+      + users.length
+      + " online"
+    );
 
-    renderOnlineUsers(users);
+    renderUsers(users);
   });
 }
 
-/* RENDER USERS */
-function renderOnlineUsers(users) {
-  const box = document.getElementById("onlineUsers");
+/* ================= RENDER USERS ================= */
+function renderUsers(users) {
+
+  const box =
+    document.getElementById("onlineUsers");
+
   box.innerHTML = "";
 
-  users.forEach(u => {
-    if (u.uid === user.uid) return;
+  users.forEach((u) => {
 
-    const row = document.createElement("div");
+    if (u.uid === currentUser.uid)
+      return;
+
+    const row =
+      document.createElement("div");
+
     row.className = "user-row";
 
     row.innerHTML = `
+
       <div class="user-left">
+
         <span class="dot"></span>
-        <span>${u.name}</span>
+
+        <div>
+
+          <div>
+            ${u.username || "user"}
+          </div>
+
+          <small style="
+            opacity:0.7;
+          ">
+            ${u.bio || ""}
+          </small>
+
+        </div>
+
       </div>
-      <div>
-        <button onclick="openDM('${u.uid}')">Msg</button>
+
+      <div class="user-actions">
+
+        <button
+          onclick="openDM('${u.uid}')"
+        >
+          ✉️ DM
+        </button>
+
       </div>
     `;
 
@@ -92,16 +228,43 @@ function renderOnlineUsers(users) {
   });
 }
 
-/* MONITOR INPUT */
-window.sendMonitorMsg = function() {
-  const input = document.getElementById("monitorInput");
-  if (!input.value.trim()) return;
+/* ================= MONITOR ================= */
+window.sendMonitorMsg = function () {
+
+  const input =
+    document.getElementById("monitorInput");
+
+  if (!input.value.trim())
+    return;
 
   log("[CMD] " + input.value);
+
   input.value = "";
 };
 
-/* ACTIONS */
+/* ================= OPEN DM ================= */
 window.openDM = function(uid) {
-  location.href = "messages.html?uid=" + uid;
+
+  location.href =
+    "messages.html?uid=" + uid;
 };
+
+/* ================= OFFLINE CLEANUP ================= */
+window.addEventListener(
+  "beforeunload",
+  async () => {
+
+    if (!currentUser) return;
+
+    try {
+
+      await updateDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          online: false,
+          lastSeen: Date.now()
+        }
+      );
+
+    } catch (err) {}
+});
