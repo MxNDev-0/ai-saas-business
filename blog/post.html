@@ -182,15 +182,11 @@ async function loadPost() {
   try {
 
     /* ================= PERFORMANCE FIX ================= */
-    const res =
-      await fetch(`/blog/post/${id}`);
+    const res = await fetch(
+  `https://mxm-backend.onrender.com/blog/post/${id}`
+);
 
-    if (!res.ok) {
-      throw new Error("Post fetch failed");
-    }
-
-    const post =
-      await res.json();
+const post = await res.json();
 
     if (!post || !post.title) {
 
