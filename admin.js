@@ -1,3 +1,7 @@
+/* =========================================
+   MCN ADMIN AI v5
+========================================= */
+
 import { auth, db } from "./firebase.js";
 
 import {
@@ -20,9 +24,7 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* =========================================
-   MCN ADMIN AI v5 AUTONOMOUS SYSTEM
-========================================= */
+/* ================= SYSTEM STATE ================= */
 
 let systemHealth = 100;
 let performanceScore = 100;
@@ -37,7 +39,6 @@ let disabledModules = [];
 let rollbackSnapshots = [];
 
 let autosaveTimer = null;
-let lastSnapshot = null;
 
 let systemMap = {
   firestore: "stable",
@@ -51,7 +52,8 @@ let systemMap = {
 
 function aiLog(msg, type = "ok") {
 
-  const box = document.getElementById("monitor");
+  const box =
+    document.getElementById("monitor");
 
   if (!box) {
     console.warn(msg);
@@ -59,11 +61,14 @@ function aiLog(msg, type = "ok") {
   }
 
   const color =
-    type === "error" ? "#ff4d4d" :
-    type === "warn" ? "#ffaa00" :
-    "#00ff88";
+    type === "error"
+      ? "#ff4d4d"
+      : type === "warn"
+      ? "#ffaa00"
+      : "#00ff88";
 
-  const div = document.createElement("div");
+  const div =
+    document.createElement("div");
 
   div.style.color = color;
 
@@ -74,249 +79,229 @@ function aiLog(msg, type = "ok") {
 
   box.scrollTop = box.scrollHeight;
 
-  const now = Date.now();
-
   if (type === "error") {
-    errorHistory.push(now);
-    systemHealth -= 6;
+    errorHistory.push(Date.now());
+    systemHealth -= 5;
   }
 
   if (type === "warn") {
-    warnHistory.push(now);
+    warnHistory.push(Date.now());
     systemHealth -= 2;
   }
 
-  runPredictiveEngine();
-
   updateHealthUI();
-
   updateSystemMapUI();
 }
 
 const log = aiLog;
 
-/* ================= PREDICTIVE ENGINE ================= */
-
-function runPredictiveEngine() {
-
-  const now = Date.now();
-
-  errorHistory =
-    errorHistory.filter(t => now - t < 60000);
-
-  warnHistory =
-    warnHistory.filter(t => now - t < 60000);
-
-  if (errorHistory.length > 5) {
-
-    aiLog(
-      "⚠ Predictive crash risk detected",
-      "error"
-    );
-
-    emergencyStabilization();
-  }
-
-  if (warnHistory.length > 10) {
-
-    aiLog(
-      "⚠ System instability rising",
-      "warn"
-    );
-
-    systemHealth -= 5;
-  }
-
-  performanceScore =
-    Math.max(30, 100 - (errorHistory.length * 4));
-
-  systemHealth =
-    Math.max(0, Math.min(100, systemHealth));
-}
-
-/* ================= AUTONOMOUS RECOVERY ================= */
-
-function emergencyStabilization() {
-
-  aiLog(
-    "🛡 Emergency stabilization activated",
-    "warn"
-  );
-
-  systemMap.autonomous = "stabilizing";
-
-  autoDisableModules();
-
-  systemHealth += 10;
-
-  updateHealthUI();
-}
-
-/* ================= AUTO DISABLE ================= */
-
-function autoDisableModules() {
-
-  if (!disabledModules.includes("heavyRealtime")) {
-
-    disabledModules.push("heavyRealtime");
-
-    aiLog(
-      "⛔ Disabled unstable realtime module",
-      "warn"
-    );
-  }
-}
-
-/* ================= SNAPSHOT SYSTEM ================= */
-
-function createSnapshot(name, data) {
-
-  rollbackSnapshots.push({
-    name,
-    data,
-    createdAt: Date.now()
-  });
-
-  if (rollbackSnapshots.length > 10) {
-    rollbackSnapshots.shift();
-  }
-
-  aiLog(`📦 Snapshot saved: ${name}`);
-}
-
-function rollbackLatest() {
-
-  const latest =
-    rollbackSnapshots[rollbackSnapshots.length - 1];
-
-  if (!latest) {
-
-    aiLog("No rollback snapshot found", "warn");
-
-    return null;
-  }
-
-  aiLog(
-    `↩ Rolled back: ${latest.name}`,
-    "warn"
-  );
-
-  return latest.data;
-}
-
-/* ================= PERFORMANCE ENGINE ================= */
-
-function optimizePerformance() {
-
-  if (performanceScore < 60) {
-
-    aiLog(
-      "⚡ Performance optimization activated",
-      "warn"
-    );
-
-    trimMonitor();
-  }
-}
-
-function trimMonitor() {
-
-  const box = document.getElementById("monitor");
-
-  if (!box) return;
-
-  while (box.children.length > 80) {
-    box.removeChild(box.firstChild);
-  }
-}
-
 /* ================= HEALTH UI ================= */
 
 function updateHealthUI() {
 
-  let box =
-    document.getElementById("healthBox");
+  let panel =
+    document.getElementById("mcnHealthPanel");
 
-  if (!box) {
+  if (!panel) {
 
-    box = document.createElement("div");
+    panel = document.createElement("div");
 
-    box.id = "healthBox";
+    panel.id = "mcnHealthPanel";
 
-    box.style.cssText = `
+    panel.style.cssText = `
       position:fixed;
       top:10px;
-      right:220px;
+      right:10px;
+      width:55px;
       background:#1c2541;
       color:#fff;
-      padding:10px;
-      border-radius:10px;
-      font-size:12px;
-      width:200px;
+      border-radius:12px;
+      overflow:hidden;
       z-index:999999;
+      box-shadow:0 0 20px rgba(0,0,0,0.4);
+      transition:all 0.3s ease;
+      font-family:Arial;
     `;
 
-    document.body.appendChild(box);
+    panel.innerHTML = `
+
+      <div id="mcnMiniBtn"
+        style="
+          padding:12px;
+          text-align:center;
+          cursor:pointer;
+          font-size:20px;
+          background:#0b132b;
+        ">
+        🧠
+      </div>
+
+      <div id="mcnHealthContent"
+        style="
+          display:none;
+          padding:12px;
+          font-size:12px;
+          line-height:1.7;
+        ">
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+
+    const miniBtn =
+      document.getElementById("mcnMiniBtn");
+
+    const content =
+      document.getElementById("mcnHealthContent");
+
+    let expanded = false;
+
+    miniBtn.onclick = () => {
+
+      expanded = !expanded;
+
+      if (expanded) {
+
+        panel.style.width = "220px";
+
+        content.style.display = "block";
+
+      } else {
+
+        panel.style.width = "55px";
+
+        content.style.display = "none";
+      }
+    };
   }
 
-  box.innerHTML = `
+  const content =
+    document.getElementById("mcnHealthContent");
+
+  if (!content) return;
+
+  content.innerHTML = `
+
     <b>🧠 MCN AI v5</b>
-    <br><br>
-    Health: ${systemHealth}%
+
+    <hr style="border:0;border-top:1px solid #444">
+
+    Health:
+    ${systemHealth}%
+
     <br>
-    Performance: ${performanceScore}%
+
+    Performance:
+    ${performanceScore}%
+
     <br>
-    Errors: ${errorHistory.length}
+
+    Errors:
+    ${errorHistory.length}
+
     <br>
-    Warnings: ${warnHistory.length}
+
+    Warnings:
+    ${warnHistory.length}
+
     <br>
+
     Autonomous:
     ${autonomousMode ? "ON" : "OFF"}
-  `;
 
-  if (systemHealth < 40) {
-    box.style.background = "darkred";
-  }
-  else if (systemHealth < 70) {
-    box.style.background = "#b26a00";
-  }
-  else {
-    box.style.background = "#1c2541";
-  }
+  `;
 }
 
 /* ================= SYSTEM MAP ================= */
 
 function updateSystemMapUI() {
 
-  let box =
-    document.getElementById("systemMap");
+  let panel =
+    document.getElementById("mcnSystemMap");
 
-  if (!box) {
+  if (!panel) {
 
-    box = document.createElement("div");
+    panel = document.createElement("div");
 
-    box.id = "systemMap";
+    panel.id = "mcnSystemMap";
 
-    box.style.cssText = `
+    panel.style.cssText = `
       position:fixed;
       bottom:10px;
       right:10px;
+      width:55px;
       background:#1c2541;
       color:#fff;
-      padding:10px;
-      border-radius:10px;
-      font-size:11px;
-      width:220px;
+      border-radius:12px;
+      overflow:hidden;
       z-index:999999;
+      box-shadow:0 0 20px rgba(0,0,0,0.4);
+      transition:all 0.3s ease;
+      font-family:Arial;
     `;
 
-    document.body.appendChild(box);
+    panel.innerHTML = `
+
+      <div id="mapMiniBtn"
+        style="
+          padding:12px;
+          text-align:center;
+          cursor:pointer;
+          font-size:18px;
+          background:#0b132b;
+        ">
+        🗺
+      </div>
+
+      <div id="mapContent"
+        style="
+          display:none;
+          padding:12px;
+          font-size:11px;
+          line-height:1.7;
+        ">
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+
+    const miniBtn =
+      document.getElementById("mapMiniBtn");
+
+    const content =
+      document.getElementById("mapContent");
+
+    let expanded = false;
+
+    miniBtn.onclick = () => {
+
+      expanded = !expanded;
+
+      if (expanded) {
+
+        panel.style.width = "240px";
+
+        content.style.display = "block";
+
+      } else {
+
+        panel.style.width = "55px";
+
+        content.style.display = "none";
+      }
+    };
   }
 
-  box.innerHTML = `
+  const content =
+    document.getElementById("mapContent");
+
+  if (!content) return;
+
+  content.innerHTML = `
+
     <b>🗺 System Map</b>
-    <br><br>
+
+    <hr style="border:0;border-top:1px solid #444">
 
     Firestore:
     ${systemMap.firestore}
@@ -341,166 +326,76 @@ function updateSystemMapUI() {
     Autonomous:
     ${systemMap.autonomous}
 
-    <hr>
+    <br>
 
     Disabled:
     ${disabledModules.join(", ") || "none"}
+
   `;
 }
 
-/* ================= SAFE HELPERS ================= */
-
-function safeGet(id, fallback = null) {
-
-  const el = document.getElementById(id);
-
-  if (!el) {
-
-    aiLog(`Missing UI: ${id}`, "warn");
-
-    systemMap.ui = "degraded";
-
-    return fallback;
-  }
-
-  return el;
-}
-
-async function safeRun(fn, label) {
-
-  const start = performance.now();
-
-  try {
-
-    const result = await fn();
-
-    const duration =
-      performance.now() - start;
-
-    if (duration > 1000) {
-
-      aiLog(
-        `⚠ Slow system: ${label} (${duration.toFixed(0)}ms)`,
-        "warn"
-      );
-
-      systemMap.firestore = "slow";
-    }
-
-    optimizePerformance();
-
-    return result;
-
-  } catch (err) {
-
-    aiLog(
-      `${label} failed: ${err.message}`,
-      "error"
-    );
-
-    systemMap.modules = "unstable";
-  }
-}
-
-/* ================= AUTO REPAIR ================= */
-
-async function ensureDoc(path, defaultData) {
-
-  try {
-
-    const snap =
-      await getDoc(doc(db, ...path.split("/")));
-
-    if (!snap.exists()) {
-
-      aiLog(
-        `🛠 Auto-repairing ${path}`,
-        "warn"
-      );
-
-      await setDoc(
-        doc(db, ...path.split("/")),
-        {
-          ...defaultData,
-          repairedAt: Date.now()
-        }
-      );
-
-      systemHealth += 5;
-    }
-
-  } catch (err) {
-
-    aiLog(
-      `Repair failed: ${path}`,
-      "error"
-    );
-
-    systemMap.firestore = "unstable";
-  }
-}
-
-/* ================= MAINTENANCE MODE ================= */
+/* ================= MAINTENANCE ================= */
 
 async function loadMaintenanceMode() {
 
-  await safeRun(async () => {
-
-    await ensureDoc("system/maintenance", {
-      enabled: false,
-      mode: "soft",
-      message: "System maintenance",
-      updatedAt: Date.now()
-    });
+  try {
 
     const snap =
-      await getDoc(doc(db, "system", "maintenance"));
+      await getDoc(
+        doc(db, "system", "maintenance")
+      );
 
     if (!snap.exists()) {
 
-      aiLog(
-        "Maintenance document missing",
-        "warn"
+      await setDoc(
+        doc(db, "system", "maintenance"),
+        {
+          enabled: false,
+          updatedAt: Date.now()
+        }
       );
-
-      return;
     }
 
-    const data = snap.data();
+    const data =
+      snap.exists()
+        ? snap.data()
+        : { enabled: false };
 
     const toggle =
-      safeGet("maintenanceToggle");
-
-    if (!toggle) {
-
-      aiLog(
-        "Maintenance toggle missing in UI",
-        "warn"
+      document.getElementById(
+        "maintenanceToggle"
       );
 
-      return;
+    if (toggle) {
+      toggle.checked = data.enabled === true;
     }
-
-    toggle.checked = data.enabled === true;
-
-    systemMap.firestore = "stable";
 
     aiLog("🛠 Maintenance system online");
 
-  }, "loadMaintenanceMode");
+  } catch (err) {
+
+    console.error(err);
+
+    aiLog(
+      "Maintenance load failed",
+      "error"
+    );
+  }
 }
 
 window.saveMaintenanceMode = async function () {
 
-  await safeRun(async () => {
+  try {
 
     const toggle =
-      safeGet("maintenanceToggle");
+      document.getElementById(
+        "maintenanceToggle"
+      );
 
     if (!toggle) {
 
       aiLog(
-        "Maintenance toggle unavailable",
+        "Maintenance toggle missing",
         "error"
       );
 
@@ -514,12 +409,9 @@ window.saveMaintenanceMode = async function () {
       doc(db, "system", "maintenance"),
       {
         enabled,
-        mode: enabled ? "hard" : "soft",
-        message: enabled
-          ? "MCN Engine is under maintenance"
-          : "System online",
         updatedAt: Date.now()
-      }
+      },
+      { merge: true }
     );
 
     aiLog(
@@ -528,7 +420,16 @@ window.saveMaintenanceMode = async function () {
         : "✅ Maintenance DISABLED"
     );
 
-  }, "saveMaintenanceMode");
+  } catch (err) {
+
+    console.error(err);
+
+    aiLog(
+      "Maintenance save failed: " +
+      err.message,
+      "error"
+    );
+  }
 };
 
 /* ================= ADMIN AUTH ================= */
@@ -537,8 +438,6 @@ onAuthStateChanged(auth, async (user) => {
 
   if (!user) {
 
-    systemMap.auth = "offline";
-
     location.href = "index.html";
 
     return;
@@ -546,17 +445,12 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
 
-    systemMap.auth = "checking";
-
     const snap =
-      await getDoc(doc(db, "users", user.uid));
+      await getDoc(
+        doc(db, "users", user.uid)
+      );
 
     if (!snap.exists()) {
-
-      aiLog(
-        "Admin profile missing",
-        "error"
-      );
 
       alert("User not found");
 
@@ -569,11 +463,6 @@ onAuthStateChanged(auth, async (user) => {
 
     if (data.role !== "admin") {
 
-      aiLog(
-        "Unauthorized admin access blocked",
-        "warn"
-      );
-
       alert("Admin access only");
 
       location.href = "dashboard.html";
@@ -583,80 +472,32 @@ onAuthStateChanged(auth, async (user) => {
 
     aiLog("🧠 MCN Admin AI v5 online");
 
-    systemHealth = 100;
+    loadMaintenanceMode();
 
-    performanceScore = 100;
+    loadPosts();
 
-    errorHistory = [];
+    loadUsers();
 
-    warnHistory = [];
+    loadAds();
 
-    disabledModules = [];
+    loadRejectedAds();
 
-    rollbackSnapshots = [];
-
-    systemMap = {
-      firestore: "stable",
-      ui: "stable",
-      auth: "stable",
-      modules: "stable",
-      autonomous: "active"
-    };
-
-    createSnapshot("boot-state", {
-      time: Date.now(),
-      health: systemHealth,
-      performance: performanceScore
-    });
-
-    updateHealthUI();
-
-    updateSystemMapUI();
-
-    await loadMaintenanceMode();
-
-    await safeRun(async () => {
-      loadPosts();
-    }, "postsModule");
-
-    await safeRun(async () => {
-      loadUsers();
-    }, "usersModule");
-
-    await safeRun(async () => {
-      loadAds();
-    }, "adsModule");
-
-    await safeRun(async () => {
-      loadRejectedAds();
-    }, "rejectedAdsModule");
-
-    await safeRun(async () => {
-      initAutosave();
-    }, "autosaveModule");
-
-    aiLog("🚀 All systems operational");
+    initAutosave();
 
   } catch (err) {
 
     console.error(err);
 
     aiLog(
-      "Critical admin boot failure: " + err.message,
+      "Admin boot failed",
       "error"
     );
-
-    systemMap.modules = "critical";
-
-    emergencyStabilization();
-
-    alert("Admin auth failed");
   }
 });
 
-/* ================= CREATE BLOG ================= */
+/* ================= POSTS ================= */
 
-window.createBlog = async () => {
+window.createBlog = async function () {
 
   try {
 
@@ -674,64 +515,28 @@ window.createBlog = async () => {
       return;
     }
 
-    const post = {
+    await addDoc(
+      collection(db, "posts"),
+      {
+        title,
+        content,
+        image,
+        createdAt: serverTimestamp()
+      }
+    );
 
-      title,
-      content,
-      image,
-
-      createdAt: serverTimestamp(),
-
-      visibility: {
-        homepage: c_homepage.checked,
-        featured: c_featured.checked,
-        trending: c_trending.checked,
-        dashboard: true
-      },
-
-      sponsored: {
-        isSponsored: c_sponsored.checked,
-        expiresAt: adExpiry.value
-          ? new Date(adExpiry.value).getTime()
-          : null,
-        priority: Number(adPriority.value || 0)
-      },
-
-      placeholder: {
-        slot: placeholderSlot.value || "",
-        text: placeholderText.value || ""
-      },
-
-      metrics: {
-        impressions: 0,
-        clicks: 0
-      },
-
-      admin: {
-        approved: true
-      },
-
-      order: 0
-    };
-
-    const ref =
-      await addDoc(collection(db, "posts"), post);
-
-    aiLog("Blog created: " + ref.id);
-
-    blogTitle.value = "";
-    blogContent.value = "";
-    blogImage.value = "";
+    aiLog("Blog created");
 
   } catch (err) {
 
     console.error(err);
 
-    aiLog("Create failed", "error");
+    aiLog(
+      "Create failed",
+      "error"
+    );
   }
 };
-
-/* ================= POSTS ================= */
 
 function loadPosts() {
 
@@ -750,37 +555,14 @@ function loadPosts() {
 
     box.innerHTML = "";
 
-    if (snap.empty) {
-
-      box.innerHTML = `
-        <div class="item">
-          No posts yet
-        </div>
-      `;
-
-      return;
-    }
-
     snap.forEach((d) => {
 
       const p = d.data();
-
-      const published =
-        p.admin?.approved !== false;
 
       box.innerHTML += `
         <div class="item">
 
           <b>${p.title || "Untitled"}</b>
-
-          <br><br>
-
-          <small>ID: ${d.id}</small>
-
-          <br><br>
-
-          Status:
-          ${published ? "PUBLISHED" : "HIDDEN"}
 
           <br><br>
 
@@ -794,21 +576,24 @@ function loadPosts() {
   });
 }
 
-/* ================= DELETE ================= */
-
-window.deletePost = async (id) => {
+window.deletePost = async function (id) {
 
   try {
 
-    await deleteDoc(doc(db, "posts", id));
+    await deleteDoc(
+      doc(db, "posts", id)
+    );
 
-    aiLog("Post deleted", "warn");
+    aiLog("Post deleted");
 
   } catch (err) {
 
     console.error(err);
 
-    aiLog("Delete failed", "error");
+    aiLog(
+      "Delete failed",
+      "error"
+    );
   }
 };
 
@@ -821,21 +606,24 @@ function loadUsers() {
 
   if (!box) return;
 
-  onSnapshot(collection(db, "users"), (snap) => {
+  onSnapshot(
+    collection(db, "users"),
+    (snap) => {
 
-    box.innerHTML = "";
+      box.innerHTML = "";
 
-    snap.forEach((d) => {
+      snap.forEach((d) => {
 
-      const u = d.data();
+        const u = d.data();
 
-      box.innerHTML += `
-        <div class="item">
-          ${u.email || "Unknown User"}
-        </div>
-      `;
-    });
-  });
+        box.innerHTML += `
+          <div class="item">
+            ${u.email || "Unknown User"}
+          </div>
+        `;
+      });
+    }
+  );
 }
 
 /* ================= ADS ================= */
@@ -847,27 +635,31 @@ function loadAds() {
 
   if (!box) return;
 
-  onSnapshot(collection(db, "adRequests"), (snap) => {
+  onSnapshot(
+    collection(db, "adRequests"),
+    (snap) => {
 
-    box.innerHTML = "";
+      box.innerHTML = "";
 
-    snap.forEach((d) => {
+      snap.forEach((d) => {
 
-      const ad = d.data();
+        const ad = d.data();
 
-      box.innerHTML += `
-        <div class="item">
+        box.innerHTML += `
+          <div class="item">
 
-          <b>${ad.title || "Ad Request"}</b>
+            <b>${ad.title || "Ad Request"}</b>
 
-          <br><br>
+            <br><br>
 
-          Status: ${ad.status || "pending"}
+            Status:
+            ${ad.status || "pending"}
 
-        </div>
-      `;
-    });
-  });
+          </div>
+        `;
+      });
+    }
+  );
 }
 
 /* ================= REJECTED ADS ================= */
@@ -879,23 +671,26 @@ function loadRejectedAds() {
 
   if (!box) return;
 
-  onSnapshot(collection(db, "adRequests"), (snap) => {
+  onSnapshot(
+    collection(db, "adRequests"),
+    (snap) => {
 
-    box.innerHTML = "";
+      box.innerHTML = "";
 
-    snap.forEach((d) => {
+      snap.forEach((d) => {
 
-      const ad = d.data();
+        const ad = d.data();
 
-      if (ad.status !== "rejected") return;
+        if (ad.status !== "rejected") return;
 
-      box.innerHTML += `
-        <div class="item">
-          ${ad.title || "Rejected Ad"}
-        </div>
-      `;
-    });
-  });
+        box.innerHTML += `
+          <div class="item">
+            ${ad.title || "Rejected"}
+          </div>
+        `;
+      });
+    }
+  );
 }
 
 /* ================= AUTOSAVE ================= */
@@ -921,14 +716,12 @@ function initAutosave() {
       autosaveTimer =
         setTimeout(() => {
 
-          const draft = {
-            title: editTitle.value,
-            content: editContent.value
-          };
-
           localStorage.setItem(
-            "postDraft",
-            JSON.stringify(draft)
+            "mcnDraft",
+            JSON.stringify({
+              title: editTitle.value,
+              content: editContent.value
+            })
           );
 
           aiLog("Draft autosaved");
@@ -937,33 +730,3 @@ function initAutosave() {
     });
   });
 }
-
-/* ================= AUTONOMOUS LOOPS ================= */
-
-setInterval(() => {
-
-  if (systemHealth < 100) {
-    systemHealth += 1;
-  }
-
-  if (performanceScore < 100) {
-    performanceScore += 1;
-  }
-
-  updateHealthUI();
-
-  updateSystemMapUI();
-
-}, 5000);
-
-/* ================= AUTO SNAPSHOTS ================= */
-
-setInterval(() => {
-
-  createSnapshot("autosave", {
-    health: systemHealth,
-    performance: performanceScore,
-    time: Date.now()
-  });
-
-}, 60000);
