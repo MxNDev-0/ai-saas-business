@@ -17,15 +17,16 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= STATE ================= */
-let lastSnapshot = null;
-let autosaveTimer = null;
+/* ================= STABILITY CORE v2 ================= */
 
-/* ================= MONITOR ================= */
-function log(msg, type = "ok") {
+function safeLog(msg, type = "ok") {
 
   const box = document.getElementById("monitor");
-  if (!box) return;
+
+  if (!box) {
+    console.warn("[MONITOR MISSING]", msg);
+    return;
+  }
 
   const color =
     type === "error" ? "red" :
@@ -41,57 +42,86 @@ function log(msg, type = "ok") {
   box.scrollTop = box.scrollHeight;
 }
 
-/* ================= MAINTENANCE MODE ================= */
-async function loadMaintenanceMode() {
+const log = safeLog;
+
+/* SAFE DOM GET */
+function safeGet(id) {
+
+  const el = document.getElementById(id);
+
+  if (!el) {
+    safeLog(`Missing UI element: ${id}`, "warn");
+  }
+
+  return el;
+}
+
+/* SAFE RUN WRAPPER */
+async function safeRun(fn, label) {
 
   try {
-
-    const snap = await getDoc(doc(db, "system", "maintenance"));
-    if (!snap.exists()) return;
-
-    const data = snap.data();
-
-    const toggle = document.getElementById("maintenanceToggle");
-
-    if (!toggle) {
-      log("Maintenance toggle not found", "warn");
-      return;
-    }
-
-    toggle.checked = data.enabled === true;
+    return await fn();
 
   } catch (err) {
 
     console.error(err);
-    log("Maintenance load failed", "error");
+    safeLog(`${label} failed: ${err.message}`, "error");
   }
+}
+
+/* ================= STATE ================= */
+let lastSnapshot = null;
+let autosaveTimer = null;
+
+/* ================= MAINTENANCE MODE ================= */
+
+async function loadMaintenanceMode() {
+
+  await safeRun(async () => {
+
+    const snap = await getDoc(doc(db, "system", "maintenance"));
+
+    if (!snap.exists()) {
+
+      safeLog("Maintenance doc missing → creating default", "warn");
+
+      await setDoc(doc(db, "system", "maintenance"), {
+        enabled: false,
+        mode: "soft",
+        message: "System maintenance",
+        updatedAt: Date.now()
+      });
+
+      return;
+    }
+
+    const data = snap.data();
+
+    const toggle = safeGet("maintenanceToggle");
+
+    if (toggle) {
+      toggle.checked = data.enabled === true;
+    }
+
+  }, "loadMaintenanceMode");
 }
 
 window.saveMaintenanceMode = async function () {
 
-  try {
+  await safeRun(async () => {
 
-    const toggle = document.getElementById("maintenanceToggle");
+    const toggle = safeGet("maintenanceToggle");
 
-    if (!toggle) {
-      log("Toggle missing", "error");
-      return;
-    }
-
-    const enabled = toggle.checked;
+    const enabled = toggle ? toggle.checked : false;
 
     await setDoc(doc(db, "system", "maintenance"), {
       enabled,
       updatedAt: Date.now()
     });
 
-    log(enabled ? "Maintenance enabled" : "Maintenance disabled");
+    safeLog(enabled ? "Maintenance enabled" : "Maintenance disabled");
 
-  } catch (err) {
-
-    console.error(err);
-    log("Maintenance save failed", "error");
-  }
+  }, "saveMaintenanceMode");
 };
 
 /* ================= ADMIN AUTH ================= */
@@ -120,9 +150,9 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    log("Admin online");
+    safeLog("Admin online");
 
-    loadMaintenanceMode(); // ✅ FIXED POSITION
+    loadMaintenanceMode();
 
     loadPosts();
     loadUsers();
@@ -141,11 +171,11 @@ onAuthStateChanged(auth, async (user) => {
 /* ================= CREATE BLOG ================= */
 window.createBlog = async () => {
 
-  try {
+  await safeRun(async () => {
 
-    const title = document.getElementById("blogTitle").value.trim();
-    const content = document.getElementById("blogContent").value.trim();
-    const image = document.getElementById("blogImage").value.trim();
+    const title = safeGet("blogTitle")?.value?.trim();
+    const content = safeGet("blogContent")?.value?.trim();
+    const image = safeGet("blogImage")?.value?.trim();
 
     if (!title || !content) {
       alert("Title and content required");
@@ -192,17 +222,13 @@ window.createBlog = async () => {
 
     const ref = await addDoc(collection(db, "posts"), post);
 
-    log("Blog created: " + ref.id);
+    safeLog("Blog created: " + ref.id);
 
     blogTitle.value = "";
     blogContent.value = "";
     blogImage.value = "";
 
-  } catch (err) {
-
-    console.error(err);
-    log("Create failed", "error");
-  }
+  }, "createBlog");
 };
 
 /* ================= POSTS ================= */
@@ -215,11 +241,6 @@ function loadPosts() {
   onSnapshot(q, (snap) => {
 
     box.innerHTML = "";
-
-    if (snap.empty) {
-      box.innerHTML = `<div class="item">No posts yet</div>`;
-      return;
-    }
 
     snap.forEach((d) => {
 
@@ -280,7 +301,7 @@ function initAutosave() {
 
         localStorage.setItem("postDraft", JSON.stringify(draft));
 
-        log("Draft autosaved");
+        safeLog("Draft autosaved");
 
         updatePreview();
 
@@ -371,7 +392,7 @@ function loadRejectedAds() {
   });
 }
 
-/* ================= ACCEPT / REJECT ================= */
+/* ================= ACTIONS ================= */
 window.acceptAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
 };
@@ -380,7 +401,6 @@ window.rejectAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
 };
 
-/* ================= CLEAR REJECTED ================= */
 window.clearRejected = async () => {
 
   const snap = await getDocs(collection(db, "adRequests"));
@@ -395,5 +415,5 @@ window.clearRejected = async () => {
 
   await batch.commit();
 
-  log("Cleared");
+  safeLog("Cleared rejected ads");
 };
