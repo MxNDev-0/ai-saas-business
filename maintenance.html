@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MCN Engine Maintenance</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+
+    body{
+      margin:0;
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      text-align:center;
+      padding:20px;
+      box-sizing:border-box;
+    }
+
+    .box{
+      background:#1c2541;
+      padding:30px;
+      border-radius:20px;
+      max-width:450px;
+      width:100%;
+    }
+
+    h1{
+      color:#5bc0be;
+      margin-bottom:10px;
+    }
+
+    p{
+      color:#ccc;
+      line-height:1.6;
+    }
+
+    .loader{
+      margin:20px auto;
+      width:50px;
+      height:50px;
+      border:5px solid #233;
+      border-top:5px solid #5bc0be;
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+
+    @keyframes spin{
+      100%{
+        transform:rotate(360deg);
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>🛠 Maintenance Mode</h1>
+
+  <div class="loader"></div>
+
+  <p>
+    MCN Engine is currently under maintenance.
+    Please check back later.
+  </p>
+
+</div>
+
+</body>
+</html>
