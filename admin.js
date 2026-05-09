@@ -338,6 +338,7 @@ function updatePreview() {
 
 /* ================= AUTOSAVE ================= */
 function initAutosave() {
+loadMaintenanceMode();
 
   const inputs = [
     "editPostTitle",
@@ -618,4 +619,65 @@ window.clearRejected = async () => {
   await batch.commit();
 
   log("Cleared");
+};
+
+/* ================= MAINTENANCE MODE ================= */
+
+import {
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+async function loadMaintenanceMode() {
+
+  try {
+
+    const snap = await getDoc(
+      doc(db, "system", "maintenance")
+    );
+
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+
+    document.getElementById(
+      "maintenanceToggle"
+    ).checked = data.enabled === true;
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("Maintenance load failed", "error");
+  }
+}
+
+window.saveMaintenanceMode = async function () {
+
+  try {
+
+    const enabled =
+      document.getElementById(
+        "maintenanceToggle"
+      ).checked;
+
+    await setDoc(
+      doc(db, "system", "maintenance"),
+      {
+        enabled,
+        updatedAt: Date.now()
+      }
+    );
+
+    log(
+      enabled
+        ? "Maintenance enabled"
+        : "Maintenance disabled"
+    );
+
+  } catch (err) {
+
+    console.error(err);
+
+    log("Maintenance save failed", "error");
+  }
 };
