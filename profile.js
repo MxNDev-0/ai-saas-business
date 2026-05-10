@@ -13,9 +13,12 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 // ===== FIREBASE INIT =====
 const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_PROJECT"
+  apiKey: "AIzaSyAu8BaL9NV6NU_oKSy-pxh89TuVrovZzaE",
+  authDomain: "ai-saas-business-ecfab.firebaseapp.com",
+  projectId: "ai-saas-business-ecfab",
+  storageBucket: "ai-saas-business-ecfab.firebasestorage.app",
+  messagingSenderId: "568523173235",
+  appId: "1:568523173235:web:b714d052976268f1e72906"
 };
 
 const app = initializeApp(firebaseConfig);
