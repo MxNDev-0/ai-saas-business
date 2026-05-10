@@ -1,4 +1,4 @@
-const CACHE_NAME = "mcn-engine-v17";
+const CACHE_NAME = "mcn-engine-v18";
 
 const STATIC_ASSETS = [
   "./",
