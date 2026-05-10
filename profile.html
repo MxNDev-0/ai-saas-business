@@ -3,36 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MCN Profile</title>
+<title>MCN Profile Neo v3</title>
+
 <style>
-body { font-family: Arial; margin: 0; background:#f5f5f5; }
-.profile { max-width:500px; margin:auto; background:#fff; padding:20px; }
-.cover { height:120px; background:#ddd; }
-.avatar { width:90px; height:90px; border-radius:50%; margin-top:-45px; border:3px solid #fff; }
-.stats { display:flex; justify-content:space-around; margin:10px 0; }
-button { padding:8px 12px; }
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #eef1f5;
+  display: flex;
+  justify-content: center;
+}
+
+.profile {
+  width: 100%;
+  max-width: 420px;
+  min-height: 100vh;
+  background: white;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.cover {
+  height: 140px;
+  background: linear-gradient(135deg, #4a90e2, #6c5ce7);
+  border-radius: 10px;
+}
+
+.avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  margin-top: -45px;
+  border: 3px solid white;
+  object-fit: cover;
+  background: #ddd;
+}
+
+h2, p {
+  margin: 5px 0;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: #4a90e2;
+  color: white;
+  border-radius: 8px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: gray;
+}
 </style>
 </head>
 <body>
 
 <div class="profile">
+
   <div class="cover"></div>
 
-  <img id="avatar" class="avatar" src="default.png">
+  <div class="loading" id="loading">Loading profile...</div>
 
-  <h2 id="name">User</h2>
-  <p id="username">@username</p>
-  <p id="bio">Bio...</p>
+  <img id="avatar" class="avatar" src="" style="display:none;">
+
+  <h2 id="name"></h2>
+  <p id="username"></p>
+  <p id="bio"></p>
 
   <div class="stats">
-    <div id="followers">0 Followers</div>
-    <div id="following">0 Following</div>
+    <div id="followers"></div>
+    <div id="following"></div>
   </div>
 
   <button id="followBtn">Follow</button>
 
 </div>
 
-<script src="profile.js"></script>
+<script type="module" src="profile.js"></script>
 </body>
 </html>
