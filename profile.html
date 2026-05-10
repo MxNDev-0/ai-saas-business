@@ -1,94 +1,255 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MCN Profile Neo v3</title>
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #eef1f5;
-  display: flex;
-  justify-content: center;
-}
+  <title>MCN Engine Profile</title>
 
-.profile {
-  width: 100%;
-  max-width: 420px;
-  min-height: 100vh;
-  background: white;
-  padding: 15px;
-  box-sizing: border-box;
-}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.cover {
-  height: 140px;
-  background: linear-gradient(135deg, #4a90e2, #6c5ce7);
-  border-radius: 10px;
-}
+  <style>
 
-.avatar {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  margin-top: -45px;
-  border: 3px solid white;
-  object-fit: cover;
-  background: #ddd;
-}
+    body{
+      margin:0;
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+    }
 
-.stats {
-  display: flex;
-  justify-content: space-between;
-  margin: 15px 0;
-  font-weight: bold;
-}
+    .navbar{
+      background:#1c2541;
+      padding:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
 
-button {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  background: #4a90e2;
-  color: white;
-  border-radius: 8px;
-}
+    .back-btn{
+      background:#5bc0be;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      font-weight:bold;
+      cursor:pointer;
+    }
 
-button.unfollow {
-  background: #888;
-}
+    .profile-card{
+      padding:20px;
+      text-align:center;
+    }
 
-.loading {
-  text-align: center;
-  padding: 20px;
-  color: gray;
-}
-</style>
+    .avatar{
+      width:110px;
+      height:110px;
+      border-radius:50%;
+      object-fit:cover;
+      border:4px solid #5bc0be;
+      background:#1c2541;
+    }
+
+    .username{
+      font-size:22px;
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    .email{
+      color:#aaa;
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    .bio{
+      margin-top:15px;
+      color:#ddd;
+      line-height:1.5;
+      padding:0 15px;
+    }
+
+    .stats{
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      margin-top:20px;
+      flex-wrap:wrap;
+    }
+
+    .stat{
+      background:#1c2541;
+      padding:12px;
+      border-radius:12px;
+      min-width:80px;
+    }
+
+    .stat b{
+      display:block;
+      font-size:18px;
+      color:#5bc0be;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      padding:15px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    button{
+      border:none;
+      padding:12px 16px;
+      border-radius:10px;
+      background:#5bc0be;
+      color:black;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    .card{
+      background:#1c2541;
+      margin:15px;
+      padding:15px;
+      border-radius:16px;
+    }
+
+    input, textarea{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border:none;
+      border-radius:10px;
+      background:#0b132b;
+      color:white;
+      box-sizing:border-box;
+    }
+
+    textarea{
+      min-height:90px;
+      resize:none;
+    }
+
+    .monitor{
+      background:black;
+      color:#00ff88;
+      font-family:monospace;
+      height:150px;
+      overflow-y:auto;
+      border-radius:10px;
+      padding:10px;
+      margin-top:10px;
+    }
+
+  </style>
+
 </head>
+
 <body>
 
-<div class="profile">
+<div class="navbar">
 
-  <div class="cover"></div>
+  <button
+    class="back-btn"
+    onclick="location.href='dashboard.html'"
+  >
+    ← Back
+  </button>
 
-  <div class="loading" id="loading">Loading profile...</div>
+  <h3>Profile</h3>
 
-  <img id="avatar" class="avatar" src="" style="display:none;">
-
-  <h2 id="name"></h2>
-  <p id="username"></p>
-  <p id="bio"></p>
-
-  <div class="stats">
-    <div id="followers"></div>
-    <div id="following"></div>
-  </div>
-
-  <button id="followBtn">Follow</button>
+  <div></div>
 
 </div>
 
-<script type="module" src="profile.js"></script>
+<div class="profile-card">
+
+  <img
+    id="avatar"
+    class="avatar"
+    src="https://via.placeholder.com/150"
+  >
+
+  <div id="username" class="username">
+    Loading...
+  </div>
+
+  <div id="email" class="email"></div>
+
+  <div id="bio" class="bio">
+    No bio yet
+  </div>
+
+  <div class="stats">
+
+    <div class="stat">
+      <b id="postsCount">0</b>
+      Posts
+    </div>
+
+    <div class="stat">
+      <b id="followersCount">0</b>
+      Followers
+    </div>
+
+    <div class="stat">
+      <b id="followingCount">0</b>
+      Following
+    </div>
+
+  </div>
+
+</div>
+
+<div class="actions">
+
+  <button onclick="toggleEdit()">
+    ✏ Edit Profile
+  </button>
+
+  <button onclick="openMessages()">
+    ✉ Messages
+  </button>
+
+</div>
+
+<div
+  id="editCard"
+  class="card"
+  style="display:none;"
+>
+
+  <h3>Edit Profile</h3>
+
+  <input
+    id="editUsername"
+    placeholder="Username"
+  >
+
+  <input
+    id="editAvatar"
+    placeholder="Avatar Image URL"
+  >
+
+  <textarea
+    id="editBio"
+    placeholder="Bio"
+  ></textarea>
+
+  <button onclick="saveProfile()">
+    Save Profile
+  </button>
+
+</div>
+
+<div class="card">
+
+  <h3>🖥 Profile Monitor</h3>
+
+  <div id="monitor" class="monitor"></div>
+
+</div>
+
+<script type="module" src="./profile.js"></script>
+
+<script type="module" src="./maintenance-check.js"></script>
+
 </body>
 </html>
