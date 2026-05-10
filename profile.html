@@ -1,70 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>MCN Engine Profile</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
 
-    body{
+    *{
       margin:0;
-      background:#0b132b;
-      color:white;
-      font-family:Arial;
-    }
-
-    .navbar{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      position:sticky;
-      top:0;
-      background:#1c2541;
-      padding:14px;
-      z-index:100;
-    }
-
-    .back-btn{
-      position:absolute;
-      left:10px;
-      background:#5bc0be;
-      border:none;
-      padding:8px 12px;
-      border-radius:8px;
-      color:black;
-      font-weight:bold;
-      cursor:pointer;
-    }
-
-    .card{
-      background:#1c2541;
-      margin:12px;
-      padding:15px;
-      border-radius:16px;
+      padding:0;
       box-sizing:border-box;
     }
 
-    button{
-      background:#5bc0be;
-      border:none;
-      color:black;
-      font-weight:bold;
-      border-radius:10px;
-      cursor:pointer;
+    body{
+
+      background:#071028;
+
+      color:white;
+
+      font-family:Arial,sans-serif;
+
+      min-height:100vh;
+
+      overflow-x:hidden;
     }
 
+    button,
     input,
     textarea{
-      width:100%;
-      padding:10px;
-      border:none;
-      border-radius:10px;
-      margin-top:8px;
-      box-sizing:border-box;
-      background:#0b132b;
-      color:white;
+
+      font-family:inherit;
+    }
+
+    a{
+      text-decoration:none;
+      color:inherit;
     }
 
   </style>
@@ -73,9 +51,8 @@
 
 <body>
 
-<!-- PROFILE WILL LOAD HERE -->
-
-<script type="module" src="profile.js"></script>
+<script type="module" src="./profile.js"></script>
 
 </body>
+
 </html>
