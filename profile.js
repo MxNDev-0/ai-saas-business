@@ -141,7 +141,7 @@ function renderProfile(user) {
       "coverPhoto"
     );
 
-  if (user.coverPhoto) {
+  if (user.photo || user.avatar) {
 
     cover.style.background = `
       url(${user.coverPhoto})
@@ -155,7 +155,9 @@ function renderProfile(user) {
   if (user.photo) {
 
     avatar.innerHTML =
-      `<img src="${user.photo}">`;
+      `<img src="${
+  user.photo || user.avatar
+}">
 
   } else {
 
