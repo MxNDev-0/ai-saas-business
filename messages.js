@@ -18,6 +18,8 @@ import {
 
   query,
   orderBy,
+  where,
+  limit,
 
   onSnapshot,
 
@@ -38,6 +40,8 @@ let currentChatId = null;
 let currentTargetUser = null;
 
 let unsubscribeMessages = null;
+
+let unsubscribeTyping = null;
 
 let mediaRecorder = null;
 
@@ -116,6 +120,10 @@ function createChatId(a, b) {
 window.openChat =
 async function(uid) {
 
+  if (uid === currentUser.uid) {
+    return;
+  }
+
   currentTargetUser = uid;
 
   currentChatId =
@@ -144,7 +152,7 @@ async function(uid) {
     document.getElementById(
       "chatAvatar"
     ).src =
-      u.avatar ||
+      u.photo ||
       "https://via.placeholder.com/100";
   }
 
@@ -170,8 +178,14 @@ function() {
 
   currentTargetUser = null;
 
+  typingIndicator.textContent = "";
+
   if (unsubscribeMessages) {
     unsubscribeMessages();
+  }
+
+  if (unsubscribeTyping) {
+    unsubscribeTyping();
   }
 };
 
@@ -215,8 +229,17 @@ async function createChatIfMissing(uid) {
 
 function loadInbox() {
 
-  onSnapshot(
+  const q = query(
     collection(db, "dms"),
+    where(
+      "members",
+      "array-contains",
+      currentUser.uid
+    )
+  );
+
+  onSnapshot(
+    q,
     async (snap) => {
 
       inboxList.innerHTML = "";
@@ -227,13 +250,6 @@ function loadInbox() {
 
         const data =
         docSnap.data();
-
-        if (
-          !data.members ||
-          !data.members.includes(
-            currentUser.uid
-          )
-        ) return;
 
         chats.push({
           id: docSnap.id,
@@ -295,6 +311,11 @@ function loadInbox() {
           currentUser.uid
         ] || 0;
 
+        const isOnline =
+        Date.now() -
+        (u.lastActive || 0)
+        < 120000;
+
         const div =
         document.createElement("div");
 
@@ -308,13 +329,13 @@ function loadInbox() {
             <img
               class="avatar"
               src="${
-                u.avatar ||
+                u.photo ||
                 "https://via.placeholder.com/100"
               }"
             >
 
             ${
-              u.online
+              isOnline
               ? `<div class="online"></div>`
               : ""
             }
@@ -401,15 +422,16 @@ function loadMessages() {
     orderBy(
       "createdAt",
       "asc"
-    )
+    ),
+    limit(100)
   );
 
   unsubscribeMessages =
-  onSnapshot(q, async (snap) => {
+  onSnapshot(q, (snap) => {
 
     chatBox.innerHTML = "";
 
-    snap.forEach(async (docSnap) => {
+    snap.forEach((docSnap) => {
 
       const m =
       docSnap.data();
@@ -425,6 +447,16 @@ function loadMessages() {
         : "them"
       );
 
+      const time =
+      m.createdAt?.seconds
+      ? new Date(
+          m.createdAt.seconds * 1000
+        ).toLocaleTimeString([],{
+          hour:"2-digit",
+          minute:"2-digit"
+        })
+      : "";
+
       /* TEXT */
 
       if (m.type === "text") {
@@ -435,13 +467,18 @@ function loadMessages() {
 
           <div class="meta">
 
+            ${time}
+
             ${
               m.senderId === currentUser.uid
-              ? (
+              ? `
+                •
+                ${
                   m.seen
                   ? "Seen"
                   : "Sent"
-                )
+                }
+              `
               : ""
             }
 
@@ -462,7 +499,8 @@ function loadMessages() {
           >
 
           <div class="meta">
-            Photo
+            ${time}
+            • Photo
           </div>
         `;
       }
@@ -484,7 +522,8 @@ function loadMessages() {
           </audio>
 
           <div class="meta">
-            Voice message
+            ${time}
+            • Voice message
           </div>
         `;
       }
@@ -500,25 +539,21 @@ function loadMessages() {
 
       ) {
 
-        try {
+        updateDoc(
 
-          await updateDoc(
+          doc(
+            db,
+            "dms",
+            currentChatId,
+            "messages",
+            docSnap.id
+          ),
 
-            doc(
-              db,
-              "dms",
-              currentChatId,
-              "messages",
-              docSnap.id
-            ),
+          {
+            seen: true
+          }
 
-            {
-              seen: true
-            }
-
-          );
-
-        } catch(e){}
+        ).catch(()=>{});
       }
 
     });
@@ -687,6 +722,11 @@ function setupTypingSystem() {
 
 function monitorTyping() {
 
+  if (unsubscribeTyping) {
+    unsubscribeTyping();
+  }
+
+  unsubscribeTyping =
   onSnapshot(
 
     doc(
@@ -797,7 +837,7 @@ async (e) => {
   const res =
   await fetch(
 
-    "https://api.cloudinary.com/v1_1/demo/upload",
+    "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
 
     {
       method:"POST",
@@ -947,7 +987,7 @@ async function uploadVoice() {
   const res =
   await fetch(
 
-    "https://api.cloudinary.com/v1_1/demo/upload",
+    "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
 
     {
       method:"POST",
@@ -1051,6 +1091,10 @@ async function() {
 
   await Promise.all(
     promises
+  );
+
+  await deleteDoc(
+    doc(db, "dms", currentChatId)
   );
 
   closeChat();
