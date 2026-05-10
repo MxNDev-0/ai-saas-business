@@ -1,12 +1,21 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+  increment
+} from "firebase/firestore";
+
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
-// ===== FIREBASE INIT (replace with your config) =====
+// ===== FIREBASE INIT =====
 const firebaseConfig = {
   apiKey: "YOUR_KEY",
   authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_PROJECT",
+  projectId: "YOUR_PROJECT"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -14,56 +23,91 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 let viewedUser = null;
+let isFollowing = false;
 
 // ===== LOAD PROFILE =====
 async function loadProfile(uid) {
-  try {
-    viewedUser = uid;
+  viewedUser = uid;
 
-    const snap = await getDoc(doc(db, "users", uid));
+  const snap = await getDoc(doc(db, "users", uid));
+  const data = snap.data();
 
-    if (!snap.exists()) {
-      document.getElementById("loading").innerText = "User not found";
-      return;
-    }
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("avatar").style.display = "block";
 
-    const data = snap.data();
+  document.getElementById("name").innerText = data.displayName || "No Name";
+  document.getElementById("username").innerText = "@" + (data.username || "user");
+  document.getElementById("bio").innerText = data.bio || "No bio";
 
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("avatar").style.display = "block";
+  document.getElementById("avatar").src = data.photoURL || "default.png";
 
-    document.getElementById("name").innerText = data.displayName || "No Name";
-    document.getElementById("username").innerText = "@" + (data.username || "user");
-    document.getElementById("bio").innerText = data.bio || "No bio yet";
+  document.getElementById("followers").innerText = (data.followers || 0) + " Followers";
+  document.getElementById("following").innerText = (data.following || 0) + " Following";
 
-    document.getElementById("avatar").src = data.photoURL || "default.png";
-
-    document.getElementById("followers").innerText = (data.followers || 0) + " Followers";
-    document.getElementById("following").innerText = (data.following || 0) + " Following";
-
-  } catch (err) {
-    document.getElementById("loading").innerText = "Error loading profile";
-    console.error(err);
-  }
+  await checkFollowState();
 }
 
-// ===== FOLLOW SYSTEM =====
-async function followUser() {
+// ===== CHECK FOLLOW STATE =====
+async function checkFollowState() {
   const user = auth.currentUser;
   if (!user || !viewedUser) return;
 
-  await updateDoc(doc(db, "users", viewedUser), {
-    followers: increment(1)
-  });
+  const followSnap = await getDoc(
+    doc(db, "follows", user.uid, "following", viewedUser)
+  );
 
-  await updateDoc(doc(db, "users", user.uid), {
-    following: increment(1)
-  });
-
-  alert("Followed!");
+  isFollowing = followSnap.exists();
+  updateFollowButton();
 }
 
-// ===== SAFE AUTH LOADING =====
+// ===== TOGGLE FOLLOW =====
+async function toggleFollow() {
+  const user = auth.currentUser;
+  if (!user || !viewedUser) return;
+
+  const followRef = doc(db, "follows", user.uid, "following", viewedUser);
+  const followerRef = doc(db, "follows", viewedUser, "followers", user.uid);
+
+  const userRef = doc(db, "users", user.uid);
+  const targetRef = doc(db, "users", viewedUser);
+
+  if (isFollowing) {
+    // UNFOLLOW
+    await deleteDoc(followRef);
+    await deleteDoc(followerRef);
+
+    await updateDoc(targetRef, { followers: increment(-1) });
+    await updateDoc(userRef, { following: increment(-1) });
+
+    isFollowing = false;
+  } else {
+    // FOLLOW
+    await setDoc(followRef, { createdAt: Date.now() });
+    await setDoc(followerRef, { createdAt: Date.now() });
+
+    await updateDoc(targetRef, { followers: increment(1) });
+    await updateDoc(userRef, { following: increment(1) });
+
+    isFollowing = true;
+  }
+
+  updateFollowButton();
+}
+
+// ===== BUTTON UI UPDATE =====
+function updateFollowButton() {
+  const btn = document.getElementById("followBtn");
+
+  if (isFollowing) {
+    btn.innerText = "Unfollow";
+    btn.classList.add("unfollow");
+  } else {
+    btn.innerText = "Follow";
+    btn.classList.remove("unfollow");
+  }
+}
+
+// ===== AUTH SAFE LOAD =====
 onAuthStateChanged(auth, (user) => {
   if (user) {
     loadProfile(user.uid);
@@ -73,4 +117,4 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ===== EVENTS =====
-document.getElementById("followBtn").onclick = followUser;
+document.getElementById("followBtn").onclick = toggleFollow;
