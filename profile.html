@@ -1,58 +1,497 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
 
-  <title>MCN Engine Profile</title>
+<title>MCN Engine Profile</title>
 
-  <style>
+<style>
 
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-    }
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
 
-    body{
+body{
+  background:#071028;
+  color:white;
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+}
 
-      background:#071028;
+/* TOPBAR */
 
-      color:white;
+.topbar{
 
-      font-family:Arial,sans-serif;
+  height:65px;
 
-      min-height:100vh;
+  background:#101935;
 
-      overflow-x:hidden;
-    }
+  display:flex;
 
-    button,
-    input,
-    textarea{
+  align-items:center;
 
-      font-family:inherit;
-    }
+  justify-content:space-between;
 
-    a{
-      text-decoration:none;
-      color:inherit;
-    }
+  padding:0 15px;
 
-  </style>
+  position:sticky;
+
+  top:0;
+
+  z-index:1000;
+
+  box-shadow:0 2px 10px rgba(0,0,0,0.4);
+}
+
+.icon-btn{
+
+  width:42px;
+  height:42px;
+
+  border:none;
+
+  border-radius:12px;
+
+  background:#5bc0be;
+
+  color:black;
+
+  font-size:18px;
+
+  font-weight:bold;
+}
+
+/* HEADER */
+
+.profile-header{
+
+  position:relative;
+
+  padding-bottom:25px;
+
+  background:#101935;
+
+  border-bottom-left-radius:25px;
+
+  border-bottom-right-radius:25px;
+}
+
+.cover{
+
+  height:180px;
+
+  background:
+  linear-gradient(
+    135deg,
+    #5bc0be,
+    #1c2541
+  );
+}
+
+.avatar{
+
+  width:120px;
+  height:120px;
+
+  border-radius:50%;
+
+  border:5px solid #071028;
+
+  overflow:hidden;
+
+  position:absolute;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  top:110px;
+
+  background:#1c2541;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  font-size:40px;
+
+  font-weight:bold;
+}
+
+.avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.profile-info{
+
+  margin-top:70px;
+
+  text-align:center;
+
+  padding:0 20px;
+}
+
+.username{
+
+  font-size:28px;
+
+  font-weight:bold;
+
+  margin-bottom:10px;
+}
+
+.bio{
+
+  color:#aaa;
+
+  line-height:1.5;
+
+  margin-bottom:20px;
+}
+
+/* STATS */
+
+.stats{
+
+  display:grid;
+
+  grid-template-columns:repeat(4,1fr);
+
+  gap:10px;
+
+  margin-bottom:20px;
+}
+
+.stat{
+
+  background:#16213e;
+
+  padding:14px 10px;
+
+  border-radius:16px;
+}
+
+.stat-number{
+
+  color:#5bc0be;
+
+  font-size:20px;
+
+  font-weight:bold;
+
+  margin-bottom:5px;
+}
+
+/* ACTIONS */
+
+.actions{
+
+  display:flex;
+
+  gap:10px;
+}
+
+.action-btn{
+
+  flex:1;
+
+  border:none;
+
+  padding:13px;
+
+  border-radius:14px;
+
+  font-weight:bold;
+}
+
+.primary{
+  background:#5bc0be;
+  color:black;
+}
+
+.secondary{
+  background:#1c2541;
+  color:white;
+}
+
+/* CONTENT */
+
+.section{
+  padding:15px;
+}
+
+.card{
+
+  background:#111b36;
+
+  padding:15px;
+
+  border-radius:18px;
+
+  margin-bottom:15px;
+}
+
+.section-title{
+
+  font-size:18px;
+
+  font-weight:bold;
+
+  margin-bottom:15px;
+}
+
+/* ONLINE USERS */
+
+.online-user{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  background:#16213e;
+
+  padding:12px;
+
+  border-radius:12px;
+
+  margin-bottom:10px;
+}
+
+.online-left{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:10px;
+}
+
+.dot{
+
+  width:10px;
+  height:10px;
+
+  background:#00ff88;
+
+  border-radius:50%;
+}
+
+.mini-btn{
+
+  border:none;
+
+  background:#5bc0be;
+
+  color:black;
+
+  padding:8px 14px;
+
+  border-radius:10px;
+
+  font-weight:bold;
+}
+
+/* POSTS */
+
+.post-box{
+
+  background:#16213e;
+
+  padding:15px;
+
+  border-radius:14px;
+
+  margin-bottom:12px;
+}
+
+.empty{
+
+  opacity:0.7;
+
+  text-align:center;
+
+  padding:20px;
+}
+
+</style>
 
 </head>
 
 <body>
 
+<!-- TOPBAR -->
+
+<div class="topbar">
+
+  <button
+    class="icon-btn"
+    onclick="goBack()"
+  >
+    ←
+  </button>
+
+  <div id="topUsername">
+    Profile
+  </div>
+
+  <button
+    class="icon-btn"
+    onclick="openSettings()"
+  >
+    ⚙
+  </button>
+
+</div>
+
+<!-- PROFILE HEADER -->
+
+<div class="profile-header">
+
+  <div class="cover"></div>
+
+  <div class="avatar" id="avatar">
+    U
+  </div>
+
+  <div class="profile-info">
+
+    <div
+      class="username"
+      id="username"
+    >
+      Username
+    </div>
+
+    <div
+      class="bio"
+      id="bio"
+    >
+      User bio...
+    </div>
+
+    <!-- STATS -->
+
+    <div class="stats">
+
+      <div class="stat">
+        <div
+          class="stat-number"
+          id="postsCount"
+        >
+          0
+        </div>
+        <div>Posts</div>
+      </div>
+
+      <div class="stat">
+        <div
+          class="stat-number"
+          id="followersCount"
+        >
+          0
+        </div>
+        <div>Followers</div>
+      </div>
+
+      <div class="stat">
+        <div
+          class="stat-number"
+          id="followingCount"
+        >
+          0
+        </div>
+        <div>Following</div>
+      </div>
+
+      <div class="stat">
+        <div
+          class="stat-number"
+          id="coinsCount"
+        >
+          0
+        </div>
+        <div>Coins</div>
+      </div>
+
+    </div>
+
+    <!-- ACTIONS -->
+
+    <div class="actions">
+
+      <button
+        class="action-btn primary"
+        onclick="editProfile()"
+      >
+        Edit Profile
+      </button>
+
+      <button
+        class="action-btn secondary"
+        onclick="openInbox()"
+      >
+        Messages
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- CONTENT -->
+
+<div class="section">
+
+  <!-- ONLINE -->
+
+  <div class="card">
+
+    <div class="section-title">
+      🟢 Online Users
+    </div>
+
+    <div id="onlineUsers">
+      Loading...
+    </div>
+
+  </div>
+
+  <!-- POSTS -->
+
+  <div class="card">
+
+    <div class="section-title">
+      📌 Activity
+    </div>
+
+    <div class="post-box">
+      Welcome to your MCN Engine profile.
+    </div>
+
+    <div class="post-box">
+      Your posts and creator activity will appear here.
+    </div>
+
+  </div>
+
+</div>
+
 <script type="module" src="./profile.js"></script>
 
 </body>
-
 </html>
