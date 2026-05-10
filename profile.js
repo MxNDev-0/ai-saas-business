@@ -25,14 +25,29 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+let currentUser = null;
 let viewedUser = null;
 let isFollowing = false;
 
-// ===== LOAD PROFILE =====
+// ===== GET UID FROM URL (?uid=xxx) =====
+function getProfileUID() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("uid");
+}
+
+// ===== LOAD PROFILE (ANY USER) =====
 async function loadProfile(uid) {
+  if (!uid) return;
+
   viewedUser = uid;
 
   const snap = await getDoc(doc(db, "users", uid));
+
+  if (!snap.exists()) {
+    document.getElementById("loading").innerText = "User not found";
+    return;
+  }
+
   const data = snap.data();
 
   document.getElementById("loading").style.display = "none";
@@ -47,16 +62,15 @@ async function loadProfile(uid) {
   document.getElementById("followers").innerText = (data.followers || 0) + " Followers";
   document.getElementById("following").innerText = (data.following || 0) + " Following";
 
-  await checkFollowState();
+  if (currentUser) await checkFollowState();
 }
 
-// ===== CHECK FOLLOW STATE =====
+// ===== CHECK IF FOLLOWING =====
 async function checkFollowState() {
-  const user = auth.currentUser;
-  if (!user || !viewedUser) return;
+  if (!currentUser || !viewedUser) return;
 
   const followSnap = await getDoc(
-    doc(db, "follows", user.uid, "following", viewedUser)
+    doc(db, "follows", currentUser.uid, "following", viewedUser)
   );
 
   isFollowing = followSnap.exists();
@@ -65,17 +79,16 @@ async function checkFollowState() {
 
 // ===== TOGGLE FOLLOW =====
 async function toggleFollow() {
-  const user = auth.currentUser;
-  if (!user || !viewedUser) return;
+  if (!currentUser || !viewedUser) return;
+  if (currentUser.uid === viewedUser) return; // cannot follow self
 
-  const followRef = doc(db, "follows", user.uid, "following", viewedUser);
-  const followerRef = doc(db, "follows", viewedUser, "followers", user.uid);
+  const followRef = doc(db, "follows", currentUser.uid, "following", viewedUser);
+  const followerRef = doc(db, "follows", viewedUser, "followers", currentUser.uid);
 
-  const userRef = doc(db, "users", user.uid);
+  const userRef = doc(db, "users", currentUser.uid);
   const targetRef = doc(db, "users", viewedUser);
 
   if (isFollowing) {
-    // UNFOLLOW
     await deleteDoc(followRef);
     await deleteDoc(followerRef);
 
@@ -84,7 +97,6 @@ async function toggleFollow() {
 
     isFollowing = false;
   } else {
-    // FOLLOW
     await setDoc(followRef, { createdAt: Date.now() });
     await setDoc(followerRef, { createdAt: Date.now() });
 
@@ -97,23 +109,30 @@ async function toggleFollow() {
   updateFollowButton();
 }
 
-// ===== BUTTON UI UPDATE =====
+// ===== BUTTON UI =====
 function updateFollowButton() {
   const btn = document.getElementById("followBtn");
 
-  if (isFollowing) {
-    btn.innerText = "Unfollow";
-    btn.classList.add("unfollow");
-  } else {
-    btn.innerText = "Follow";
-    btn.classList.remove("unfollow");
+  if (!currentUser || currentUser.uid === viewedUser) {
+    btn.style.display = "none";
+    return;
   }
+
+  btn.style.display = "block";
+  btn.innerText = isFollowing ? "Unfollow" : "Follow";
+  btn.classList.toggle("unfollow", isFollowing);
 }
 
-// ===== AUTH SAFE LOAD =====
+// ===== AUTH + INIT =====
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    loadProfile(user.uid);
+  currentUser = user;
+
+  const uid = getProfileUID();
+
+  if (uid) {
+    loadProfile(uid);
+  } else if (user) {
+    loadProfile(user.uid); // fallback to own profile
   } else {
     document.getElementById("loading").innerText = "Please login";
   }
