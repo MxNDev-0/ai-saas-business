@@ -361,7 +361,10 @@ body{
 
 <div class="profile-header">
 
-  <div class="cover"></div>
+  <div
+    class="cover"
+    id="coverPhoto"
+  ></div>
 
   <div class="avatar" id="avatar">
     U
@@ -420,11 +423,11 @@ body{
       <div class="stat">
         <div
           class="stat-number"
-          id="coinsCount"
+          id="likesCount"
         >
           0
         </div>
-        <div>Coins</div>
+        <div>Likes</div>
       </div>
 
     </div>
@@ -478,6 +481,33 @@ body{
     <div class="section-title">
       📌 Activity
     </div>
+
+    <textarea
+      id="timelinePost"
+      placeholder="What's on your mind?"
+      style="
+        width:100%;
+        background:#16213e;
+        border:none;
+        color:white;
+        padding:14px;
+        border-radius:14px;
+        margin-bottom:10px;
+        resize:none;
+        min-height:90px;
+      "
+    ></textarea>
+
+    <button
+      class="action-btn primary"
+      onclick="createTimelinePost()"
+      style="
+        width:100%;
+        margin-bottom:15px;
+      "
+    >
+      Post Update
+    </button>
 
     <div class="post-box">
       Welcome to your MCN Engine profile.
