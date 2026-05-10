@@ -60,6 +60,9 @@ async function createProfileIfNeeded(user) {
       photo:
         "",
 
+      coverPhoto:
+        "",
+
       verified: false,
 
       followers: 0,
@@ -68,9 +71,11 @@ async function createProfileIfNeeded(user) {
 
       posts: 0,
 
-      coins: 0,
+      likes: 0,
 
       role: "user",
+
+      privateAccount: false,
 
       createdAt: Date.now(),
 
@@ -127,9 +132,22 @@ function renderProfile(user) {
     user.following || 0;
 
   document.getElementById(
-    "coinsCount"
+    "likesCount"
   ).textContent =
-    user.coins || 0;
+    user.likes || 0;
+
+  const cover =
+    document.getElementById(
+      "coverPhoto"
+    );
+
+  if (user.coverPhoto) {
+
+    cover.style.background = `
+      url(${user.coverPhoto})
+      center/cover
+    `;
+  }
 
   const avatar =
     document.getElementById("avatar");
@@ -194,11 +212,136 @@ window.editProfile = async function () {
   }
 };
 
-window.openSettings = function () {
+window.openSettings = async function () {
 
-  alert(
-    "Settings system coming soon"
+  const choice = prompt(
+
+`PROFILE SETTINGS
+
+1 = Change Username
+2 = Change Bio
+3 = Change Avatar URL
+4 = Change Cover URL
+5 = Private Account
+6 = Contact Support
+7 = Logout
+
+Enter number:`
+
   );
+
+  if (!choice) return;
+
+  if (choice === "1") {
+
+    const username = prompt(
+      "New username:",
+      profileData.username || ""
+    );
+
+    if (!username) return;
+
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        username
+      }
+    );
+
+    await loadProfile(currentUser.uid);
+
+    alert("Username updated");
+  }
+
+  if (choice === "2") {
+
+    const bio = prompt(
+      "New bio:",
+      profileData.bio || ""
+    );
+
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        bio
+      }
+    );
+
+    await loadProfile(currentUser.uid);
+
+    alert("Bio updated");
+  }
+
+  if (choice === "3") {
+
+    const photo = prompt(
+      "Avatar image URL:",
+      profileData.photo || ""
+    );
+
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        photo
+      }
+    );
+
+    await loadProfile(currentUser.uid);
+
+    alert("Avatar updated");
+  }
+
+  if (choice === "4") {
+
+    const coverPhoto = prompt(
+      "Cover image URL:",
+      profileData.coverPhoto || ""
+    );
+
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        coverPhoto
+      }
+    );
+
+    alert("Cover updated");
+
+    location.reload();
+  }
+
+  if (choice === "5") {
+
+    const current =
+      profileData.privateAccount || false;
+
+    await updateDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        privateAccount: !current
+      }
+    );
+
+    alert(
+      !current
+        ? "Account is now private"
+        : "Account is now public"
+    );
+  }
+
+  if (choice === "6") {
+
+    alert(
+      "Contact support from MCN Engine support center."
+    );
+  }
+
+  if (choice === "7") {
+
+    auth.signOut();
+
+    location.href = "index.html";
+  }
 };
 
 /* ================= ONLINE USERS ================= */
@@ -220,6 +363,8 @@ function loadOnlineUsers() {
 
     box.innerHTML = "";
 
+    const now = Date.now();
+
     snap.forEach((docSnap) => {
 
       const u = docSnap.data();
@@ -227,16 +372,47 @@ function loadOnlineUsers() {
       if (u.uid === currentUser.uid)
         return;
 
+      const lastActive =
+        u.lastActive || 0;
+
+      const isOnline =
+        now - lastActive < 120000;
+
       box.innerHTML += `
 
         <div class="online-user">
 
           <div class="online-left">
 
-            <div class="dot"></div>
+            <div
+              class="dot"
+              style="
+                background:
+                ${isOnline
+                  ? '#00ff88'
+                  : '#777'
+                };
+              "
+            ></div>
 
             <div>
+
               ${u.username}
+
+              <div style="
+                font-size:11px;
+                opacity:0.7;
+                margin-top:2px;
+              ">
+
+                ${
+                  isOnline
+                    ? "Online"
+                    : "Offline"
+                }
+
+              </div>
+
             </div>
 
           </div>
@@ -245,7 +421,7 @@ function loadOnlineUsers() {
             class="mini-btn"
             onclick="startDM('${u.uid}')"
           >
-            Message
+            💬
           </button>
 
         </div>
@@ -257,12 +433,32 @@ function loadOnlineUsers() {
       box.innerHTML = `
 
         <div class="empty">
-          No users online
+          No users found
         </div>
 
       `;
     }
   });
+
+  setInterval(async () => {
+
+    if (!currentUser) return;
+
+    try {
+
+      await updateDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          lastActive: Date.now()
+        }
+      );
+
+    } catch(err) {
+
+      console.log(err);
+    }
+
+  }, 30000);
 }
 
 /* ================= START DM ================= */
@@ -271,4 +467,48 @@ window.startDM = function(uid){
 
   location.href =
     "messages.html?uid=" + uid;
+};
+
+/* ================= TIMELINE POST ================= */
+
+window.createTimelinePost = async function () {
+
+  const text =
+    document.getElementById(
+      "timelinePost"
+    ).value.trim();
+
+  if (!text) return;
+
+  try {
+
+    await setDoc(
+      doc(
+        collection(db, "timeline")
+      ),
+      {
+
+        uid: currentUser.uid,
+
+        username:
+          profileData.username,
+
+        text,
+
+        createdAt: Date.now()
+      }
+    );
+
+    document.getElementById(
+      "timelinePost"
+    ).value = "";
+
+    alert("Posted");
+
+  } catch(err) {
+
+    console.log(err);
+
+    alert("Failed");
+  }
 };
