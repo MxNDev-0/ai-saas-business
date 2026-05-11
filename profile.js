@@ -1,4 +1,4 @@
-import { auth, db } from "./firebase.js";
+import { auth, db, storage } from "./firebase.js";
 
 import {
   onAuthStateChanged
@@ -14,7 +14,6 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= FIREBASE STORAGE (SAFE IMPORT) ================= */
 import {
   ref,
   uploadBytes,
@@ -42,17 +41,6 @@ onAuthStateChanged(auth, async (user) => {
   loadOnlineUsers();
 });
 
-/* ================= STORAGE UPLOAD ================= */
-
-async function uploadImage(file, path) {
-
-  const storageRef = ref(path);
-
-  await uploadBytes(storageRef, file);
-
-  return await getDownloadURL(storageRef);
-}
-
 /* ================= CREATE PROFILE ================= */
 
 async function createProfileIfNeeded(user) {
@@ -64,7 +52,6 @@ async function createProfileIfNeeded(user) {
   if (!snap.exists()) {
 
     await setDoc(refDoc, {
-
       uid: user.uid,
       username: user.email.split("@")[0],
       bio: "MCN Engine User",
@@ -141,11 +128,11 @@ window.uploadAvatar = function () {
 
     try {
 
-      const pathRef = ref(`avatars/${currentUser.uid}`);
+      const storageRef = ref(storage, `avatars/${currentUser.uid}`);
 
-      await uploadBytes(pathRef, file);
+      await uploadBytes(storageRef, file);
 
-      const url = await getDownloadURL(pathRef);
+      const url = await getDownloadURL(storageRef);
 
       await updateDoc(doc(db, "users", currentUser.uid), {
         photo: url
@@ -175,11 +162,11 @@ window.uploadCover = function () {
 
     try {
 
-      const pathRef = ref(`covers/${currentUser.uid}`);
+      const storageRef = ref(storage, `covers/${currentUser.uid}`);
 
-      await uploadBytes(pathRef, file);
+      await uploadBytes(storageRef, file);
 
-      const url = await getDownloadURL(pathRef);
+      const url = await getDownloadURL(storageRef);
 
       await updateDoc(doc(db, "users", currentUser.uid), {
         coverPhoto: url
@@ -197,7 +184,6 @@ window.uploadCover = function () {
 /* ================= BUTTONS ================= */
 
 window.goBack = () => location.href = "dashboard.html";
-
 window.openInbox = () => location.href = "messages.html";
 
 window.editProfile = async function () {
@@ -261,7 +247,7 @@ window.startDM = (uid) => {
 
 window.createTimelinePost = async function () {
 
-  const text = document.getElementById("timelinePost").value;
+  const text = document.getElementById("timelinePost").value.trim();
 
   if (!text) return;
 
