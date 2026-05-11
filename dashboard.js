@@ -72,21 +72,9 @@ async function loadLivePrices() {
   try {
 
     const prices = [
-      {
-        name: "Bitcoin",
-        symbol: "BTC",
-        price: "$103,240"
-      },
-      {
-        name: "Ethereum",
-        symbol: "ETH",
-        price: "$4,920"
-      },
-      {
-        name: "Solana",
-        symbol: "SOL",
-        price: "$182"
-      }
+      { name: "Bitcoin", symbol: "BTC", price: "$103,240" },
+      { name: "Ethereum", symbol: "ETH", price: "$4,920" },
+      { name: "Solana", symbol: "SOL", price: "$182" }
     ];
 
     box.innerHTML = "";
@@ -100,8 +88,7 @@ async function loadLivePrices() {
           background:#0b132b;
           border-radius:8px;
         ">
-          <b>${p.name}</b>
-          (${p.symbol})
+          <b>${p.name}</b> (${p.symbol})
           <br>
           <span style="color:#5bc0be;">
             ${p.price}
@@ -114,16 +101,14 @@ async function loadLivePrices() {
 
     console.error(err);
 
-    box.innerHTML =
-      "⚠️ Failed to load prices";
+    box.innerHTML = "⚠️ Failed to load prices";
   }
 }
 
 /* ================= NOTIFICATIONS ================= */
 function loadNotifications() {
 
-  const panel =
-    document.getElementById("notifPanel");
+  const panel = document.getElementById("notifPanel");
 
   if (!panel) return;
 
@@ -140,9 +125,7 @@ function loadNotifications() {
     if (snap.empty) {
 
       panel.innerHTML = `
-        <button>
-          No notifications
-        </button>
+        <button>No notifications</button>
       `;
 
       return;
@@ -153,9 +136,7 @@ function loadNotifications() {
       const n = d.data();
 
       panel.innerHTML += `
-        <button>
-          ${n.title || "Update"}
-        </button>
+        <button>${n.title || "Update"}</button>
       `;
     });
 
@@ -164,9 +145,7 @@ function loadNotifications() {
     console.error(err);
 
     panel.innerHTML = `
-      <button>
-        Notification error
-      </button>
+      <button>Notification error</button>
     `;
   });
 }
@@ -174,8 +153,7 @@ function loadNotifications() {
 /* ================= TOGGLE NOTIFICATION ================= */
 window.toggleNotif = function () {
 
-  const panel =
-    document.getElementById("notifPanel");
+  const panel = document.getElementById("notifPanel");
 
   panel.classList.toggle("active");
 };
@@ -187,8 +165,7 @@ window.logout = async function () {
 
     await signOut(auth);
 
-    window.location.href =
-      "index.html";
+    window.location.href = "index.html";
 
   } catch (err) {
 
@@ -270,7 +247,19 @@ window.goAdmin = async function () {
 /* ================= DONATE ================= */
 window.donate = function () {
 
-  alert(
-    "Donation system coming soon 🚀"
-  );
+  alert("Donation system coming soon 🚀");
 };
+
+/* =========================================================
+   🔥 INJECTED UPDATE (AS REQUESTED - SAFE ADDITION)
+========================================================= */
+
+window.refreshPrices = function () {
+  loadLivePrices();
+};
+
+setInterval(() => {
+  if (currentUser) {
+    console.log("Dashboard active");
+  }
+}, 15000);
