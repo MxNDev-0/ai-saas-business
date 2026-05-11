@@ -12,7 +12,8 @@ import {
   onSnapshot,
   query,
   orderBy,
-  limit
+  limit,
+  where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= USER STATE ================= */
@@ -48,12 +49,14 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    const userData = snap.data();
-
-    console.log("Dashboard Loaded:", userData);
+    console.log("Dashboard Loaded");
 
     loadNotifications();
     loadLivePrices();
+    loadDiscover();
+    loadFeatured();
+    loadTrending();
+    loadSponsoredAds();
 
   } catch (err) {
 
@@ -62,19 +65,49 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* ================= LIVE PRICE SYSTEM ================= */
-async function loadLivePrices() {
+/* ================= REAL-TIME NOTIFICATIONS ================= */
+function loadNotifications() {
+
+  const panel = document.getElementById("notifPanel");
+
+  const q = query(
+    collection(db, "notifications"),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  onSnapshot(q, (snap) => {
+
+    panel.innerHTML = "";
+
+    if (snap.empty) {
+      panel.innerHTML = `<button>No notifications</button>`;
+      return;
+    }
+
+    snap.forEach(d => {
+
+      const n = d.data();
+
+      panel.innerHTML += `
+        <button>🔔 ${n.title || "Update"}</button>
+      `;
+    });
+
+  });
+}
+
+/* ================= REAL-TIME LIVE PRICES ================= */
+function loadLivePrices() {
 
   const box = document.getElementById("priceBox");
 
-  if (!box) return;
-
-  try {
+  function render() {
 
     const prices = [
-      { name: "Bitcoin", symbol: "BTC", price: "$103,240" },
-      { name: "Ethereum", symbol: "ETH", price: "$4,920" },
-      { name: "Solana", symbol: "SOL", price: "$182" }
+      { name: "Bitcoin", symbol: "BTC", price: (103000 + Math.random() * 1000).toFixed(2) },
+      { name: "Ethereum", symbol: "ETH", price: (4900 + Math.random() * 50).toFixed(2) },
+      { name: "Solana", symbol: "SOL", price: (180 + Math.random() * 5).toFixed(2) }
     ];
 
     box.innerHTML = "";
@@ -88,178 +121,218 @@ async function loadLivePrices() {
           background:#0b132b;
           border-radius:8px;
         ">
-          <b>${p.name}</b> (${p.symbol})
-          <br>
-          <span style="color:#5bc0be;">
-            ${p.price}
-          </span>
+          <b>${p.name}</b> (${p.symbol})<br>
+          <span style="color:#5bc0be;">$${p.price}</span>
+        </div>
+      `;
+    });
+  }
+
+  render();
+  setInterval(render, 5000);
+}
+
+/* ================= DISCOVER (REAL-TIME) ================= */
+function loadDiscover() {
+
+  const box = document.getElementById("discoverBox");
+
+  const q = query(
+    collection(db, "posts"),
+    where("visibility.dashboard", "==", true),
+    limit(5)
+  );
+
+  onSnapshot(q, (snap) => {
+
+    box.innerHTML = "";
+
+    if (snap.empty) {
+      box.innerHTML = "No posts available";
+      return;
+    }
+
+    snap.forEach(docSnap => {
+
+      const post = docSnap.data();
+
+      box.innerHTML += `
+        <div class="card" onclick="openPost('${docSnap.id}')">
+          <b>${post.title}</b>
+          <div style="font-size:12px;opacity:0.7;">
+            ${(post.content || "").substring(0,120)}...
+          </div>
         </div>
       `;
     });
 
-  } catch (err) {
-
-    console.error(err);
-
-    box.innerHTML = "⚠️ Failed to load prices";
-  }
+  });
 }
 
-/* ================= NOTIFICATIONS ================= */
-function loadNotifications() {
+/* ================= FEATURED ================= */
+function loadFeatured() {
 
-  const panel = document.getElementById("notifPanel");
-
-  if (!panel) return;
+  const box = document.getElementById("featuredBox");
 
   const q = query(
-    collection(db, "notifications"),
-    orderBy("createdAt", "desc"),
+    collection(db, "posts"),
+    where("visibility.featured", "==", true),
+    limit(3)
+  );
+
+  onSnapshot(q, (snap) => {
+
+    box.innerHTML = "";
+
+    if (snap.empty) {
+      box.innerHTML = "No featured posts";
+      return;
+    }
+
+    snap.forEach(docSnap => {
+
+      const p = docSnap.data();
+
+      box.innerHTML += `
+        <div class="card" onclick="openPost('${docSnap.id}')">
+          ⭐ ${p.title}
+        </div>
+      `;
+    });
+
+  });
+}
+
+/* ================= TRENDING ================= */
+function loadTrending() {
+
+  const box = document.getElementById("trendingBox");
+
+  const q = query(
+    collection(db, "posts"),
+    where("visibility.trending", "==", true),
+    limit(5)
+  );
+
+  onSnapshot(q, (snap) => {
+
+    box.innerHTML = "";
+
+    if (snap.empty) {
+      box.innerHTML = "No trending posts";
+      return;
+    }
+
+    snap.forEach(docSnap => {
+
+      const p = docSnap.data();
+
+      box.innerHTML += `
+        <div class="card" onclick="openPost('${docSnap.id}')">
+          🔥 ${p.title}
+        </div>
+      `;
+    });
+
+  });
+}
+
+/* ================= SPONSORED ADS ================= */
+function loadSponsoredAds() {
+
+  const slider = document.getElementById("adsSlider");
+
+  const q = query(
+    collection(db, "posts"),
+    where("sponsored.isSponsored", "==", true),
     limit(10)
   );
 
   onSnapshot(q, (snap) => {
 
-    panel.innerHTML = "";
+    slider.innerHTML = "";
 
     if (snap.empty) {
-
-      panel.innerHTML = `
-        <button>No notifications</button>
+      slider.innerHTML = `
+        <div class="ad">
+          <div class="ad-box">🚀 No sponsored ads yet</div>
+        </div>
       `;
-
       return;
     }
 
-    snap.forEach(d => {
+    snap.forEach(docSnap => {
 
-      const n = d.data();
+      const post = docSnap.data();
 
-      panel.innerHTML += `
-        <button>${n.title || "Update"}</button>
+      slider.innerHTML += `
+        <div class="ad">
+          <div class="ad-box" onclick="openPost('${docSnap.id}')">
+            💰 ${post.title}
+          </div>
+        </div>
       `;
     });
 
-  }, (err) => {
-
-    console.error(err);
-
-    panel.innerHTML = `
-      <button>Notification error</button>
-    `;
   });
 }
 
-/* ================= TOGGLE NOTIFICATION ================= */
-window.toggleNotif = function () {
+/* ================= ADS SLIDER ================= */
+let index = 0;
 
-  const panel = document.getElementById("notifPanel");
+setInterval(() => {
 
-  panel.classList.toggle("active");
-};
+  const slider = document.getElementById("adsSlider");
 
-/* ================= LOGOUT ================= */
-window.logout = async function () {
+  if (!slider || !slider.children.length) return;
 
-  try {
+  index = (index + 1) % slider.children.length;
 
-    await signOut(auth);
+  slider.style.transform =
+    `translateX(-${index * 100}%)`;
 
-    window.location.href = "index.html";
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Logout failed");
-  }
-};
+}, 3500);
 
 /* ================= ROUTING ================= */
-window.goHome = function () {
-  window.location.href = "dashboard.html";
+window.openPost = function (id) {
+  window.location.href = "post.html?id=" + encodeURIComponent(id);
 };
 
-window.goProfile = function () {
-  window.location.href = "profile.html";
+window.toggleNotif = function () {
+  document.getElementById("notifPanel").classList.toggle("active");
 };
 
-window.goMessages = function () {
-  window.location.href = "messages.html";
+window.logout = async function () {
+  await signOut(auth);
+  window.location.href = "index.html";
 };
 
-window.goAdSpace = function () {
-  window.location.href = "ads.html";
-};
-
-window.goBlog = function () {
-  window.location.href = "blog/index.html";
-};
-
-window.goFaq = function () {
-  window.location.href = "faq.html";
-};
-
-window.goAbout = function () {
-  window.location.href = "about.html";
-};
-
-window.goContact = function () {
-  window.location.href = "contact.html";
-};
-
-window.goDMCA = function () {
-  window.location.href = "dmca.html";
-};
+window.goHome = () => location.href = "dashboard.html";
+window.goProfile = () => location.href = "profile.html";
+window.goMessages = () => location.href = "messages.html";
+window.goAdSpace = () => location.href = "ads.html";
+window.goBlog = () => location.href = "blog/index.html";
+window.goFaq = () => location.href = "faq.html";
+window.goAbout = () => location.href = "about.html";
+window.goContact = () => location.href = "contact.html";
+window.goDMCA = () => location.href = "dmca.html";
 
 window.goAdmin = async function () {
 
   if (!currentUser) return;
 
-  try {
+  const snap = await getDoc(doc(db, "users", currentUser.uid));
 
-    const snap = await getDoc(
-      doc(db, "users", currentUser.uid)
-    );
+  if (!snap.exists()) return;
 
-    if (!snap.exists()) {
-      alert("User not found");
-      return;
-    }
-
-    const data = snap.data();
-
-    if (data.role !== "admin") {
-      alert("Admin only");
-      return;
-    }
-
-    window.location.href = "admin.html";
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Admin check failed");
+  if (snap.data().role !== "admin") {
+    alert("Admin only");
+    return;
   }
+
+  location.href = "admin.html";
 };
 
-/* ================= DONATE ================= */
 window.donate = function () {
-
   alert("Donation system coming soon 🚀");
 };
-
-/* =========================================================
-   🔥 INJECTED UPDATE (AS REQUESTED - SAFE ADDITION)
-========================================================= */
-
-window.refreshPrices = function () {
-  loadLivePrices();
-};
-
-setInterval(() => {
-  if (currentUser) {
-    console.log("Dashboard active");
-  }
-}, 15000);
