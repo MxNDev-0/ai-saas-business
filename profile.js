@@ -1,4 +1,4 @@
-import { auth, db, storage } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 
 import {
   onAuthStateChanged
@@ -14,6 +14,7 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* ================= FIREBASE STORAGE (SAFE IMPORT) ================= */
 import {
   ref,
   uploadBytes,
@@ -45,7 +46,7 @@ onAuthStateChanged(auth, async (user) => {
 
 async function uploadImage(file, path) {
 
-  const storageRef = ref(storage, path);
+  const storageRef = ref(path);
 
   await uploadBytes(storageRef, file);
 
@@ -63,6 +64,7 @@ async function createProfileIfNeeded(user) {
   if (!snap.exists()) {
 
     await setDoc(refDoc, {
+
       uid: user.uid,
       username: user.email.split("@")[0],
       bio: "MCN Engine User",
@@ -92,7 +94,7 @@ async function loadProfile(uid) {
   renderProfile(profileData);
 }
 
-/* ================= RENDER ================= */
+/* ================= RENDER PROFILE ================= */
 
 function renderProfile(user) {
 
@@ -105,6 +107,7 @@ function renderProfile(user) {
   document.getElementById("followingCount").textContent = user.following || 0;
   document.getElementById("likesCount").textContent = user.likes || 0;
 
+  /* COVER */
   const cover = document.getElementById("coverPhoto");
 
   if (user.coverPhoto) {
@@ -113,6 +116,7 @@ function renderProfile(user) {
     cover.style.background = "linear-gradient(135deg,#5bc0be,#1c2541)";
   }
 
+  /* AVATAR */
   const avatar = document.getElementById("avatar");
 
   if (user.photo) {
@@ -135,13 +139,24 @@ window.uploadAvatar = function () {
     const file = e.target.files[0];
     if (!file) return;
 
-    const url = await uploadImage(file, `avatars/${currentUser.uid}`);
+    try {
 
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      photo: url
-    });
+      const pathRef = ref(`avatars/${currentUser.uid}`);
 
-    await loadProfile(currentUser.uid);
+      await uploadBytes(pathRef, file);
+
+      const url = await getDownloadURL(pathRef);
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        photo: url
+      });
+
+      await loadProfile(currentUser.uid);
+
+    } catch (err) {
+      console.error(err);
+      alert("Avatar upload failed");
+    }
   };
 };
 
@@ -158,20 +173,33 @@ window.uploadCover = function () {
     const file = e.target.files[0];
     if (!file) return;
 
-    const url = await uploadImage(file, `covers/${currentUser.uid}`);
+    try {
 
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      coverPhoto: url
-    });
+      const pathRef = ref(`covers/${currentUser.uid}`);
 
-    await loadProfile(currentUser.uid);
+      await uploadBytes(pathRef, file);
+
+      const url = await getDownloadURL(pathRef);
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        coverPhoto: url
+      });
+
+      await loadProfile(currentUser.uid);
+
+    } catch (err) {
+      console.error(err);
+      alert("Cover upload failed");
+    }
   };
 };
 
-/* ================= EXISTING BUTTONS (UNCHANGED) ================= */
+/* ================= BUTTONS ================= */
 
 window.goBack = () => location.href = "dashboard.html";
+
 window.openInbox = () => location.href = "messages.html";
+
 window.editProfile = async function () {
 
   const username = prompt("Username:", profileData.username);
