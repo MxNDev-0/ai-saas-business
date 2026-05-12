@@ -269,26 +269,21 @@ body{
 <div class="section">
 
   <div class="card">
-    <div class="section-title">🟢 Online Users</div>
-    <div id="onlineUsers">Loading...</div>
-  </div>
 
-  <div class="card">
+  <div class="section-title">📌 Activity</div>
 
-    <div class="section-title">📌 Activity</div>
+  <textarea id="timelinePost"
+    placeholder="What's on your mind?"
+    style="width:100%;padding:12px;border-radius:12px;background:#16213e;color:white;border:none;"></textarea>
 
-    <textarea id="timelinePost" placeholder="What's on your mind?"
-      style="width:100%;background:#16213e;border:none;color:white;padding:14px;border-radius:14px;margin-bottom:10px;resize:none;min-height:90px;"></textarea>
+  <button class="action-btn primary" onclick="createTimelinePost()"
+    style="width:100%;margin-top:10px;">
+    Post
+  </button>
 
-    <button class="action-btn primary" onclick="createTimelinePost()" style="width:100%;margin-bottom:15px;">
-      Post Update
-    </button>
+  <div id="timelinePosts" style="margin-top:15px;"></div>
 
-    <div id="timelinePosts">
-
-  <div class="empty">
-    No posts yet
-  </div>
+</div>
 
 </div>
 
