@@ -1,6 +1,6 @@
 /* =========================================
-   MCN ADMIN AUTH GUARD v1
-   MUST LOAD BEFORE admin.js
+   MCN ADMIN AUTH GATE (v1)
+   - Pre-check security layer
 ========================================= */
 
 import { auth, db } from "../firebase.js";
@@ -14,88 +14,57 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ===============================
-   HARD UI LOCK (PREVENT FLASH)
-================================= */
+/* ================= CONFIG ================= */
 
-document.body.style.display = "none";
+const ADMIN_ONLY_PAGES = [
+  "admin.html"
+];
 
-/* ===============================
-   AUTH GUARD
-================================= */
+const REDIRECT_IF_FAIL = "dashboard.html";
 
-function failRedirect(message, url = "../index.html") {
-
-  console.warn("[ADMIN AUTH]", message);
-
-  sessionStorage.removeItem("mcn_admin_ok");
-
-  location.href = url;
-}
-
-/* ===============================
-   MAIN CHECK
-================================= */
+/* ================= CORE GUARD ================= */
 
 onAuthStateChanged(auth, async (user) => {
 
+  const currentPage =
+    location.pathname.split("/").pop();
+
+  if (!ADMIN_ONLY_PAGES.includes(currentPage)) return;
+
+  if (!user) {
+    location.href = "index.html";
+    return;
+  }
+
   try {
 
-    /* ❌ NO USER */
-    if (!user) {
-      failRedirect("No user logged in");
-      return;
-    }
+    const snap =
+      await getDoc(doc(db, "users", user.uid));
 
-    const snap = await getDoc(
-      doc(db, "users", user.uid)
-    );
-
-    /* ❌ USER NOT FOUND */
     if (!snap.exists()) {
-      failRedirect("User doc missing");
+      location.href = REDIRECT_IF_FAIL;
       return;
     }
 
     const data = snap.data();
 
-    /* ❌ NOT ADMIN */
     if (data.role !== "admin") {
-      failRedirect("Not admin user", "../dashboard.html");
+
+      console.warn("⛔ Admin access denied");
+
+      location.href = REDIRECT_IF_FAIL;
+
       return;
     }
 
-    /* ===============================
-       SUCCESS → ADMIN APPROVED
-    ================================= */
+    console.log("🧠 Admin Auth Passed");
 
-    sessionStorage.setItem("mcn_admin_ok", "true");
-
-    console.log("🧠 ADMIN AUTH VERIFIED");
-
-    document.body.style.display = "block";
+    window.__MCN_ADMIN_AUTH = true;
 
   } catch (err) {
 
-    console.error("[ADMIN AUTH ERROR]", err);
+    console.error("Auth error:", err);
 
-    failRedirect("Auth system error");
+    location.href = REDIRECT_IF_FAIL;
   }
 });
-
-/* ===============================
-   EXTRA SAFETY (ANTI DIRECT BYPASS)
-================================= */
-
-setTimeout(() => {
-
-  if (!sessionStorage.getItem("mcn_admin_ok")) {
-
-    failRedirect("Auth timeout fallback");
-
-  } else {
-
-    document.body.style.display = "block";
-  }
-
-}, 5000);
