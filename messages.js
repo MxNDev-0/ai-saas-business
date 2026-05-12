@@ -7,17 +7,14 @@ import {
 import {
   doc,
   getDoc,
+  setDoc,
   addDoc,
   updateDoc,
   collection,
   query,
-  orderBy,
   onSnapshot,
-  serverTimestamp,
-  increment
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-/* ================= STATE ================= */
 
 let currentUser = null;
 let chatId = null;
@@ -25,38 +22,15 @@ let targetUser = null;
 
 /* ================= AUTH ================= */
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
 
   if (!user) return location.href = "index.html";
 
   currentUser = user;
 
-  const params = new URLSearchParams(location.search);
-  const uid = params.get("uid");
-
   loadInbox();
 
-  if (uid) openChat(uid);
-
 });
-
-/* ================= USER RESOLVER (IMPORTANT FIX) ================= */
-
-async function getUser(uid) {
-
-  const snap = await getDoc(doc(db, "users", uid));
-
-  if (!snap.exists()) {
-    return {
-      uid,
-      username: "Unknown",
-      photo: ""
-    };
-  }
-
-  return snap.data();
-
-}
 
 /* ================= CHAT ID ================= */
 
@@ -64,56 +38,21 @@ function id(a,b){
   return [a,b].sort().join("_");
 }
 
-function loadInbox(){
+/* ================= USER FETCH ================= */
 
-  const q = query(collection(db,"dms"));
-
-  onSnapshot(q,(snap)=>{
-
-    const list = document.getElementById("inboxList");
-    list.innerHTML="";
-
-    snap.forEach(d=>{
-
-      const chat = d.data();
-
-      if(!chat.members?.includes(currentUser.uid)) return;
-
-      const other = chat.members.find(x=>x!==currentUser.uid);
-
-      list.innerHTML += `
-        <div onclick="openChat('${other}')" class="chat-item">
-          Chat with ${other}
-        </div>
-      `;
-
-    });
-
-  });
-
-}
-
-/* ================= FALLBACK AVATAR ================= */
-
-function avatar(name, photo) {
-  if (photo) return photo;
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5bc0be&color=000`;
+async function getUser(uid) {
+  const snap = await getDoc(doc(db,"users",uid));
+  return snap.exists() ? snap.data() : { uid, username:"Unknown" };
 }
 
 /* ================= OPEN CHAT ================= */
 
-window.openChat = async function(uid) {
-
-  if (!uid) return;
+window.openChat = async function(uid){
 
   chatId = id(currentUser.uid, uid);
   targetUser = await getUser(uid);
 
-  document.getElementById("chatUsername").textContent =
-    targetUser.username;
-
-  document.getElementById("chatAvatar").src =
-    avatar(targetUser.username, targetUser.photo);
+  document.getElementById("chatUsername").textContent = targetUser.username;
 
   document.getElementById("chatScreen").classList.add("active");
 
@@ -123,67 +62,51 @@ window.openChat = async function(uid) {
 
 /* ================= SEND MESSAGE ================= */
 
-window.sendMsg = async function() {
+window.sendMsg = async function(){
 
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
 
-  if (!text || !chatId) return;
+  if(!text || !chatId) return;
 
   input.value = "";
 
-  await addDoc(collection(db, "dms", chatId, "messages"), {
+  await addDoc(collection(db,"dms",chatId,"messages"),{
     text,
     senderId: currentUser.uid,
     receiverId: targetUser.uid,
     createdAt: serverTimestamp(),
-    seen: false
+    seen:false
   });
 
-  await updateDoc(doc(db, "dms", chatId), {
-    lastMessage: text,
-    updatedAt: serverTimestamp(),
-    [`unread.${targetUser.uid}`]: increment(1)
-  });
+  await setDoc(doc(db,"dms",chatId),{
+    members:[currentUser.uid, targetUser.uid],
+    lastMessage:text,
+    updatedAt:serverTimestamp()
+  }, { merge:true });
 
 };
 
 /* ================= LOAD MESSAGES ================= */
 
-function loadMessages() {
+function loadMessages(){
 
-  const q = query(
-    collection(db, "dms", chatId, "messages"),
-    orderBy("createdAt", "asc")
-  );
+  const q = query(collection(db,"dms",chatId,"messages"));
 
-  onSnapshot(q, (snap) => {
+  onSnapshot(q,(snap)=>{
 
     const box = document.getElementById("chatBox");
     box.innerHTML = "";
 
-    snap.forEach(d => {
+    snap.forEach(d=>{
 
       const m = d.data();
 
-      const div = document.createElement("div");
-
-      div.className =
-        "msg " +
-        (m.senderId === currentUser.uid ? "me" : "them");
-
-      div.innerHTML = `
-        ${m.text}
+      box.innerHTML += `
+        <div class="msg ${m.senderId===currentUser.uid?'me':'them'}">
+          ${m.text}
+        </div>
       `;
-
-      box.appendChild(div);
-
-      /* mark seen */
-      if (m.senderId !== currentUser.uid && !m.seen) {
-        updateDoc(doc(db, "dms", chatId, "messages", d.id), {
-          seen: true
-        });
-      }
 
     });
 
@@ -193,46 +116,38 @@ function loadMessages() {
 
 }
 
-/* ================= INBOX (FIXED USER SYNC) ================= */
+/* ================= INBOX (NO DUPLICATES FIX) ================= */
 
-function loadInbox() {
+function loadInbox(){
 
-  const q = query(collection(db, "dms"));
+  const q = query(collection(db,"dms"));
 
-  onSnapshot(q, async (snap) => {
+  onSnapshot(q,(snap)=>{
 
     const list = document.getElementById("inboxList");
     list.innerHTML = "";
 
-    for (const d of snap.docs) {
+    const seen = new Set();
+
+    snap.forEach(d=>{
 
       const chat = d.data();
 
-      if (!chat.members?.includes(currentUser.uid)) continue;
+      if(!chat.members?.includes(currentUser.uid)) return;
 
-      const otherUid = chat.members.find(x => x !== currentUser.uid);
-      const user = await getUser(otherUid);
+      const other = chat.members.find(x=>x!==currentUser.uid);
 
-      const div = document.createElement("div");
+      const key = id(currentUser.uid, other);
+      if(seen.has(key)) return;
+      seen.add(key);
 
-      div.className = "chat-item";
-
-      div.innerHTML = `
-        <div class="avatar-wrap">
-          <img class="avatar" src="${avatar(user.username, user.photo)}">
-        </div>
-
-        <div class="chat-info">
-          <div class="chat-name">${user.username}</div>
-          <div class="chat-preview">${chat.lastMessage || "Start chat"}</div>
+      list.innerHTML += `
+        <div onclick="openChat('${other}')" class="chat-item">
+          Chat
         </div>
       `;
 
-      div.onclick = () => openChat(otherUid);
-
-      list.appendChild(div);
-
-    }
+    });
 
   });
 
@@ -240,7 +155,7 @@ function loadInbox() {
 
 /* ================= CLOSE CHAT ================= */
 
-window.closeChat = function() {
+window.closeChat = function(){
   document.getElementById("chatScreen").classList.remove("active");
   chatId = null;
   targetUser = null;
