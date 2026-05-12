@@ -309,20 +309,26 @@ function loadOnlineUsers() {
       if (u.uid === currentUser.uid) return;
 
       box.innerHTML += `
-        <div class="online-user">
-          <div class="online-left">
-            <div class="dot"></div>
-            <div>${u.username}</div>
-          </div>
+  <div class="online-user">
+    <div class="online-left">
 
-          <button
-            class="mini-btn"
-            onclick="startDM('${u.uid}')"
-          >
-            💬
-          </button>
-        </div>
-      `;
+      ${
+        Date.now() - (u.lastActive || 0) < 120000
+        ? `<div class="dot"></div>`
+        : `<div class="dot" style="background:gray;"></div>`
+      }
+
+      <div>${u.username}</div>
+    </div>
+
+    <button
+      class="mini-btn"
+      onclick="startDM('${u.uid}')"
+    >
+      💬
+    </button>
+  </div>
+`;
     });
 
   });
@@ -334,6 +340,8 @@ window.startDM = (uid) => {
 
 /* ================= TIMELINE ================= */
 
+/* ================= TIMELINE ================= */
+
 window.createTimelinePost = async function () {
 
   const text =
@@ -341,9 +349,56 @@ window.createTimelinePost = async function () {
   .value
   .trim();
 
-  if (!text) return;
+  if (!text) {
+    alert("Write something first");
+    return;
+  }
 
-  alert("Timeline system coming soon");
+  try {
 
-  document.getElementById("timelinePost").value = "";
+    await setDoc(
+
+      doc(collection(db, "timeline")),
+
+      {
+        uid: currentUser.uid,
+        username: profileData.username,
+        userPhoto: profileData.photo || "",
+        text: text,
+        createdAt: Date.now()
+      }
+
+    );
+
+    /* UPDATE POSTS COUNT */
+
+    await updateDoc(
+
+      doc(db, "users", currentUser.uid),
+
+      {
+        posts: (profileData.posts || 0) + 1
+      }
+
+    );
+
+    /* CLEAR INPUT */
+
+    document.getElementById(
+      "timelinePost"
+    ).value = "";
+
+    /* RELOAD PROFILE */
+
+    await loadProfile(currentUser.uid);
+
+    alert("Post published");
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert("Failed to publish post");
+  }
+
 };
