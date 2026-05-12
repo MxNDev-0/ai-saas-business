@@ -184,31 +184,15 @@ window.toggleFollow = async function(targetUid) {
 
 /* ================= SHARE FIX (REAL SHEET) ================= */
 
-window.sharePost = async function(postId) {
-
-  const url =
-  window.location.origin +
-  "/post.html?id=" +
-  postId;
+window.sharePost = function(id) {
+  const url = location.origin + "/post.html?id=" + id;
 
   if (navigator.share) {
-
-    navigator.share({
-      title: "MCN Post",
-      url
-    });
-
+    navigator.share({ title: "MCN Post", url });
   } else {
-
-    await navigator.clipboard.writeText(url);
-    alert("Post link copied");
-
+    navigator.clipboard.writeText(url);
+    alert("Link copied");
   }
-
-  await updateDoc(doc(db, "timeline", postId), {
-    shares: increment(1)
-  });
-
 };
 
 /* ================= LIKE FIX ================= */
