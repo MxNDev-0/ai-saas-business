@@ -155,16 +155,138 @@ window.editProfile = async function () {
   await loadProfile(currentUser.uid);
 };
 
-window.openSettings = async function () {
+window.openSettings = function () {
 
-  const choice = prompt("1 username 2 bio 7 logout");
+  const existing =
+  document.getElementById("settingsModal");
 
-  if (choice === "7") {
+  if (existing) {
+    existing.remove();
+  }
+
+  const modal =
+  document.createElement("div");
+
+  modal.id = "settingsModal";
+
+  modal.innerHTML = `
+
+    <div
+      style="
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,0.7);
+        z-index:9999;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+      "
+    >
+
+      <div
+        style="
+          width:100%;
+          max-width:380px;
+          background:#111b36;
+          border-radius:24px;
+          padding:25px;
+          box-shadow:0 10px 40px rgba(0,0,0,0.5);
+        "
+      >
+
+        <div
+          style="
+            font-size:22px;
+            font-weight:bold;
+            margin-bottom:20px;
+          "
+        >
+          ⚙ Settings
+        </div>
+
+        <button
+          id="editProfileBtn"
+          style="
+            width:100%;
+            border:none;
+            padding:15px;
+            border-radius:14px;
+            background:#16213e;
+            color:white;
+            margin-bottom:12px;
+            font-size:15px;
+            font-weight:bold;
+          "
+        >
+          ✏ Edit Profile
+        </button>
+
+        <button
+          id="logoutBtn"
+          style="
+            width:100%;
+            border:none;
+            padding:15px;
+            border-radius:14px;
+            background:#ff4d6d;
+            color:white;
+            margin-bottom:12px;
+            font-size:15px;
+            font-weight:bold;
+          "
+        >
+          🚪 Logout
+        </button>
+
+        <button
+          id="closeSettingsBtn"
+          style="
+            width:100%;
+            border:none;
+            padding:15px;
+            border-radius:14px;
+            background:#1c2541;
+            color:white;
+            font-size:15px;
+            font-weight:bold;
+          "
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById(
+    "closeSettingsBtn"
+  ).onclick = () => {
+
+    modal.remove();
+  };
+
+  document.getElementById(
+    "editProfileBtn"
+  ).onclick = async () => {
+
+    modal.remove();
+
+    editProfile();
+  };
+
+  document.getElementById(
+    "logoutBtn"
+  ).onclick = async () => {
 
     await auth.signOut();
 
     location.href = "index.html";
-  }
+  };
+
 };
 
 /* ================= ONLINE USERS ================= */
