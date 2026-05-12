@@ -1,44 +1,101 @@
+/* =========================================
+   MCN ADMIN AUTH GUARD v1
+   MUST LOAD BEFORE admin.js
+========================================= */
+
 import { auth, db } from "../firebase.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/**
- * Central Admin Auth Layer
- * Used by ALL admin modules
- */
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-export async function requireAdmin() {
-  return new Promise((resolve, reject) => {
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    auth.onAuthStateChanged(async (user) => {
+/* ===============================
+   HARD UI LOCK (PREVENT FLASH)
+================================= */
 
-      if (!user) {
-        location.href = "../index.html";
-        return reject("No user");
-      }
+document.body.style.display = "none";
 
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid));
+/* ===============================
+   AUTH GUARD
+================================= */
 
-        if (!snap.exists()) {
-          location.href = "../index.html";
-          return reject("No profile");
-        }
+function failRedirect(message, url = "../index.html") {
 
-        const data = snap.data();
+  console.warn("[ADMIN AUTH]", message);
 
-        if (data.role !== "admin") {
-          location.href = "../index.html";
-          return reject("Not admin");
-        }
+  sessionStorage.removeItem("mcn_admin_ok");
 
-        resolve(user);
-
-      } catch (err) {
-        console.error("Admin auth error:", err);
-        location.href = "../index.html";
-        reject(err);
-      }
-    });
-
-  });
+  location.href = url;
 }
+
+/* ===============================
+   MAIN CHECK
+================================= */
+
+onAuthStateChanged(auth, async (user) => {
+
+  try {
+
+    /* ❌ NO USER */
+    if (!user) {
+      failRedirect("No user logged in");
+      return;
+    }
+
+    const snap = await getDoc(
+      doc(db, "users", user.uid)
+    );
+
+    /* ❌ USER NOT FOUND */
+    if (!snap.exists()) {
+      failRedirect("User doc missing");
+      return;
+    }
+
+    const data = snap.data();
+
+    /* ❌ NOT ADMIN */
+    if (data.role !== "admin") {
+      failRedirect("Not admin user", "../dashboard.html");
+      return;
+    }
+
+    /* ===============================
+       SUCCESS → ADMIN APPROVED
+    ================================= */
+
+    sessionStorage.setItem("mcn_admin_ok", "true");
+
+    console.log("🧠 ADMIN AUTH VERIFIED");
+
+    document.body.style.display = "block";
+
+  } catch (err) {
+
+    console.error("[ADMIN AUTH ERROR]", err);
+
+    failRedirect("Auth system error");
+  }
+});
+
+/* ===============================
+   EXTRA SAFETY (ANTI DIRECT BYPASS)
+================================= */
+
+setTimeout(() => {
+
+  if (!sessionStorage.getItem("mcn_admin_ok")) {
+
+    failRedirect("Auth timeout fallback");
+
+  } else {
+
+    document.body.style.display = "block";
+  }
+
+}, 5000);
