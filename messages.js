@@ -7,9 +7,8 @@ import {
 import {
   doc,
   getDoc,
-  setDoc,
-  updateDoc,
   addDoc,
+  updateDoc,
   collection,
   query,
   orderBy,
@@ -22,8 +21,11 @@ let currentUser = null;
 let chatId = null;
 let targetUid = null;
 
+/* ================= AUTH ================= */
+
 onAuthStateChanged(auth, (user) => {
-  if (!user) return (location.href = "index.html");
+
+  if (!user) return location.href = "index.html";
 
   currentUser = user;
 
@@ -33,24 +35,23 @@ onAuthStateChanged(auth, (user) => {
   loadInbox();
 
   if (targetUid) openChat(targetUid);
+
 });
 
-function createChatId(a,b){
-  return [a,b].sort().join("_");
-}
+/* ================= CHAT ID ================= */
+
+function id(a,b){ return [a,b].sort().join("_"); }
 
 /* ================= OPEN CHAT ================= */
 
 window.openChat = async function(uid){
 
   targetUid = uid;
-  chatId = createChatId(currentUser.uid, uid);
+  chatId = id(currentUser.uid, uid);
 
-  const userSnap = await getDoc(doc(db,"users",uid));
-  const u = userSnap.data();
+  const u = await getDoc(doc(db,"users",uid));
 
-  document.getElementById("chatUsername").textContent = u.username;
-  document.getElementById("chatAvatar").src = u.photo || "";
+  document.getElementById("chatUsername").textContent = u.data().username;
 
   loadMessages();
 
@@ -82,7 +83,7 @@ window.sendMsg = async function(){
 
 };
 
-/* ================= LOAD MESSAGES ================= */
+/* ================= LOAD ================= */
 
 function loadMessages(){
 
@@ -101,10 +102,18 @@ function loadMessages(){
       const m = d.data();
 
       box.innerHTML += `
-        <div style="margin:5px;padding:8px;background:${m.senderId===currentUser.uid?"#5bc0be":"#16213e"};color:${m.senderId===currentUser.uid?"black":"white"};border-radius:10px;">
+        <div style="padding:8px;margin:5px;border-radius:10px;background:${m.senderId===currentUser.uid?"#5bc0be":"#16213e"};color:${m.senderId===currentUser.uid?"black":"white"}">
           ${m.text}
         </div>
       `;
+
+      /* 👁 MARK AS SEEN */
+      if(m.senderId !== currentUser.uid && !m.seen){
+        updateDoc(doc(db,"dms",chatId,"messages",d.id),{
+          seen:true
+        });
+      }
+
     });
 
     box.scrollTop = box.scrollHeight;
