@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <title>MCN Engine V17 - AI Admin Control Panel</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#5bc0be">
+  <link rel="manifest" href="./manifest.json">
+
+  <!-- IOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- ICON -->
+  <link rel="icon" href="./icons/icon-192.png">
+
+  <style>
+    body {
+      background: #0b132b;
+      color: #fff;
+      font-family: Arial;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: #1c2541;
+      padding: 12px;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: none;
+      background: #0b132b;
+      color: white;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: #5bc0be;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      margin-top: 5px;
+    }
+
+    .danger {
+      background: red;
+      color: white;
+    }
+
+    .list-box {
+      max-height: 220px;
+      overflow-y: auto;
+      background: #0b132b;
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .item {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #16213e;
+      border-radius: 8px;
+    }
+
+    .monitor {
+      background: linear-gradient(145deg, #05070f, #0a0f1f);
+      color: #00ff88;
+      height: 260px;
+      overflow-y: auto;
+      font-family: monospace;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #1c2541;
+    }
+
+    .small-btn {
+      width: auto;
+      padding: 4px 6px;
+      font-size: 12px;
+      margin-left: 5px;
+      margin-top: 5px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 5px 0;
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    .toggle-row input {
+      width: auto;
+      margin: 0;
+    }
+
+    .section-title {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .placeholder-box {
+      background: #0b132b;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>👑 MCN Admin Panel V17 (AI Powered)</h2>
+
+<div class="grid">
+
+  <!-- SYSTEM -->
+  <div class="card">
+    <h3>🖥 System Monitor</h3>
+    <div id="monitor" class="monitor"></div>
+  </div>
+
+  <!-- BLOG -->
+  <div class="card">
+
+    <h3>📝 Create Blog</h3>
+
+    <input id="blogTitle" placeholder="Blog Title">
+
+    <textarea id="blogContent" placeholder="Blog Content"></textarea>
+
+    <input id="blogImage" placeholder="Image URL">
+
+    <div class="toggle-row">
+      <label>Homepage</label>
+      <input type="checkbox" id="c_homepage">
+    </div>
+
+    <div class="toggle-row">
+      <label>Featured</label>
+      <input type="checkbox" id="c_featured">
+    </div>
+
+    <div class="toggle-row">
+      <label>Trending</label>
+      <input type="checkbox" id="c_trending">
+    </div>
+
+    <div class="toggle-row">
+      <label>Sponsored</label>
+      <input type="checkbox" id="c_sponsored">
+    </div>
+
+    <input id="adExpiry" type="datetime-local">
+
+    <input
+      id="adPriority"
+      type="number"
+      placeholder="Priority (0-10)"
+    >
+
+    <!-- PLACEHOLDER CONTROL -->
+    <div class="section-title">Featured Placeholder Slot</div>
+
+    <select id="placeholderSlot">
+      <option value="">No Placeholder</option>
+      <option value="hero">Hero Banner</option>
+      <option value="featured1">Featured Slot 1</option>
+      <option value="featured2">Featured Slot 2</option>
+      <option value="sidebar">Sidebar Ad</option>
+      <option value="popup">Popup Promo</option>
+    </select>
+
+    <input
+      id="placeholderText"
+      placeholder="Placeholder Text"
+    >
+
+    <button onclick="createBlog()">
+      Publish Blog
+    </button>
+
+  </div>
+
+  <!-- AI -->
+  <div class="card">
+    <h3>🤖 AI Blog Writer</h3>
+
+    <input id="aiTopic" placeholder="Enter topic">
+
+    <button onclick="generateAI()">
+      Generate Article
+    </button>
+  </div>
+
+  <!-- SCHEDULER -->
+  <div class="card">
+    <h3>⏱ Auto Scheduler</h3>
+
+    <input id="scheduleTitle" placeholder="Blog Title">
+
+    <textarea id="scheduleContent"></textarea>
+
+    <input id="scheduleTime" type="datetime-local">
+
+    <button onclick="schedulePost()">
+      Schedule
+    </button>
+  </div>
+
+  <!-- BROADCAST -->
+  <div class="card">
+    <h3>🔔 Broadcast</h3>
+
+    <input id="broadcastTitle" placeholder="Broadcast Title">
+
+    <textarea id="broadcastMessage"></textarea>
+
+    <button onclick="sendBroadcast()">
+      Send
+    </button>
+  </div>
+
+  <!-- USERS -->
+  <div class="card">
+    <h3>👥 Users</h3>
+
+    <div id="usersList" class="list-box"></div>
+  </div>
+
+  <!-- ADS -->
+  <div class="card">
+    <h3>📢 Ad Requests</h3>
+
+    <div id="upgradeList" class="list-box"></div>
+  </div>
+
+  <!-- POSTS -->
+  <div class="card">
+
+    <h3>💬 Post Manager</h3>
+
+    <div id="postsList" class="list-box"></div>
+
+    <h3>✏️ Edit Post</h3>
+
+    <input id="editPostId" placeholder="Post ID">
+
+    <input id="editTitle" placeholder="Post Title">
+
+    <textarea id="editContent" placeholder="Post Content"></textarea>
+
+    <div class="toggle-row">
+      <label>Homepage</label>
+      <input type="checkbox" id="e_homepage">
+    </div>
+
+    <div class="toggle-row">
+      <label>Featured</label>
+      <input type="checkbox" id="e_featured">
+    </div>
+
+    <div class="toggle-row">
+      <label>Trending</label>
+      <input type="checkbox" id="e_trending">
+    </div>
+
+    <div class="toggle-row">
+      <label>Sponsored</label>
+      <input type="checkbox" id="e_sponsored">
+    </div>
+
+    <input id="e_adExpiry" type="datetime-local">
+
+    <input
+      id="e_adPriority"
+      type="number"
+      placeholder="Priority"
+    >
+
+    <!-- PLACEHOLDER EDIT -->
+    <div class="section-title">Placeholder Slot</div>
+
+    <select id="e_placeholderSlot">
+      <option value="">No Placeholder</option>
+      <option value="hero">Hero Banner</option>
+      <option value="featured1">Featured Slot 1</option>
+      <option value="featured2">Featured Slot 2</option>
+      <option value="sidebar">Sidebar Ad</option>
+      <option value="popup">Popup Promo</option>
+    </select>
+
+    <input
+      id="e_placeholderText"
+      placeholder="Placeholder Text"
+    >
+
+    <button onclick="updatePost()">
+      Update Post
+    </button>
+
+  </div>
+
+  <!-- REJECTED -->
+  <div class="card">
+    <h3>❌ Rejected Ads</h3>
+
+    <div id="rejectedList" class="list-box"></div>
+
+    <button class="danger" onclick="clearRejected()">
+      Clear Rejected
+    </button>
+  </div>
+
+<!-- MAINTENANCE -->
+<div class="card">
+
+  <h3>🛠 Maintenance Mode</h3>
+
+  <div class="toggle-row">
+    <label>Enable Maintenance</label>
+
+    <input
+      type="checkbox"
+      id="maintenanceToggle"
+    >
+  </div>
+
+  <button onclick="saveMaintenanceMode()">
+    Save Maintenance Mode
+  </button>
+
+</div>
+
+  <!-- FEATURE CONTROL -->
+  <div class="card">
+
+    <h3>⭐ Homepage Feature Control</h3>
+
+    <div class="placeholder-box">
+
+      <p>
+        Use the checkboxes while creating/editing posts:
+      </p>
+
+      <ul>
+        <li>✅ Homepage</li>
+        <li>✅ Featured</li>
+        <li>✅ Trending</li>
+        <li>✅ Sponsored</li>
+      </ul>
+
+      <p>
+        Your index page can now automatically filter posts.
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module" src="./admin.js"></script>
+
+</body>
+</html>
