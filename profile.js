@@ -11,8 +11,8 @@ import {
   updateDoc,
   collection,
   query,
-onSnapshot,
-deleteDoc
+  onSnapshot,
+  deleteDoc
   where,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
