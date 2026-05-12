@@ -185,9 +185,9 @@ window.toggleFollow = async function(targetUid) {
 
 window.sharePost = function(id) {
 
-  const url =
-    window.location.origin +
-    "/post.html?id=" + id;
+  const base = window.location.href.split("/profile.html")[0];
+
+  const url = base + "/post.html?id=" + id;
 
   if (navigator.share) {
 
