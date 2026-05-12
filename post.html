@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MCN Post</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin:0;
+      font-family:Arial;
+      background:#071028;
+      color:white;
+    }
+
+    .container {
+      padding:15px;
+    }
+
+    .post {
+      background:#16213e;
+      padding:15px;
+      border-radius:12px;
+    }
+
+    .btn {
+      margin-top:10px;
+      padding:10px;
+      border:none;
+      border-radius:8px;
+      background:#5bc0be;
+      color:black;
+      font-weight:bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div id="post" class="post">Loading...</div>
+
+</div>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const postId = new URLSearchParams(location.search).get("id");
+
+async function loadPost() {
+
+  if (!postId) {
+    document.getElementById("post").innerHTML = "Post not found";
+    return;
+  }
+
+  const snap = await getDoc(doc(db, "timeline", postId));
+
+  if (!snap.exists()) {
+    document.getElementById("post").innerHTML = "Post not found";
+    return;
+  }
+
+  const p = snap.data();
+
+  document.getElementById("post").innerHTML = `
+
+    <b>${p.username}</b>
+    <p style="margin-top:10px">${p.text}</p>
+
+    <div style="margin-top:15px;opacity:.7">
+      ❤️ ${p.likes?.length || 0} likes<br>
+      💬 ${p.comments?.length || 0} comments<br>
+      🔁 ${p.shares || 0} shares
+    </div>
+
+  `;
+}
+
+loadPost();
+</script>
+
+</body>
+</html>
