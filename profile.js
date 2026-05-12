@@ -186,19 +186,22 @@ window.toggleFollow = async function(targetUid) {
 
 window.sharePost = async function(postId) {
 
-  const url = window.location.origin + "/profile.html?post=" + postId;
+  const url =
+  window.location.origin +
+  "/post.html?id=" +
+  postId;
 
   if (navigator.share) {
 
     navigator.share({
-      title: "Check this post",
+      title: "MCN Post",
       url
     });
 
   } else {
 
     await navigator.clipboard.writeText(url);
-    alert("Link copied to clipboard");
+    alert("Post link copied");
 
   }
 
