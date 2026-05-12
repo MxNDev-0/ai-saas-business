@@ -7,6 +7,7 @@
 <title>MCN Engine Profile</title>
 
 <style>
+
 *{
   margin:0;
   padding:0;
@@ -20,7 +21,6 @@ body{
   min-height:100vh;
 }
 
-/* TOPBAR */
 .topbar{
   height:65px;
   background:#101935;
@@ -31,7 +31,6 @@ body{
   position:sticky;
   top:0;
   z-index:1000;
-  box-shadow:0 2px 10px rgba(0,0,0,0.4);
 }
 
 .icon-btn{
@@ -45,7 +44,6 @@ body{
   font-weight:bold;
 }
 
-/* HEADER */
 .profile-header{
   position:relative;
   padding-bottom:25px;
@@ -101,7 +99,6 @@ body{
   margin-bottom:20px;
 }
 
-/* STATS */
 .stats{
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -122,10 +119,10 @@ body{
   margin-bottom:5px;
 }
 
-/* ACTIONS */
 .actions{
   display:flex;
   gap:10px;
+  margin-top:10px;
 }
 
 .action-btn{
@@ -146,7 +143,6 @@ body{
   color:white;
 }
 
-/* CONTENT */
 .section{
   padding:15px;
 }
@@ -164,31 +160,37 @@ body{
   margin-bottom:15px;
 }
 
-/* ONLINE USERS */
-.online-user{
+.user-item{
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content:space-between;
   background:#16213e;
   padding:12px;
   border-radius:12px;
   margin-bottom:10px;
 }
 
-.online-left{
+.user-left{
   display:flex;
   align-items:center;
   gap:10px;
 }
 
-.dot{
+.online-dot{
   width:10px;
   height:10px;
   background:#00ff88;
   border-radius:50%;
 }
 
-.mini-btn{
+.offline-dot{
+  width:10px;
+  height:10px;
+  background:gray;
+  border-radius:50%;
+}
+
+.user-btn{
   border:none;
   background:#5bc0be;
   color:black;
@@ -197,7 +199,6 @@ body{
   font-weight:bold;
 }
 
-/* POSTS */
 .post-box{
   background:#16213e;
   padding:15px;
@@ -205,11 +206,28 @@ body{
   margin-bottom:12px;
 }
 
+textarea{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  background:#16213e;
+  color:white;
+  border:none;
+}
+
 .empty{
   opacity:0.7;
   text-align:center;
   padding:20px;
 }
+
+.private-box{
+  background:#1c2541;
+  padding:20px;
+  border-radius:15px;
+  text-align:center;
+}
+
 </style>
 
 </head>
@@ -222,7 +240,7 @@ body{
 
   <div id="topUsername">Profile</div>
 
-  <button class="icon-btn" onclick="openSettings()">⚙</button>
+  <button class="icon-btn" onclick="location.href='dashboard.html'">🏠</button>
 
 </div>
 
@@ -235,32 +253,60 @@ body{
   <div class="profile-info">
 
     <div class="username" id="username">Username</div>
+
     <div class="bio" id="bio">User bio...</div>
 
     <div class="stats">
-      <div class="stat"><div class="stat-number" id="postsCount">0</div><div>Posts</div></div>
-      <div class="stat"><div class="stat-number" id="followersCount">0</div><div>Followers</div></div>
-      <div class="stat"><div class="stat-number" id="followingCount">0</div><div>Following</div></div>
-      <div class="stat"><div class="stat-number" id="likesCount">0</div><div>Likes</div></div>
+
+      <div class="stat">
+        <div class="stat-number" id="postsCount">0</div>
+        <div>Posts</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-number" id="followersCount">0</div>
+        <div>Followers</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-number" id="followingCount">0</div>
+        <div>Following</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-number" id="likesCount">0</div>
+        <div>Likes</div>
+      </div>
+
     </div>
 
-    <div class="actions">
+    <div class="actions" id="ownerActions">
 
-      <button class="action-btn primary" onclick="editProfile()">Edit Profile</button>
-      <button class="action-btn secondary" onclick="openInbox()">Messages</button>
+      <button class="action-btn primary" onclick="editProfile()">
+        Edit Profile
+      </button>
 
-    </div>
-
-    <!-- 🔥 NEW UPLOAD BUTTONS -->
-    <div class="actions" style="margin-top:10px;">
-
-      <button class="action-btn secondary" onclick="uploadAvatar()">Change Avatar</button>
-      <button class="action-btn secondary" onclick="uploadCover()">Change Cover</button>
+      <button class="action-btn secondary"
+        onclick="location.href='messages.html'">
+        Messages
+      </button>
 
     </div>
 
-    <input type="file" id="avatarInput" accept="image/*" hidden>
-    <input type="file" id="coverInput" accept="image/*" hidden>
+    <div class="actions" id="visitorActions" style="display:none;">
+
+      <button id="followBtn"
+        class="action-btn primary"
+        onclick="toggleFollow()">
+        Follow
+      </button>
+
+      <button class="action-btn secondary"
+        onclick="messageUser()">
+        Message
+      </button>
+
+    </div>
 
   </div>
 
@@ -270,20 +316,40 @@ body{
 
   <div class="card">
 
-  <div class="section-title">📌 Activity</div>
+    <div class="section-title">📌 Activity</div>
 
-  <textarea id="timelinePost"
-    placeholder="What's on your mind?"
-    style="width:100%;padding:12px;border-radius:12px;background:#16213e;color:white;border:none;"></textarea>
+    <div id="postCreator">
 
-  <button class="action-btn primary" onclick="createTimelinePost()"
-    style="width:100%;margin-top:10px;">
-    Post
-  </button>
+      <textarea id="timelinePost"
+        placeholder="What's on your mind?"></textarea>
 
-  <div id="timelinePosts" style="margin-top:15px;"></div>
+      <button class="action-btn primary"
+        style="margin-top:10px;"
+        onclick="createTimelinePost()">
+        Post
+      </button>
 
-</div>
+    </div>
+
+    <div id="timelinePosts" style="margin-top:15px;"></div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="section-title">🟢 Online Users</div>
+
+    <div id="onlineUsers"></div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="section-title">👥 Suggested Users</div>
+
+    <div id="suggestedUsers"></div>
+
+  </div>
 
 </div>
 
