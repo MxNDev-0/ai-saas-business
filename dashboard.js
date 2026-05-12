@@ -317,22 +317,6 @@ window.goAbout = () => location.href = "about.html";
 window.goContact = () => location.href = "contact.html";
 window.goDMCA = () => location.href = "dmca.html";
 
-window.goAdmin = async function () {
-
-  if (!currentUser) return;
-
-  const snap = await getDoc(doc(db, "users", currentUser.uid));
-
-  if (!snap.exists()) return;
-
-  if (snap.data().role !== "admin") {
-    alert("Admin only");
-    return;
-  }
-
-  location.href = "admin.html";
-};
-
 window.donate = function () {
   alert("Donation system coming soon 🚀");
 };
