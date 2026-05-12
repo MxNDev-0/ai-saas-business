@@ -23,10 +23,11 @@ let currentUser = null;
 let profileData = null;
 let viewingUid = null;
 
-/* ================= INIT ================= */
+/* ================= AUTH ================= */
 
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return (location.href = "index.html");
+
+  if (!user) return location.href = "index.html";
 
   currentUser = user;
 
@@ -36,17 +37,28 @@ onAuthStateChanged(auth, async (user) => {
   await ensureProfile(user);
 
   loadProfile(viewingUid);
-  loadTimeline(viewingUid);
+  loadTimeline();
   loadOnlineUsers();
+  loadNotifications();
+
+  /* LIVE ONLINE PING */
+  setInterval(async () => {
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      lastActive: Date.now()
+    });
+  }, 25000);
+
 });
 
 /* ================= PROFILE CREATE ================= */
 
 async function ensureProfile(user) {
+
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
+
     await setDoc(ref, {
       uid: user.uid,
       username: user.email.split("@")[0],
@@ -57,15 +69,17 @@ async function ensureProfile(user) {
       following: [],
       posts: 0,
       likes: 0,
-      createdAt: Date.now(),
-      lastActive: Date.now()
+      lastActive: Date.now(),
+      createdAt: Date.now()
     });
+
   }
 }
 
 /* ================= LOAD PROFILE ================= */
 
 async function loadProfile(uid) {
+
   const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return;
 
@@ -78,17 +92,9 @@ async function loadProfile(uid) {
   document.getElementById("postsCount").textContent = profileData.posts || 0;
   document.getElementById("followersCount").textContent = (profileData.followers || []).length;
   document.getElementById("followingCount").textContent = (profileData.following || []).length;
-
-  const avatar = document.getElementById("avatar");
-
-  if (profileData.photo) {
-    avatar.innerHTML = `<img src="${profileData.photo}">`;
-  } else {
-    avatar.textContent = profileData.username?.[0]?.toUpperCase() || "U";
-  }
 }
 
-/* ================= FOLLOW SYSTEM ================= */
+/* ================= FOLLOW SYSTEM + NOTIFY ================= */
 
 window.toggleFollow = async function(targetUid) {
 
@@ -107,11 +113,25 @@ window.toggleFollow = async function(targetUid) {
   const isFollowing = myFollowing.includes(targetUid);
 
   if (isFollowing) {
+
     myFollowing = myFollowing.filter(id => id !== targetUid);
     theirFollowers = theirFollowers.filter(id => id !== currentUser.uid);
+
   } else {
+
     myFollowing.push(targetUid);
     theirFollowers.push(currentUser.uid);
+
+    /* 🔔 NOTIFICATION */
+    await addDoc(collection(db, "notifications"), {
+      to: targetUid,
+      from: currentUser.uid,
+      type: "follow",
+      text: `${me.username} started following you`,
+      createdAt: serverTimestamp(),
+      seen: false
+    });
+
   }
 
   await updateDoc(meRef, { following: myFollowing });
@@ -120,13 +140,7 @@ window.toggleFollow = async function(targetUid) {
   loadProfile(targetUid);
 };
 
-/* ================= OPEN PROFILE ================= */
-
-window.openUserProfile = (uid) => {
-  location.href = "profile.html?uid=" + uid;
-};
-
-/* ================= TIMELINE POSTS ================= */
+/* ================= TIMELINE ================= */
 
 window.createTimelinePost = async function () {
 
@@ -153,16 +167,30 @@ window.createTimelinePost = async function () {
 
 /* ================= LIKE ================= */
 
-window.likePost = async function(postId, likes = []) {
+window.likePost = async function(postId, likes = [], ownerUid) {
 
   const ref = doc(db, "timeline", postId);
 
   let updated = likes || [];
 
-  if (updated.includes(currentUser.uid)) {
+  const liked = updated.includes(currentUser.uid);
+
+  if (liked) {
     updated = updated.filter(id => id !== currentUser.uid);
   } else {
     updated.push(currentUser.uid);
+
+    /* 🔔 NOTIFICATION */
+    if (ownerUid !== currentUser.uid) {
+      await addDoc(collection(db, "notifications"), {
+        to: ownerUid,
+        from: currentUser.uid,
+        type: "like",
+        text: `${profileData.username} liked your post`,
+        createdAt: serverTimestamp(),
+        seen: false
+      });
+    }
   }
 
   await updateDoc(ref, { likes: updated });
@@ -170,7 +198,7 @@ window.likePost = async function(postId, likes = []) {
 
 /* ================= COMMENT ================= */
 
-window.commentPost = async function(postId, text) {
+window.commentPost = async function(postId, text, ownerUid) {
 
   if (!text) return;
 
@@ -187,6 +215,19 @@ window.commentPost = async function(postId, text) {
   });
 
   await updateDoc(ref, { comments });
+
+  /* 🔔 NOTIFICATION */
+  if (ownerUid !== currentUser.uid) {
+    await addDoc(collection(db, "notifications"), {
+      to: ownerUid,
+      from: currentUser.uid,
+      type: "comment",
+      text: `${profileData.username} commented on your post`,
+      createdAt: serverTimestamp(),
+      seen: false
+    });
+  }
+
 };
 
 /* ================= SHARE ================= */
@@ -199,11 +240,12 @@ window.sharePost = async function(postId) {
   await updateDoc(ref, {
     shares: (snap.data().shares || 0) + 1
   });
+
 };
 
 /* ================= TIMELINE LOAD ================= */
 
-function loadTimeline(uid) {
+function loadTimeline() {
 
   const q = query(collection(db, "timeline"));
 
@@ -220,26 +262,19 @@ function loadTimeline(uid) {
       container.innerHTML += `
         <div class="post-box">
 
-          <div style="display:flex;gap:10px;align-items:center;">
-            <div style="width:40px;height:40px;border-radius:50%;background:#5bc0be;overflow:hidden;">
-              ${p.userPhoto ? `<img src="${p.userPhoto}" style="width:100%;height:100%;object-fit:cover;">` : ""}
-            </div>
+          <b onclick="openUserProfile('${p.uid}')" style="cursor:pointer">
+            ${p.username}
+          </b>
 
-            <div>
-              <b>${p.username}</b>
-              <div style="font-size:12px;opacity:0.6">${new Date(p.createdAt).toLocaleString()}</div>
-            </div>
-          </div>
-
-          <p style="margin:10px 0">${p.text}</p>
+          <p>${p.text}</p>
 
           <div style="display:flex;gap:10px;flex-wrap:wrap">
 
-            <button onclick="likePost('${id}', ${JSON.stringify(p.likes || [])})">
+            <button onclick="likePost('${id}', ${JSON.stringify(p.likes || [])}, '${p.uid}')">
               ❤️ ${p.likes?.length || 0}
             </button>
 
-            <button onclick="commentPost('${id}', prompt('Comment:'))">
+            <button onclick="commentPost('${id}', prompt('Comment:'), '${p.uid}')">
               💬 ${p.comments?.length || 0}
             </button>
 
@@ -251,10 +286,31 @@ function loadTimeline(uid) {
 
         </div>
       `;
+    });
+
+  });
+}
+
+/* ================= NOTIFICATIONS ================= */
+
+function loadNotifications() {
+
+  const q = query(collection(db, "notifications"));
+
+  onSnapshot(q, (snap) => {
+
+    snap.forEach(async (n) => {
+
+      const d = n.data();
+
+      if (d.to !== currentUser.uid) return;
+
+      console.log("🔔", d.text);
 
     });
 
   });
+
 }
 
 /* ================= ONLINE USERS ================= */
@@ -273,10 +329,11 @@ function loadOnlineUsers() {
       const u = d.data();
       if (u.uid === currentUser.uid) return;
 
+      const online = Date.now() - (u.lastActive || 0) < 30000;
+
       box.innerHTML += `
-        <div onclick="openUserProfile('${u.uid}')"
-          style="padding:10px;background:#16213e;margin-bottom:8px;border-radius:10px;cursor:pointer;">
-          ${u.username}
+        <div onclick="openUserProfile('${u.uid}')" style="padding:10px;background:#16213e;margin:5px;border-radius:10px;">
+          ${u.username} ${online ? "🟢" : "⚪"}
         </div>
       `;
     });
@@ -284,3 +341,9 @@ function loadOnlineUsers() {
   });
 
 }
+
+/* ================= NAV ================= */
+
+window.openUserProfile = (uid) => {
+  location.href = "profile.html?uid=" + uid;
+};
