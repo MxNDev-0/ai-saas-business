@@ -2,7 +2,7 @@
    MCN ADMIN AI v5
 ========================================= */
 
-import { auth, db } from "./firebase.js";
+import { auth, db } from "../firebase.js";
 
 import {
   onAuthStateChanged
