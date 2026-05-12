@@ -39,12 +39,7 @@ onAuthStateChanged(auth, async (user) => {
   loadProfile(viewingUid);
   loadUserPosts(viewingUid);
   loadOnlineUsers();
-
-  setInterval(() => {
-    updateDoc(doc(db, "users", currentUser.uid), {
-      lastActive: Date.now()
-    });
-  }, 25000);
+  loadFeed();
 
 });
 
@@ -56,17 +51,19 @@ async function ensureProfile(user) {
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
+
     await setDoc(ref, {
       uid: user.uid,
       username: user.email.split("@")[0],
-      bio: "MCN Engine User",
+      bio: "MCN User",
       photo: "",
       coverPhoto: "",
       followers: [],
       following: [],
-      createdAt: Date.now(),
-      lastActive: Date.now()
+      privacy: "public",
+      createdAt: Date.now()
     });
+
   }
 }
 
@@ -83,26 +80,50 @@ async function loadProfile(uid) {
   document.getElementById("topUsername").textContent = profileData.username;
   document.getElementById("bio").textContent = profileData.bio || "";
 
-  document.getElementById("postsCount").textContent = profileData.posts || 0;
-  document.getElementById("followersCount").textContent = (profileData.followers || []).length;
-  document.getElementById("followingCount").textContent = (profileData.following || []).length;
+  document.getElementById("followersCount").textContent =
+    (profileData.followers || []).length;
+
+  document.getElementById("followingCount").textContent =
+    (profileData.following || []).length;
+
 }
 
-/* ================= USER POSTS (FIXED SCOPE) ================= */
+/* ================= CREATE POST (FIXED + PRIVACY) ================= */
+
+window.createTimelinePost = async function () {
+
+  const text = document.getElementById("timelinePost").value.trim();
+  if (!text) return;
+
+  const postRef = collection(db, "userPosts", currentUser.uid, "posts");
+
+  await addDoc(postRef, {
+    uid: currentUser.uid,
+    username: profileData.username,
+    text,
+    likes: 0,
+    comments: [],
+    createdAt: serverTimestamp()
+  });
+
+  document.getElementById("timelinePost").value = "";
+
+};
+
+/* ================= USER POSTS ================= */
 
 function loadUserPosts(uid) {
 
-  const q = query(collection(db, "timeline", uid, "posts"));
+  const q = query(collection(db, "userPosts", uid, "posts"));
 
   onSnapshot(q, (snap) => {
 
     const container = document.getElementById("timelinePosts");
     container.innerHTML = "";
 
-    snap.forEach(docSnap => {
+    snap.forEach(d => {
 
-      const p = docSnap.data();
-      const id = docSnap.id;
+      const p = d.data();
 
       container.innerHTML += `
         <div class="post-box">
@@ -110,26 +131,20 @@ function loadUserPosts(uid) {
           <b>${p.username}</b>
           <p>${p.text}</p>
 
-          <div style="display:flex;gap:10px;margin-top:10px;">
+          <div style="display:flex;gap:10px;margin-top:10px">
 
-            <button onclick="likePost('${uid}','${id}')">
-              ❤️ ${p.likes || 0}
+            <button onclick="likePost('${uid}','${d.id}',${p.likes})">
+              ❤️ ${p.likes}
             </button>
 
-            <button onclick="commentPost('${uid}','${id}')">
-              💬 ${(p.comments || []).length}
+            <button onclick="commentPost('${uid}','${d.id}')">
+              💬 ${p.comments?.length || 0}
             </button>
 
-            <button onclick="sharePost('${id}')">
+            <button onclick="sharePost('${d.id}')">
               🔁 Share
             </button>
 
-          </div>
-
-          <div style="margin-top:10px;font-size:13px;">
-            ${(p.comments || []).slice(-3).map(c =>
-              `<div>💬 ${c.username}: ${c.text}</div>`
-            ).join("")}
           </div>
 
         </div>
@@ -141,43 +156,14 @@ function loadUserPosts(uid) {
 
 }
 
-/* ================= CREATE POST (FIXED) ================= */
-
-window.createTimelinePost = async function () {
-
-  const text = document.getElementById("timelinePost").value.trim();
-  if (!text) return;
-
-  const ref = collection(db, "timeline", currentUser.uid, "posts");
-
-  await addDoc(ref, {
-    text,
-    uid: currentUser.uid,
-    username: profileData.username,
-    likes: 0,
-    comments: [],
-    createdAt: serverTimestamp()
-  });
-
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    posts: increment(1)
-  });
-
-  document.getElementById("timelinePost").value = "";
-
-};
-
 /* ================= LIKE ================= */
 
-window.likePost = async function(uid, postId) {
+window.likePost = async function(uid, postId, likes) {
 
-  const ref = doc(db, "timeline", uid, "posts", postId);
-  const snap = await getDoc(ref);
-
-  let likes = snap.data().likes || 0;
+  const ref = doc(db, "userPosts", uid, "posts", postId);
 
   await updateDoc(ref, {
-    likes: likes + 1
+    likes: (likes || 0) + 1
   });
 
 };
@@ -189,7 +175,7 @@ window.commentPost = async function(uid, postId) {
   const text = prompt("Comment:");
   if (!text) return;
 
-  const ref = doc(db, "timeline", uid, "posts", postId);
+  const ref = doc(db, "userPosts", uid, "posts", postId);
   const snap = await getDoc(ref);
 
   let comments = snap.data().comments || [];
@@ -205,56 +191,27 @@ window.commentPost = async function(uid, postId) {
 
 };
 
-/* ================= SHARE FIX (NO 404) ================= */
+/* ================= FEED (NEW GLOBAL SYSTEM) ================= */
 
-window.sharePost = function(id) {
+function loadFeed() {
 
-  const url = `${location.origin}/post.html?id=${id}`;
-
-  if (navigator.share) {
-    navigator.share({ title: "MCN Post", url });
-  } else {
-    navigator.clipboard.writeText(url);
-    alert("Copied!");
-  }
-
-};
-
-/* ================= SETTINGS ================= */
-
-window.openSettings = function () {
-  alert("Settings coming soon (safe stub)");
-};
-
-window.uploadAvatar = function () {
-  alert("Avatar upload coming soon");
-};
-
-window.uploadCover = function () {
-  alert("Cover upload coming soon");
-};
-
-/* ================= ONLINE USERS ================= */
-
-function loadOnlineUsers() {
-
-  const q = query(collection(db, "users"));
+  const q = query(collection(db, "feed", "posts"));
 
   onSnapshot(q, (snap) => {
 
-    const box = document.getElementById("onlineUsers");
-    if (!box) return;
+    const feedBox = document.getElementById("feedPosts");
+    if (!feedBox) return;
 
-    box.innerHTML = "";
+    feedBox.innerHTML = "";
 
     snap.forEach(d => {
 
-      const u = d.data();
-      if (u.uid === currentUser.uid) return;
+      const p = d.data();
 
-      box.innerHTML += `
-        <div onclick="openUserProfile('${u.uid}')">
-          ${u.username}
+      feedBox.innerHTML += `
+        <div class="post-box">
+          <b>${p.username}</b>
+          <p>${p.text}</p>
         </div>
       `;
 
@@ -264,11 +221,30 @@ function loadOnlineUsers() {
 
 }
 
+/* ================= SHARE FIX ================= */
+
+window.sharePost = function(id) {
+
+  const url = `${location.origin}/post.html?id=${id}`;
+
+  if (navigator.share) {
+    navigator.share({ title: "MCN Post", url });
+  } else {
+    navigator.clipboard.writeText(url);
+    alert("Copied link");
+  }
+
+};
+
+/* ================= SETTINGS SAFE ================= */
+
+window.openSettings = function () {
+  alert("V6 Settings coming soon (privacy system next)");
+};
+
 /* ================= NAV ================= */
 
-window.goBack = () => {
-  history.length > 1 ? history.back() : location.href = "dashboard.html";
-};
+window.goBack = () => history.length > 1 ? history.back() : location.href = "dashboard.html";
 
 window.openInbox = () => location.href = "messages.html";
 
