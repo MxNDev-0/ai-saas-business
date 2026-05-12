@@ -13,8 +13,7 @@ import {
   query,
   onSnapshot,
   addDoc,
-  serverTimestamp,
-  increment
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
@@ -37,9 +36,15 @@ onAuthStateChanged(auth, async (user) => {
   await ensureProfile(user);
 
   loadProfile(viewingUid);
-  loadUserPosts(viewingUid);
+  loadTimeline();
   loadOnlineUsers();
-  loadFeed();
+  loadSuggestedUsers();
+
+  setInterval(() => {
+    updateDoc(doc(db, "users", currentUser.uid), {
+      lastActive: Date.now()
+    });
+  }, 25000);
 
 });
 
@@ -55,13 +60,16 @@ async function ensureProfile(user) {
     await setDoc(ref, {
       uid: user.uid,
       username: user.email.split("@")[0],
-      bio: "MCN User",
+      bio: "MCN Engine User",
       photo: "",
       coverPhoto: "",
       followers: [],
       following: [],
-      privacy: "public",
-      createdAt: Date.now()
+      posts: 0,
+      likes: 0,
+      isPrivate: false,
+      createdAt: Date.now(),
+      lastActive: Date.now()
     });
 
   }
@@ -80,50 +88,38 @@ async function loadProfile(uid) {
   document.getElementById("topUsername").textContent = profileData.username;
   document.getElementById("bio").textContent = profileData.bio || "";
 
-  document.getElementById("followersCount").textContent =
-    (profileData.followers || []).length;
+  document.getElementById("postsCount").textContent = profileData.posts || 0;
+  document.getElementById("followersCount").textContent = (profileData.followers || []).length;
+  document.getElementById("followingCount").textContent = (profileData.following || []).length;
 
-  document.getElementById("followingCount").textContent =
-    (profileData.following || []).length;
-
+  const cover = document.getElementById("coverPhoto");
+  cover.style.background = profileData.coverPhoto
+    ? `url(${profileData.coverPhoto}) center/cover`
+    : "linear-gradient(135deg,#5bc0be,#1c2541)";
 }
 
-/* ================= CREATE POST (FIXED + PRIVACY) ================= */
+/* ================= PRIVACY GUARD ================= */
 
-window.createTimelinePost = async function () {
+function canViewProfile(profile) {
+  return !profile.isPrivate || profile.uid === currentUser.uid;
+}
 
-  const text = document.getElementById("timelinePost").value.trim();
-  if (!text) return;
+/* ================= TIMELINE ================= */
 
-  const postRef = collection(db, "userPosts", currentUser.uid, "posts");
+function loadTimeline() {
 
-  await addDoc(postRef, {
-    uid: currentUser.uid,
-    username: profileData.username,
-    text,
-    likes: 0,
-    comments: [],
-    createdAt: serverTimestamp()
-  });
-
-  document.getElementById("timelinePost").value = "";
-
-};
-
-/* ================= USER POSTS ================= */
-
-function loadUserPosts(uid) {
-
-  const q = query(collection(db, "userPosts", uid, "posts"));
+  const q = query(collection(db, "timeline"));
 
   onSnapshot(q, (snap) => {
 
     const container = document.getElementById("timelinePosts");
     container.innerHTML = "";
 
-    snap.forEach(d => {
+    snap.forEach(docSnap => {
 
-      const p = d.data();
+      const p = docSnap.data();
+
+      if (p.ownerId !== viewingUid) return;
 
       container.innerHTML += `
         <div class="post-box">
@@ -131,22 +127,6 @@ function loadUserPosts(uid) {
           <b>${p.username}</b>
           <p>${p.text}</p>
 
-          <div style="display:flex;gap:10px;margin-top:10px">
-
-            <button onclick="likePost('${uid}','${d.id}',${p.likes})">
-              ❤️ ${p.likes}
-            </button>
-
-            <button onclick="commentPost('${uid}','${d.id}')">
-              💬 ${p.comments?.length || 0}
-            </button>
-
-            <button onclick="sharePost('${d.id}')">
-              🔁 Share
-            </button>
-
-          </div>
-
         </div>
       `;
 
@@ -156,62 +136,50 @@ function loadUserPosts(uid) {
 
 }
 
-/* ================= LIKE ================= */
+/* ================= POST CREATION FIX ================= */
 
-window.likePost = async function(uid, postId, likes) {
+window.createTimelinePost = async function () {
 
-  const ref = doc(db, "userPosts", uid, "posts", postId);
-
-  await updateDoc(ref, {
-    likes: (likes || 0) + 1
-  });
-
-};
-
-/* ================= COMMENT ================= */
-
-window.commentPost = async function(uid, postId) {
-
-  const text = prompt("Comment:");
+  const text = document.getElementById("timelinePost").value.trim();
   if (!text) return;
 
-  const ref = doc(db, "userPosts", uid, "posts", postId);
-  const snap = await getDoc(ref);
-
-  let comments = snap.data().comments || [];
-
-  comments.push({
-    uid: currentUser.uid,
-    username: profileData.username,
+  await addDoc(collection(db, "timeline"), {
     text,
-    time: Date.now()
+    username: profileData.username,
+    ownerId: currentUser.uid,
+    createdAt: serverTimestamp(),
+    likes: [],
+    comments: []
   });
 
-  await updateDoc(ref, { comments });
+  document.getElementById("timelinePost").value = "";
 
 };
 
-/* ================= FEED (NEW GLOBAL SYSTEM) ================= */
+/* ================= ONLINE USERS ================= */
 
-function loadFeed() {
+function loadOnlineUsers() {
 
-  const q = query(collection(db, "feed", "posts"));
+  const q = query(collection(db, "users"));
 
   onSnapshot(q, (snap) => {
 
-    const feedBox = document.getElementById("feedPosts");
-    if (!feedBox) return;
+    const box = document.getElementById("onlineUsers");
+    if (!box) return;
 
-    feedBox.innerHTML = "";
+    box.innerHTML = "";
 
     snap.forEach(d => {
 
-      const p = d.data();
+      const u = d.data();
+      if (u.uid === currentUser.uid) return;
 
-      feedBox.innerHTML += `
-        <div class="post-box">
-          <b>${p.username}</b>
-          <p>${p.text}</p>
+      const online = Date.now() - (u.lastActive || 0) < 60000;
+
+      box.innerHTML += `
+        <div onclick="openUserProfile('${u.uid}')"
+          style="padding:10px;margin:6px;background:#16213e;border-radius:10px;cursor:pointer;">
+          ${u.username} ${online ? "🟢" : "⚫"}
         </div>
       `;
 
@@ -221,32 +189,43 @@ function loadFeed() {
 
 }
 
-/* ================= SHARE FIX ================= */
+/* ================= SUGGESTED USERS ================= */
 
-window.sharePost = function(id) {
+function loadSuggestedUsers() {
 
-  const url = `${location.origin}/post.html?id=${id}`;
+  const q = query(collection(db, "users"));
 
-  if (navigator.share) {
-    navigator.share({ title: "MCN Post", url });
-  } else {
-    navigator.clipboard.writeText(url);
-    alert("Copied link");
-  }
+  onSnapshot(q, (snap) => {
 
-};
+    const box = document.getElementById("suggestedUsers");
+    if (!box) return;
 
-/* ================= SETTINGS SAFE ================= */
+    box.innerHTML = "";
 
-window.openSettings = function () {
-  alert("V6 Settings coming soon (privacy system next)");
-};
+    snap.forEach(d => {
+
+      const u = d.data();
+      if (u.uid === currentUser.uid) return;
+
+      box.innerHTML += `
+        <div onclick="openUserProfile('${u.uid}')"
+          style="padding:10px;margin:6px;background:#1c2541;border-radius:10px;cursor:pointer;">
+          ${u.username}
+        </div>
+      `;
+
+    });
+
+  });
+
+}
 
 /* ================= NAV ================= */
 
-window.goBack = () => history.length > 1 ? history.back() : location.href = "dashboard.html";
-
-window.openInbox = () => location.href = "messages.html";
+window.goBack = () => {
+  if (history.length > 1) history.back();
+  else location.href = "dashboard.html";
+};
 
 window.openUserProfile = (uid) => {
   location.href = "profile.html?uid=" + uid;
