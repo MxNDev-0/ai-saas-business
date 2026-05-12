@@ -339,9 +339,6 @@ window.startDM = (uid) => {
 };
 
 /* ================= TIMELINE ================= */
-
-/* ================= TIMELINE ================= */
-
 window.createTimelinePost = async function () {
 
   const text =
