@@ -1,229 +1,121 @@
-import { auth, db } from "../firebase.js";
+/* =========================================
+   MCN EMERGENCY CONTROL SYSTEM v1
+========================================= */
+
+import { db } from "../firebase.js";
 
 import {
   doc,
-  getDoc,
   setDoc,
-  serverTimestamp
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ===============================
-   EMERGENCY STATE
-================================= */
+/* ================= STATE ================= */
 
-let emergencyActive = false;
-let emergencyReason = "";
-let emergencyMode = "safe";
+let emergencyState = false;
 
-/* ===============================
-   UI LOGGER (optional reuse admin monitor if exists)
-================================= */
+/* ================= INIT ================= */
 
-function log(msg, type = "info") {
+async function loadState() {
 
-  const box = document.getElementById("monitor");
+  const snap =
+    await getDoc(doc(db, "system", "emergency"));
 
-  if (!box) {
-    console.log("[MCN EMERGENCY]", msg);
-    return;
+  if (!snap.exists()) {
+
+    await setDoc(doc(db, "system", "emergency"), {
+      enabled: false,
+      updatedAt: Date.now()
+    });
   }
 
-  const color =
-    type === "danger"
-      ? "#ff3b3b"
-      : type === "warn"
-      ? "#ffaa00"
-      : "#00ff88";
+  emergencyState =
+    snap.exists() ? snap.data().enabled : false;
 
-  const div = document.createElement("div");
-
-  div.style.color = color;
-
-  div.textContent =
-    `[${new Date().toLocaleTimeString()}] ${msg}`;
-
-  box.appendChild(div);
-
-  box.scrollTop = box.scrollHeight;
+  renderUI();
 }
 
-/* ===============================
-   CHECK EMERGENCY STATE
-================================= */
+/* ================= ACTIONS ================= */
 
-export async function checkEmergencyState() {
+async function setEmergency(state) {
 
-  try {
+  emergencyState = state;
 
-    const snap = await getDoc(
-      doc(db, "system", "emergency")
-    );
+  await setDoc(doc(db, "system", "emergency"), {
+    enabled: state,
+    updatedAt: Date.now()
+  }, { merge: true });
 
-    if (!snap.exists()) return;
+  console.log(
+    state
+      ? "🚨 EMERGENCY ACTIVATED"
+      : "🟢 EMERGENCY DISABLED"
+  );
 
-    const data = snap.data();
+  renderUI();
+}
 
-    if (data.lockdown === true) {
+/* ================= UI CONTROLLER ================= */
 
-      emergencyActive = true;
-      emergencyReason = data.reason || "unknown";
-      emergencyMode = data.mode || "hard";
+function renderUI() {
 
-      activateEmergencyUI();
-    }
+  let panel = document.getElementById("emergencyPanel");
 
-  } catch (err) {
+  if (!panel) {
 
-    console.error(err);
-    log("Emergency check failed", "warn");
+    panel = document.createElement("div");
+
+    panel.id = "emergencyPanel";
+
+    panel.style.cssText = `
+      position:fixed;
+      top:50%;
+      left:10px;
+      transform:translateY(-50%);
+      background:#1c2541;
+      color:white;
+      padding:10px;
+      border-radius:12px;
+      z-index:999999;
+      width:160px;
+      font-family:Arial;
+      box-shadow:0 0 20px rgba(0,0,0,0.4);
+    `;
+
+    panel.innerHTML = `
+      <b>🚨 Emergency Control</b>
+      <hr style="border:0;border-top:1px solid #444">
+
+      <button id="emOn">ACTIVATE</button>
+      <button id="emOff" style="margin-top:5px;background:red;color:white;">
+        DISABLE
+      </button>
+
+      <p id="emStatus" style="margin-top:10px;font-size:12px;">
+      Status: UNKNOWN
+      </p>
+    `;
+
+    document.body.appendChild(panel);
+
+    document.getElementById("emOn").onclick =
+      () => setEmergency(true);
+
+    document.getElementById("emOff").onclick =
+      () => setEmergency(false);
   }
-}
 
-/* ===============================
-   ACTIVATE EMERGENCY MODE
-================================= */
+  const status =
+    document.getElementById("emStatus");
 
-function activateEmergencyUI() {
+  if (status) {
 
-  log("🚨 EMERGENCY MODE ACTIVE", "danger");
-
-  /* FULL SCREEN LOCK BANNER */
-  const overlay = document.createElement("div");
-
-  overlay.id = "mcnEmergencyOverlay";
-
-  overlay.style.cssText = `
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:#0b132b;
-    color:#ff3b3b;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    z-index:99999999;
-    text-align:center;
-    padding:20px;
-    font-family:Arial;
-  `;
-
-  overlay.innerHTML = `
-
-    <h1>🚨 SYSTEM LOCKDOWN</h1>
-
-    <p style="max-width:500px;opacity:0.8;line-height:1.6">
-      MCN Engine is currently in emergency mode.
-    </p>
-
-    <p><b>Reason:</b> ${emergencyReason}</p>
-
-    <p><b>Mode:</b> ${emergencyMode}</p>
-
-    <div style="margin-top:20px;font-size:12px;opacity:0.6">
-      Only administrators can restore system access
-    </div>
-
-  `;
-
-  document.body.appendChild(overlay);
-}
-
-/* ===============================
-   ACTIVATE EMERGENCY (ADMIN ONLY)
-================================= */
-
-export async function triggerEmergency({
-  reason = "manual trigger",
-  mode = "hard"
-}) {
-
-  try {
-
-    const user = auth.currentUser;
-
-    if (!user) return;
-
-    /* verify admin */
-    const snap = await getDoc(
-      doc(db, "users", user.uid)
-    );
-
-    if (!snap.exists() || snap.data().role !== "admin") {
-      log("Unauthorized emergency attempt", "danger");
-      return;
-    }
-
-    await setDoc(
-      doc(db, "system", "emergency"),
-      {
-        lockdown: true,
-        reason,
-        mode,
-        triggeredBy: user.uid,
-        timestamp: serverTimestamp()
-      }
-    );
-
-    log("🚨 Emergency triggered", "danger");
-
-    checkEmergencyState();
-
-  } catch (err) {
-
-    console.error(err);
-    log("Emergency trigger failed", "danger");
+    status.textContent =
+      "Status: " +
+      (emergencyState ? "ACTIVE 🚨" : "NORMAL 🟢");
   }
 }
 
-/* ===============================
-   DISABLE EMERGENCY (RECOVERY)
-================================= */
+/* ================= BOOT ================= */
 
-export async function disableEmergency() {
-
-  try {
-
-    const user = auth.currentUser;
-
-    if (!user) return;
-
-    const snap = await getDoc(
-      doc(db, "users", user.uid)
-    );
-
-    if (!snap.exists() || snap.data().role !== "admin") {
-      log("Unauthorized restore attempt", "danger");
-      return;
-    }
-
-    await setDoc(
-      doc(db, "system", "emergency"),
-      {
-        lockdown: false,
-        reason: "",
-        mode: "safe",
-        restoredBy: user.uid,
-        timestamp: serverTimestamp()
-      },
-      { merge: true }
-    );
-
-    log("✅ Emergency disabled", "info");
-
-    location.reload();
-
-  } catch (err) {
-
-    console.error(err);
-    log("Restore failed", "danger");
-  }
-}
-
-/* ===============================
-   AUTO INIT
-================================= */
-
-checkEmergencyState();
+loadState();
