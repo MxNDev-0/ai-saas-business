@@ -1,46 +1,26 @@
-import { auth, db } from "./firebase.js";
-
+import { db } from "./firebase.js";
 import {
   collection,
-  onSnapshot,
   query,
-  orderBy
+  where,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import {
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-let user = null;
-
-onAuthStateChanged(auth, (u) => {
-  if (!u) return;
-  user = u;
-  loadNotifications();
-});
-
-function loadNotifications() {
-  const box = document.getElementById("notifBox");
-  if (!box) return;
+export function listenNotifications(uid, callback) {
 
   const q = query(
-    collection(db, "notifications", user.uid, "items"),
-    orderBy("createdAt", "desc")
+    collection(db, "events"),
+    where("payload.to", "==", uid)
   );
 
-  onSnapshot(q, (snap) => {
-    let html = "";
+  onSnapshot(q, snap => {
 
-    snap.forEach(d => {
-      const n = d.data();
+    const notes = [];
 
-      html += `
-        <div style="padding:8px;margin:6px;background:#1c2541;border-radius:8px;">
-          🔔 ${n.text}
-        </div>
-      `;
-    });
+    snap.forEach(d => notes.push(d.data()));
 
-    box.innerHTML = html;
+    callback(notes);
+
   });
+
 }
