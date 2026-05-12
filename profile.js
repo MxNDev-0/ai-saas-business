@@ -466,116 +466,59 @@ window.startDM =
 
 /* ================= TIMELINE ================= */
 
-window.createTimelinePost =
-async function () {
+window.createTimelinePost = async function () {
 
   const text =
-
-  document.getElementById(
-    "timelinePost"
-  )
-
+  document.getElementById("timelinePost")
   .value
-
   .trim();
 
   if (!text) {
-
-    alert(
-      "Write something first"
-    );
-
+    alert("Write something first");
     return;
-
   }
 
   try {
 
-    const postRef =
-
-    doc(
-      collection(
-        db,
-        "timeline"
-      )
-    );
-
     await setDoc(
 
-      postRef,
+      doc(collection(db, "timeline")),
 
       {
-
-        postId:
-        postRef.id,
-
-        uid:
-        currentUser.uid,
-
-        username:
-        profileData.username,
-
-        userPhoto:
-        profileData.photo || "",
-
-        text:
-        text,
-
-        likes: 0,
-
-        comments: 0,
-
-        createdAt:
-        Date.now()
-
+        uid: currentUser.uid,
+        username: profileData.username,
+        userPhoto: profileData.photo || "",
+        text: text,
+        createdAt: Date.now()
       }
 
     );
 
-    /* UPDATE POSTS */
+    /* UPDATE POSTS COUNT */
 
     await updateDoc(
 
-      doc(
-        db,
-        "users",
-        currentUser.uid
-      ),
+      doc(db, "users", currentUser.uid),
 
       {
-
-        posts:
-        (profileData.posts || 0) + 1
-
+        posts: (profileData.posts || 0) + 1
       }
 
     );
-
-    /* CLEAR INPUT */
 
     document.getElementById(
       "timelinePost"
     ).value = "";
 
-    /* RELOAD PROFILE */
+    await loadProfile(currentUser.uid);
 
-    await loadProfile(
-      currentUser.uid
-    );
-
-    alert(
-      "Post published"
-    );
+    alert("Post published");
 
   } catch (err) {
 
     console.error(err);
 
-    alert(
-      "Timeline failed: " +
-      err.message
-    );
-
+    alert("Failed to publish post");
   }
 
 };
@@ -583,6 +526,162 @@ async function () {
 /* ================= LOAD TIMELINE POSTS ================= */
 
 function loadTimelinePosts() {
+
+  const q =
+  query(collection(db, "timeline"));
+
+  onSnapshot(q, (snap) => {
+
+    const activityCard =
+    document.querySelectorAll(".card")[1];
+
+    let html = `
+
+      <div class="section-title">
+        📌 Activity
+      </div>
+
+      <textarea
+        id="timelinePost"
+        placeholder="What's on your mind?"
+        style="
+          width:100%;
+          background:#16213e;
+          border:none;
+          color:white;
+          padding:14px;
+          border-radius:14px;
+          margin-bottom:10px;
+          resize:none;
+          min-height:90px;
+        "
+      ></textarea>
+
+      <button
+        class="action-btn primary"
+        onclick="createTimelinePost()"
+        style="
+          width:100%;
+          margin-bottom:15px;
+        "
+      >
+        Post Update
+      </button>
+    `;
+
+    const posts = [];
+
+    snap.forEach((docSnap) => {
+
+      posts.push(docSnap.data());
+
+    });
+
+    posts.sort((a, b) =>
+      b.createdAt - a.createdAt
+    );
+
+    if (!posts.length) {
+
+      html += `
+
+        <div class="empty">
+          No posts yet
+        </div>
+      `;
+    }
+
+    posts.forEach((post) => {
+
+      html += `
+
+        <div class="post-box">
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:10px;
+              margin-bottom:10px;
+            "
+          >
+
+            <div
+              style="
+                width:42px;
+                height:42px;
+                border-radius:50%;
+                background:#5bc0be;
+                overflow:hidden;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-weight:bold;
+                color:black;
+              "
+            >
+
+              ${
+                post.userPhoto
+                ? `<img
+                    src="${post.userPhoto}"
+                    style="
+                      width:100%;
+                      height:100%;
+                      object-fit:cover;
+                    "
+                  >`
+                : post.username?.[0]?.toUpperCase()
+              }
+
+            </div>
+
+            <div>
+
+              <div
+                style="
+                  font-weight:bold;
+                "
+              >
+                ${post.username}
+              </div>
+
+              <div
+                style="
+                  opacity:.6;
+                  font-size:12px;
+                "
+              >
+                ${
+                  new Date(post.createdAt)
+                  .toLocaleString()
+                }
+              </div>
+
+            </div>
+
+          </div>
+
+          <div
+            style="
+              line-height:1.5;
+            "
+          >
+            ${post.text}
+          </div>
+
+        </div>
+      `;
+    });
+
+    activityCard.innerHTML = html;
+
+  });
+}
+
+/* ================= START TIMELINE ================= */
+
+loadTimelinePosts();
 
   const postsBox =
   document.getElementById(
