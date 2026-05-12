@@ -13,7 +13,6 @@ import {
   query,
   onSnapshot,
   addDoc,
-  deleteDoc,
   increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -23,7 +22,7 @@ let currentUser = null;
 let profileData = null;
 let viewingUid = null;
 
-/* ================= AUTH ================= */
+/* ================= INIT ================= */
 
 onAuthStateChanged(auth, async (user) => {
 
@@ -37,26 +36,20 @@ onAuthStateChanged(auth, async (user) => {
   const params = new URLSearchParams(location.search);
   viewingUid = params.get("uid") || user.uid;
 
-  await ensureProfile(user);
+  await ensureUser(user);
 
   await loadProfile(viewingUid);
 
   loadTimeline();
   loadOnlineUsers();
 
-  setInterval(async () => {
-    try {
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        lastActive: Date.now()
-      });
-    } catch (e) {}
-  }, 20000);
+  startPresence();
 
 });
 
-/* ================= PROFILE INIT ================= */
+/* ================= PROFILE CREATION ================= */
 
-async function ensureProfile(user) {
+async function ensureUser(user) {
 
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
@@ -66,7 +59,7 @@ async function ensureProfile(user) {
     await setDoc(ref, {
       uid: user.uid,
       username: user.email.split("@")[0],
-      bio: "MCN Engine User",
+      bio: "MCN User",
       photo: "",
       coverPhoto: "",
       followers: [],
@@ -78,6 +71,7 @@ async function ensureProfile(user) {
     });
 
   }
+
 }
 
 /* ================= LOAD PROFILE ================= */
@@ -89,27 +83,36 @@ async function loadProfile(uid) {
 
   profileData = snap.data();
 
-  document.getElementById("username").textContent = profileData.username;
-  document.getElementById("topUsername").textContent = profileData.username;
-  document.getElementById("bio").textContent = profileData.bio || "";
+  safeSet("username", profileData.username);
+  safeSet("topUsername", profileData.username);
+  safeSet("bio", profileData.bio || "");
 
-  document.getElementById("postsCount").textContent = profileData.posts || 0;
-  document.getElementById("followersCount").textContent = (profileData.followers || []).length;
-  document.getElementById("followingCount").textContent = (profileData.following || []).length;
-  document.getElementById("likesCount").textContent = profileData.likes || 0;
+  safeSet("postsCount", profileData.posts || 0);
+  safeSet("followersCount", (profileData.followers || []).length);
+  safeSet("followingCount", (profileData.following || []).length);
+  safeSet("likesCount", profileData.likes || 0);
 
   const cover = document.getElementById("coverPhoto");
-
-  cover.style.background = profileData.coverPhoto
-    ? `url(${profileData.coverPhoto}) center/cover`
-    : "linear-gradient(135deg,#5bc0be,#1c2541)";
+  if (cover) {
+    cover.style.background = profileData.coverPhoto
+      ? `url(${profileData.coverPhoto}) center/cover`
+      : "linear-gradient(135deg,#5bc0be,#1c2541)";
+  }
 
   const avatar = document.getElementById("avatar");
+  if (avatar) {
+    avatar.innerHTML = profileData.photo
+      ? `<img src="${profileData.photo}">`
+      : (profileData.username?.[0]?.toUpperCase() || "U");
+  }
 
-  avatar.innerHTML = profileData.photo
-    ? `<img src="${profileData.photo}">`
-    : (profileData.username?.[0]?.toUpperCase() || "U");
+}
 
+/* ================= SAFE UI SET ================= */
+
+function safeSet(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 /* ================= NAVIGATION ================= */
@@ -124,7 +127,7 @@ window.openInbox = function () {
   location.href = "messages.html";
 };
 
-window.openUserProfile = function(uid) {
+window.openUserProfile = function (uid) {
   if (!uid) return;
   location.href = "profile.html?uid=" + uid;
 };
@@ -164,10 +167,10 @@ window.openSettings = function () {
 
 window.editProfile = async function () {
 
-  const username = prompt("Username:", profileData.username);
+  const username = prompt("Username:", profileData?.username);
   if (!username) return;
 
-  const bio = prompt("Bio:", profileData.bio);
+  const bio = prompt("Bio:", profileData?.bio);
   if (!bio) return;
 
   await updateDoc(doc(db, "users", currentUser.uid), {
@@ -176,11 +179,12 @@ window.editProfile = async function () {
   });
 
   await loadProfile(currentUser.uid);
+
 };
 
 /* ================= FOLLOW SYSTEM ================= */
 
-window.toggleFollow = async function(targetUid) {
+window.toggleFollow = async function (targetUid) {
 
   if (!targetUid || targetUid === currentUser.uid) return;
 
@@ -210,85 +214,6 @@ window.toggleFollow = async function(targetUid) {
   await updateDoc(themRef, { followers: theirFollowers });
 
   await loadProfile(viewingUid);
-};
-
-/* ================= POST SYSTEM ================= */
-
-window.createTimelinePost = async function () {
-
-  const text = document.getElementById("timelinePost").value.trim();
-  if (!text) return alert("Write something first");
-
-  await addDoc(collection(db, "timeline"), {
-    uid: currentUser.uid,
-    username: profileData.username,
-    userPhoto: profileData.photo || "",
-    text,
-    likesCount: 0,
-    commentsCount: 0,
-    sharesCount: 0,
-    createdAt: Date.now()
-  });
-
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    posts: increment(1)
-  });
-
-  document.getElementById("timelinePost").value = "";
-};
-
-/* ================= LIKE ================= */
-
-window.likePost = async function(postId) {
-
-  const postRef = doc(db, "timeline", postId);
-  const snap = await getDoc(postRef);
-
-  let likes = snap.data().likes || [];
-
-  if (likes.includes(currentUser.uid)) {
-    likes = likes.filter(x => x !== currentUser.uid);
-  } else {
-    likes.push(currentUser.uid);
-  }
-
-  await updateDoc(postRef, { likes });
-};
-
-/* ================= COMMENT ================= */
-
-window.commentPost = async function(postId) {
-
-  const text = prompt("Write comment:");
-  if (!text) return;
-
-  await addDoc(collection(db, "timeline", postId, "comments"), {
-    uid: currentUser.uid,
-    username: profileData.username,
-    text,
-    time: Date.now()
-  });
-
-  await updateDoc(doc(db, "timeline", postId), {
-    commentsCount: increment(1)
-  });
-
-};
-
-/* ================= SHARE FIX (NO 404) ================= */
-
-window.sharePost = function(postId) {
-
-  const base = window.location.origin + window.location.pathname.replace("profile.html", "");
-
-  const url = base + "post.html?id=" + postId;
-
-  if (navigator.share) {
-    navigator.share({ title: "MCN Post", url });
-  } else {
-    navigator.clipboard.writeText(url);
-    alert("Link copied");
-  }
 
 };
 
@@ -301,6 +226,8 @@ function loadTimeline() {
   onSnapshot(q, (snap) => {
 
     const container = document.getElementById("timelinePosts");
+    if (!container) return;
+
     container.innerHTML = "";
 
     snap.forEach(docSnap => {
@@ -311,7 +238,7 @@ function loadTimeline() {
       container.innerHTML += `
         <div class="post-box">
 
-          <b onclick="openUserProfile('${p.uid}')" style="cursor:pointer;">
+          <b style="cursor:pointer" onclick="openUserProfile('${p.uid}')">
             ${p.username}
           </b>
 
@@ -335,12 +262,67 @@ function loadTimeline() {
 
         </div>
       `;
-
     });
 
   });
 
 }
+
+/* ================= LIKE ================= */
+
+window.likePost = async function (postId) {
+
+  const ref = doc(db, "timeline", postId);
+  const snap = await getDoc(ref);
+
+  let likes = snap.data().likes || [];
+
+  if (likes.includes(currentUser.uid)) {
+    likes = likes.filter(x => x !== currentUser.uid);
+  } else {
+    likes.push(currentUser.uid);
+  }
+
+  await updateDoc(ref, { likes });
+
+};
+
+/* ================= COMMENT ================= */
+
+window.commentPost = async function (postId) {
+
+  const text = prompt("Write comment:");
+  if (!text) return;
+
+  await addDoc(collection(db, "timeline", postId, "comments"), {
+    uid: currentUser.uid,
+    username: profileData.username,
+    text,
+    createdAt: Date.now()
+  });
+
+  await updateDoc(doc(db, "timeline", postId), {
+    commentsCount: increment(1)
+  });
+
+};
+
+/* ================= SHARE FIX (NO 404) ================= */
+
+window.sharePost = function (postId) {
+
+  const base = window.location.origin + window.location.pathname.split("/").slice(0, -1).join("/");
+
+  const url = `${base}/post.html?id=${postId}`;
+
+  if (navigator.share) {
+    navigator.share({ url });
+  } else {
+    navigator.clipboard.writeText(url);
+    alert("Link copied");
+  }
+
+};
 
 /* ================= ONLINE USERS ================= */
 
@@ -351,6 +333,8 @@ function loadOnlineUsers() {
   onSnapshot(q, (snap) => {
 
     const box = document.getElementById("onlineUsers");
+    if (!box) return;
+
     box.innerHTML = "";
 
     snap.forEach(d => {
@@ -359,7 +343,7 @@ function loadOnlineUsers() {
       if (u.uid === currentUser.uid) return;
 
       box.innerHTML += `
-        <div class="online-user" onclick="openUserProfile('${u.uid}')" style="cursor:pointer;">
+        <div onclick="openUserProfile('${u.uid}')" style="padding:10px;background:#16213e;margin:5px;border-radius:10px;cursor:pointer;">
           ${u.username}
         </div>
       `;
@@ -367,5 +351,21 @@ function loadOnlineUsers() {
     });
 
   });
+
+}
+
+/* ================= PRESENCE ================= */
+
+function startPresence() {
+
+  setInterval(async () => {
+
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        lastActive: Date.now()
+      });
+    } catch (e) {}
+
+  }, 20000);
 
 }
