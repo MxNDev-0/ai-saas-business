@@ -13,8 +13,7 @@ import {
   query,
   onSnapshot,
   addDoc,
-  increment,
-  serverTimestamp
+  increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
@@ -100,7 +99,7 @@ window.goBack = function () {
     : location.href = "dashboard.html";
 };
 
-/* ================= SETTINGS FIX ================= */
+/* ================= SETTINGS ================= */
 
 window.openSettings = function () {
 
@@ -132,7 +131,7 @@ window.openSettings = function () {
   document.body.appendChild(modal);
 };
 
-/* ================= EDIT FIX ================= */
+/* ================= EDIT PROFILE ================= */
 
 window.editProfile = async function () {
 
@@ -150,7 +149,7 @@ window.editProfile = async function () {
   loadProfile(currentUser.uid);
 };
 
-/* ================= FOLLOW FIX ================= */
+/* ================= FOLLOW SYSTEM ================= */
 
 window.toggleFollow = async function(targetUid) {
 
@@ -179,23 +178,62 @@ window.toggleFollow = async function(targetUid) {
   await updateDoc(meRef, { following: myFollowing });
   await updateDoc(themRef, { followers: theirFollowers });
 
-  loadProfile(targetUid);
+  loadProfile(viewingUid);
 };
 
-/* ================= SHARE FIX (REAL SHEET) ================= */
+/* ================= SHARE FIX (NO 404) ================= */
 
 window.sharePost = function(id) {
-  const url = location.origin + "/post.html?id=" + id;
+
+  const url =
+    window.location.origin +
+    "/post.html?id=" + id;
 
   if (navigator.share) {
-    navigator.share({ title: "MCN Post", url });
+
+    navigator.share({
+      title: "MCN Post",
+      url
+    });
+
   } else {
+
     navigator.clipboard.writeText(url);
     alert("Link copied");
+
   }
 };
 
-/* ================= LIKE FIX ================= */
+/* ================= CREATE POST (FIXED - MAIN ISSUE) ================= */
+
+window.createTimelinePost = async function () {
+
+  const input = document.getElementById("timelinePost");
+  const text = input.value.trim();
+
+  if (!text) return alert("Write something first");
+
+  const postRef = doc(collection(db, "timeline"));
+
+  await setDoc(postRef, {
+    uid: currentUser.uid,
+    username: profileData.username,
+    userPhoto: profileData.photo || "",
+    text,
+    createdAt: Date.now(),
+    likes: [],
+    comments: [],
+    shares: 0
+  });
+
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    posts: increment(1)
+  });
+
+  input.value = "";
+};
+
+/* ================= LIKE POST ================= */
 
 window.likePost = async function(postId, likes = []) {
 
@@ -212,7 +250,7 @@ window.likePost = async function(postId, likes = []) {
   await updateDoc(ref, { likes: updated });
 };
 
-/* ================= COMMENT FIX (NOW VISIBLE) ================= */
+/* ================= COMMENT POST ================= */
 
 window.commentPost = async function(postId, text) {
 
@@ -233,10 +271,9 @@ window.commentPost = async function(postId, text) {
   });
 
   await updateDoc(ref, { comments });
-
 };
 
-/* ================= TIMELINE UI FIX ================= */
+/* ================= LOAD TIMELINE ================= */
 
 function loadTimeline() {
 
@@ -255,10 +292,7 @@ function loadTimeline() {
       container.innerHTML += `
         <div class="post-box">
 
-          <div style="display:flex;gap:10px;align-items:center;">
-            <b>${p.username}</b>
-          </div>
-
+          <b>${p.username}</b>
           <p>${p.text}</p>
 
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -277,7 +311,6 @@ function loadTimeline() {
 
           </div>
 
-          <!-- COMMENT LIST -->
           <div style="margin-top:10px;font-size:13px;opacity:.8;">
             ${(p.comments || []).slice(-3).map(c =>
               `<div>💬 ${c.username}: ${c.text}</div>`
@@ -321,7 +354,7 @@ function loadOnlineUsers() {
 
 }
 
-/* ================= PROFILE NAV ================= */
+/* ================= NAV ================= */
 
 window.openUserProfile = (uid) => {
   location.href = "profile.html?uid=" + uid;
