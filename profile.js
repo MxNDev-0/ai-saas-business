@@ -11,7 +11,8 @@ import {
   updateDoc,
   collection,
   query,
-  onSnapshot,
+onSnapshot,
+deleteDoc
   where,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -394,74 +395,284 @@ function () {
 
 function loadOnlineUsers() {
 
-  const q =
-  query(
-    collection(db, "users")
-  );
+  const q = query(collection(db, "users"));
 
-  onSnapshot(q, (snap) => {
+  onSnapshot(q, async (snap) => {
 
     const box =
-    document.getElementById(
-      "onlineUsers"
-    );
+    document.getElementById("onlineUsers");
 
     box.innerHTML = "";
 
-    snap.forEach((d) => {
+    snap.forEach(async (d) => {
 
-      const u =
-      d.data();
+      const u = d.data();
 
-      if (
-        u.uid === currentUser.uid
-      ) return;
+      if (u.uid === currentUser.uid) return;
+
+      /* CHECK FOLLOW */
+
+      let following = false;
+
+      try {
+
+        const followId =
+        currentUser.uid + "_" + u.uid;
+
+        const followSnap =
+        await getDoc(
+          doc(db, "follows", followId)
+        );
+
+        following =
+        followSnap.exists();
+
+      } catch(e){}
 
       box.innerHTML += `
 
         <div class="online-user">
 
-          <div class="online-left">
+          <div
+            class="online-left"
+            style="cursor:pointer;"
+            onclick="openUserProfile('${u.uid}')"
+          >
 
-            ${
-              Date.now() -
-              (u.lastActive || 0)
-              < 120000
+            <div
+              class="dot"
+              style="
+                background:
+                ${
+                  Date.now() -
+                  (u.lastActive || 0)
+                  < 120000
+                  ? '#00ff88'
+                  : 'gray'
+                };
+              "
+            ></div>
 
-              ? `<div class="dot"></div>`
+            <div
+              style="
+                display:flex;
+                align-items:center;
+                gap:10px;
+              "
+            >
 
-              : `<div class="dot" style="background:gray;"></div>`
-            }
+              ${
+                u.photo
+                ? `
+                  <img
+                    src="${u.photo}"
+                    style="
+                      width:38px;
+                      height:38px;
+                      border-radius:50%;
+                      object-fit:cover;
+                    "
+                    onerror="
+                      this.style.display='none'
+                    "
+                  >
+                `
+                : `
+                  <div
+                    style="
+                      width:38px;
+                      height:38px;
+                      border-radius:50%;
+                      background:#5bc0be;
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      color:black;
+                      font-weight:bold;
+                    "
+                  >
+                    ${
+                      u.username?.[0]
+                      ?.toUpperCase() || "U"
+                    }
+                  </div>
+                `
+              }
 
-            <div>
-              ${u.username}
+              <div>
+
+                <div
+                  style="
+                    font-weight:bold;
+                  "
+                >
+                  ${u.username}
+                </div>
+
+                <div
+                  style="
+                    opacity:.6;
+                    font-size:12px;
+                  "
+                >
+                  ${
+                    u.followers || 0
+                  } followers
+                </div>
+
+              </div>
+
             </div>
 
           </div>
 
           <button
             class="mini-btn"
-            onclick="startDM('${u.uid}')"
+            onclick="toggleFollow(
+              '${u.uid}',
+              ${following}
+            )"
           >
-            💬
+
+            ${
+              following
+              ? "Following"
+              : "Follow"
+            }
+
           </button>
 
         </div>
-
       `;
 
     });
 
   });
-
 }
 
-window.startDM =
-(uid) => {
+/* ================= OPEN USER PROFILE ================= */
+
+window.openUserProfile = function(uid) {
 
   location.href =
-  "messages.html?uid=" + uid;
+  "profile.html?uid=" + uid;
+};
 
+/* ================= FOLLOW SYSTEM ================= */
+
+window.toggleFollow =
+async function(targetUid, following) {
+
+  try {
+
+    const followId =
+    currentUser.uid +
+    "_" +
+    targetUid;
+
+    const followRef =
+    doc(
+      db,
+      "follows",
+      followId
+    );
+
+    const targetRef =
+    doc(
+      db,
+      "users",
+      targetUid
+    );
+
+    const myRef =
+    doc(
+      db,
+      "users",
+      currentUser.uid
+    );
+
+    const targetSnap =
+    await getDoc(targetRef);
+
+    const mySnap =
+    await getDoc(myRef);
+
+    const targetData =
+    targetSnap.data();
+
+    const myData =
+    mySnap.data();
+
+    if (!following) {
+
+      await setDoc(
+        followRef,
+        {
+          follower:
+          currentUser.uid,
+
+          following:
+          targetUid,
+
+          createdAt:
+          Date.now()
+        }
+      );
+
+      await updateDoc(
+        targetRef,
+        {
+          followers:
+          (targetData.followers || 0) + 1
+        }
+      );
+
+      await updateDoc(
+        myRef,
+        {
+          following:
+          (myData.following || 0) + 1
+        }
+      );
+
+    } else {
+
+      await deleteDoc(
+        followRef
+      );
+
+      await updateDoc(
+        targetRef,
+        {
+          followers:
+          Math.max(
+            0,
+            (targetData.followers || 1) - 1
+          )
+        }
+      );
+
+      await updateDoc(
+        myRef,
+        {
+          following:
+          Math.max(
+            0,
+            (myData.following || 1) - 1
+          )
+        }
+      );
+
+    }
+
+  } catch(err) {
+
+    console.error(err);
+
+    alert(
+      "Follow system error"
+    );
+  }
 };
 
 /* ================= TIMELINE ================= */
