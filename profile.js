@@ -12,8 +12,8 @@ import {
   collection,
   query,
   onSnapshot,
-  addDoc,
-  increment
+  deleteDoc,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
@@ -26,7 +26,10 @@ let viewingUid = null;
 
 onAuthStateChanged(auth, async (user) => {
 
-  if (!user) return location.href = "index.html";
+  if (!user) {
+    location.href = "index.html";
+    return;
+  }
 
   currentUser = user;
 
@@ -35,19 +38,23 @@ onAuthStateChanged(auth, async (user) => {
 
   await ensureProfile(user);
 
-  loadProfile(viewingUid);
-  loadTimeline();
-  loadOnlineUsers();
+  await loadProfile(viewingUid);
 
+  loadOnlineUsers();
+  loadTimelinePosts();
+
+  /* ONLINE STATUS */
   setInterval(async () => {
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      lastActive: Date.now()
-    });
+    try {
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        lastActive: Date.now()
+      });
+    } catch (e) {}
   }, 20000);
 
 });
 
-/* ================= PROFILE INIT ================= */
+/* ================= CREATE PROFILE ================= */
 
 async function ensureProfile(user) {
 
@@ -84,14 +91,34 @@ async function loadProfile(uid) {
 
   document.getElementById("username").textContent = profileData.username;
   document.getElementById("topUsername").textContent = profileData.username;
-  document.getElementById("bio").textContent = profileData.bio || "";
+  document.getElementById("bio").textContent = profileData.bio || "No bio yet";
 
   document.getElementById("postsCount").textContent = profileData.posts || 0;
   document.getElementById("followersCount").textContent = (profileData.followers || []).length;
   document.getElementById("followingCount").textContent = (profileData.following || []).length;
+  document.getElementById("likesCount").textContent = profileData.likes || 0;
+
+  /* COVER */
+  const cover = document.getElementById("coverPhoto");
+
+  if (profileData.coverPhoto) {
+    cover.style.background = `url(${profileData.coverPhoto}) center/cover`;
+  } else {
+    cover.style.background = "linear-gradient(135deg,#5bc0be,#1c2541)";
+  }
+
+  /* AVATAR */
+  const avatar = document.getElementById("avatar");
+
+  if (profileData.photo) {
+    avatar.innerHTML = `<img src="${profileData.photo}">`;
+  } else {
+    avatar.textContent = profileData.username?.[0]?.toUpperCase() || "U";
+  }
+
 }
 
-/* ================= NAV FIX ================= */
+/* ================= NAVIGATION FIX ================= */
 
 window.goBack = function () {
   window.history.length > 1
@@ -99,7 +126,16 @@ window.goBack = function () {
     : location.href = "dashboard.html";
 };
 
-/* ================= SETTINGS ================= */
+window.openInbox = function () {
+  location.href = "messages.html";
+};
+
+window.openUserProfile = function(uid) {
+  if (!uid) return;
+  location.href = "profile.html?uid=" + uid;
+};
+
+/* ================= SETTINGS FIX ================= */
 
 window.openSettings = function () {
 
@@ -107,7 +143,6 @@ window.openSettings = function () {
   if (old) old.remove();
 
   const modal = document.createElement("div");
-
   modal.id = "settingsModal";
 
   modal.innerHTML = `
@@ -120,7 +155,7 @@ window.openSettings = function () {
           Edit Profile
         </button>
 
-        <button onclick="document.body.removeChild(document.getElementById('settingsModal'))" style="width:100%;padding:12px;">
+        <button onclick="document.getElementById('settingsModal').remove()" style="width:100%;padding:12px;">
           Close
         </button>
 
@@ -146,12 +181,14 @@ window.editProfile = async function () {
     bio
   });
 
-  loadProfile(currentUser.uid);
+  await loadProfile(currentUser.uid);
 };
 
 /* ================= FOLLOW SYSTEM ================= */
 
 window.toggleFollow = async function(targetUid) {
+
+  if (!targetUid || targetUid === currentUser.uid) return;
 
   const meRef = doc(db, "users", currentUser.uid);
   const themRef = doc(db, "users", targetUid);
@@ -178,110 +215,20 @@ window.toggleFollow = async function(targetUid) {
   await updateDoc(meRef, { following: myFollowing });
   await updateDoc(themRef, { followers: theirFollowers });
 
-  loadProfile(viewingUid);
+  await loadProfile(viewingUid);
 };
 
-/* ================= SHARE FIX (NO 404) ================= */
+/* ================= TIMELINE ================= */
 
-window.sharePost = function(id) {
-
-  const base = window.location.href.split("/profile.html")[0];
-
-  const url = base + "/post.html?id=" + id;
-
-  if (navigator.share) {
-
-    navigator.share({
-      title: "MCN Post",
-      url
-    });
-
-  } else {
-
-    navigator.clipboard.writeText(url);
-    alert("Link copied");
-
-  }
-};
-
-/* ================= CREATE POST (FIXED - MAIN ISSUE) ================= */
-
-window.createTimelinePost = async function () {
-
-  const input = document.getElementById("timelinePost");
-  const text = input.value.trim();
-
-  if (!text) return alert("Write something first");
-
-  const postRef = doc(collection(db, "timeline"));
-
-  await setDoc(postRef, {
-    uid: currentUser.uid,
-    username: profileData.username,
-    userPhoto: profileData.photo || "",
-    text,
-    createdAt: Date.now(),
-    likes: [],
-    comments: [],
-    shares: 0
-  });
-
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    posts: increment(1)
-  });
-
-  input.value = "";
-};
-
-/* ================= LIKE POST ================= */
-
-window.likePost = async function(postId, likes = []) {
-
-  const ref = doc(db, "timeline", postId);
-
-  let updated = likes || [];
-
-  if (updated.includes(currentUser.uid)) {
-    updated = updated.filter(x => x !== currentUser.uid);
-  } else {
-    updated.push(currentUser.uid);
-  }
-
-  await updateDoc(ref, { likes: updated });
-};
-
-/* ================= COMMENT POST ================= */
-
-window.commentPost = async function(postId, text) {
-
-  if (!text) return;
-
-  const ref = doc(db, "timeline", postId);
-  const snap = await getDoc(ref);
-
-  const data = snap.data();
-
-  const comments = data.comments || [];
-
-  comments.push({
-    uid: currentUser.uid,
-    username: profileData.username,
-    text,
-    time: Date.now()
-  });
-
-  await updateDoc(ref, { comments });
-};
-
-/* ================= LOAD TIMELINE ================= */
-
-function loadTimeline() {
+function loadTimelinePosts() {
 
   const q = query(collection(db, "timeline"));
 
   onSnapshot(q, (snap) => {
 
     const container = document.getElementById("timelinePosts");
+    if (!container) return;
+
     container.innerHTML = "";
 
     snap.forEach(docSnap => {
@@ -292,12 +239,15 @@ function loadTimeline() {
       container.innerHTML += `
         <div class="post-box">
 
-          <b>${p.username}</b>
-          <p>${p.text}</p>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <b>${p.username || "User"}</b>
+          </div>
+
+          <p>${p.text || ""}</p>
 
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
 
-            <button onclick="likePost('${id}', ${JSON.stringify(p.likes || [])})">
+            <button onclick="likePost('${id}')">
               ❤️ ${p.likes?.length || 0}
             </button>
 
@@ -311,15 +261,8 @@ function loadTimeline() {
 
           </div>
 
-          <div style="margin-top:10px;font-size:13px;opacity:.8;">
-            ${(p.comments || []).slice(-3).map(c =>
-              `<div>💬 ${c.username}: ${c.text}</div>`
-            ).join("")}
-          </div>
-
         </div>
       `;
-
     });
 
   });
@@ -334,6 +277,8 @@ function loadOnlineUsers() {
   onSnapshot(q, (snap) => {
 
     const box = document.getElementById("onlineUsers");
+    if (!box) return;
+
     box.innerHTML = "";
 
     snap.forEach(d => {
@@ -342,8 +287,8 @@ function loadOnlineUsers() {
       if (u.uid === currentUser.uid) return;
 
       box.innerHTML += `
-        <div onclick="openUserProfile('${u.uid}')"
-          style="padding:10px;background:#16213e;margin:5px;border-radius:10px;cursor:pointer;">
+        <div class="online-user" onclick="openUserProfile('${u.uid}')"
+          style="cursor:pointer;">
           ${u.username}
         </div>
       `;
@@ -354,8 +299,8 @@ function loadOnlineUsers() {
 
 }
 
-/* ================= NAV ================= */
+/* ================= SAFETY ================= */
 
-window.openUserProfile = (uid) => {
-  location.href = "profile.html?uid=" + uid;
-};
+function safe() {
+  return profileData && currentUser;
+}
