@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MCN Post</title>
+  <title>MCN Post View</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -12,76 +12,210 @@
       color:white;
     }
 
-    .container {
+    .wrap {
       padding:15px;
     }
 
-    .post {
+    .card {
       background:#16213e;
       padding:15px;
-      border-radius:12px;
+      border-radius:14px;
+      margin-bottom:12px;
     }
 
     .btn {
-      margin-top:10px;
       padding:10px;
       border:none;
-      border-radius:8px;
+      border-radius:10px;
+      margin-right:5px;
       background:#5bc0be;
       color:black;
       font-weight:bold;
+    }
+
+    .comment {
+      padding:10px;
+      background:#111b36;
+      border-radius:10px;
+      margin-top:8px;
+    }
+
+    input {
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      margin-top:10px;
+      background:#111b36;
+      color:white;
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="wrap">
 
-  <div id="post" class="post">Loading...</div>
+  <div id="post" class="card">Loading...</div>
+
+  <div class="card">
+    <h3>Actions</h3>
+
+    <button class="btn" id="likeBtn">❤️ Like</button>
+    <button class="btn" id="shareBtn">🔁 Share</button>
+
+    <div id="stats" style="margin-top:10px;opacity:.8;"></div>
+  </div>
+
+  <div class="card">
+    <h3>Comments</h3>
+
+    <input id="commentInput" placeholder="Write comment...">
+    <button class="btn" id="sendComment">Send</button>
+
+    <div id="comments"></div>
+  </div>
 
 </div>
 
 <script type="module">
-import { db } from "./firebase.js";
+
+import { db, auth } from "./firebase.js";
 import {
-  doc,
-  getDoc
+  doc, getDoc, setDoc, deleteDoc,
+  collection, addDoc,
+  onSnapshot, serverTimestamp,
+  increment, updateDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+let user;
 const postId = new URLSearchParams(location.search).get("id");
 
-async function loadPost() {
+/* AUTH */
+onAuthStateChanged(auth, async (u) => {
+  if (!u) return location.href = "index.html";
+  user = u;
+  loadPost();
+  loadComments();
+});
 
-  if (!postId) {
-    document.getElementById("post").innerHTML = "Post not found";
-    return;
-  }
+/* LOAD POST */
+async function loadPost() {
 
   const snap = await getDoc(doc(db, "timeline", postId));
 
-  if (!snap.exists()) {
-    document.getElementById("post").innerHTML = "Post not found";
-    return;
-  }
+  if (!snap.exists()) return;
 
   const p = snap.data();
 
   document.getElementById("post").innerHTML = `
-
     <b>${p.username}</b>
-    <p style="margin-top:10px">${p.text}</p>
-
-    <div style="margin-top:15px;opacity:.7">
-      ❤️ ${p.likes?.length || 0} likes<br>
-      💬 ${p.comments?.length || 0} comments<br>
-      🔁 ${p.shares || 0} shares
-    </div>
-
+    <p>${p.text}</p>
   `;
+
+  const likeSnap = await getDoc(doc(db, "timeline", postId, "likes", user.uid));
+
+  document.getElementById("stats").innerText =
+    `❤️ Likes: ${p.likeCount || 0}`;
 }
 
-loadPost();
+/* LIKE TOGGLE */
+document.getElementById("likeBtn").onclick = async () => {
+
+  const likeRef = doc(db, "timeline", postId, "likes", user.uid);
+  const snap = await getDoc(likeRef);
+
+  if (snap.exists()) {
+
+    await deleteDoc(likeRef);
+
+    await updateDoc(doc(db, "timeline", postId), {
+      likeCount: increment(-1)
+    });
+
+  } else {
+
+    await setDoc(likeRef, {
+      uid: user.uid
+    });
+
+    await updateDoc(doc(db, "timeline", postId), {
+      likeCount: increment(1)
+    });
+
+  }
+
+  loadPost();
+};
+
+/* SHARE */
+document.getElementById("shareBtn").onclick = async () => {
+
+  const url = location.origin + "/post.html?id=" + postId;
+
+  if (navigator.share) {
+    navigator.share({ title: "MCN Post", url });
+  } else {
+    await navigator.clipboard.writeText(url);
+    alert("Copied");
+  }
+
+  await updateDoc(doc(db, "timeline", postId), {
+    shareCount: increment(1)
+  });
+
+};
+
+/* COMMENTS */
+document.getElementById("sendComment").onclick = async () => {
+
+  const text = document.getElementById("commentInput").value;
+
+  if (!text) return;
+
+  await addDoc(collection(db, "timeline", postId, "comments"), {
+    uid: user.uid,
+    text,
+    createdAt: serverTimestamp()
+  });
+
+  document.getElementById("commentInput").value = "";
+};
+
+/* LOAD COMMENTS */
+function loadComments() {
+
+  const q = query(
+    collection(db, "timeline", postId, "comments"),
+    orderBy("createdAt", "asc")
+  );
+
+  onSnapshot(q, (snap) => {
+
+    const box = document.getElementById("comments");
+    box.innerHTML = "";
+
+    snap.forEach(d => {
+
+      const c = d.data();
+
+      box.innerHTML += `
+        <div class="comment">
+          <b>${c.uid}</b><br>
+          ${c.text}
+        </div>
+      `;
+
+    });
+
+  });
+
+}
+
 </script>
 
 </body>
