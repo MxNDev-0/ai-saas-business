@@ -1,4 +1,4 @@
-import { auth, db, storage } from "./firebase.js";
+import { auth, db } from "./firebase.js";
 
 import {
   onAuthStateChanged
@@ -13,12 +13,6 @@ import {
   query,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 /* ================= STATE ================= */
 
@@ -39,6 +33,20 @@ onAuthStateChanged(auth, async (user) => {
   await createProfileIfNeeded(user);
   await loadProfile(user.uid);
   loadOnlineUsers();
+
+  /* UPDATE ONLINE STATUS */
+  setInterval(async () => {
+
+    try {
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        lastActive: Date.now()
+      });
+
+    } catch (e) {}
+
+  }, 30000);
+
 });
 
 /* ================= CREATE PROFILE ================= */
@@ -113,83 +121,31 @@ function renderProfile(user) {
   }
 }
 
-/* ================= UPLOAD AVATAR ================= */
+/* ================= COMING SOON ================= */
 
 window.uploadAvatar = function () {
-
-  const input = document.getElementById("avatarInput");
-
-  input.click();
-
-  input.onchange = async (e) => {
-
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-
-      const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-
-      await uploadBytes(storageRef, file);
-
-      const url = await getDownloadURL(storageRef);
-
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        photo: url
-      });
-
-      await loadProfile(currentUser.uid);
-
-    } catch (err) {
-      console.error(err);
-      alert("Avatar upload failed");
-    }
-  };
+  alert("Avatar upload coming soon");
 };
 
-/* ================= UPLOAD COVER ================= */
-
 window.uploadCover = function () {
-
-  const input = document.getElementById("coverInput");
-
-  input.click();
-
-  input.onchange = async (e) => {
-
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-
-      const storageRef = ref(storage, `covers/${currentUser.uid}`);
-
-      await uploadBytes(storageRef, file);
-
-      const url = await getDownloadURL(storageRef);
-
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        coverPhoto: url
-      });
-
-      await loadProfile(currentUser.uid);
-
-    } catch (err) {
-      console.error(err);
-      alert("Cover upload failed");
-    }
-  };
+  alert("Cover upload coming soon");
 };
 
 /* ================= BUTTONS ================= */
 
 window.goBack = () => location.href = "dashboard.html";
+
 window.openInbox = () => location.href = "messages.html";
 
 window.editProfile = async function () {
 
   const username = prompt("Username:", profileData.username);
+
+  if (username === null) return;
+
   const bio = prompt("Bio:", profileData.bio);
+
+  if (bio === null) return;
 
   await updateDoc(doc(db, "users", currentUser.uid), {
     username,
@@ -201,10 +157,12 @@ window.editProfile = async function () {
 
 window.openSettings = async function () {
 
-  const choice = prompt("1 username 2 bio 5 private 7 logout");
+  const choice = prompt("1 username 2 bio 7 logout");
 
   if (choice === "7") {
-    auth.signOut();
+
+    await auth.signOut();
+
     location.href = "index.html";
   }
 };
@@ -224,6 +182,7 @@ function loadOnlineUsers() {
     snap.forEach((d) => {
 
       const u = d.data();
+
       if (u.uid === currentUser.uid) return;
 
       box.innerHTML += `
@@ -232,10 +191,17 @@ function loadOnlineUsers() {
             <div class="dot"></div>
             <div>${u.username}</div>
           </div>
-          <button class="mini-btn" onclick="startDM('${u.uid}')">💬</button>
+
+          <button
+            class="mini-btn"
+            onclick="startDM('${u.uid}')"
+          >
+            💬
+          </button>
         </div>
       `;
     });
+
   });
 }
 
@@ -247,16 +213,14 @@ window.startDM = (uid) => {
 
 window.createTimelinePost = async function () {
 
-  const text = document.getElementById("timelinePost").value.trim();
+  const text =
+  document.getElementById("timelinePost")
+  .value
+  .trim();
 
   if (!text) return;
 
-  await setDoc(doc(collection(db, "timeline")), {
-    uid: currentUser.uid,
-    username: profileData.username,
-    text,
-    createdAt: Date.now()
-  });
+  alert("Timeline system coming soon");
 
   document.getElementById("timelinePost").value = "";
 };
