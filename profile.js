@@ -13,9 +13,8 @@ import {
   query,
   onSnapshot,
   addDoc,
-  deleteDoc,
-  increment,
-  serverTimestamp
+  serverTimestamp,
+  increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
@@ -38,11 +37,11 @@ onAuthStateChanged(auth, async (user) => {
   await ensureProfile(user);
 
   loadProfile(viewingUid);
-  loadTimeline();
+  loadUserPosts(viewingUid);
   loadOnlineUsers();
 
-  setInterval(async () => {
-    await updateDoc(doc(db, "users", currentUser.uid), {
+  setInterval(() => {
+    updateDoc(doc(db, "users", currentUser.uid), {
       lastActive: Date.now()
     });
   }, 25000);
@@ -57,24 +56,17 @@ async function ensureProfile(user) {
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-
     await setDoc(ref, {
       uid: user.uid,
       username: user.email.split("@")[0],
       bio: "MCN Engine User",
       photo: "",
       coverPhoto: "",
-
       followers: [],
       following: [],
-
-      posts: 0,
-      likes: 0,
-
       createdAt: Date.now(),
       lastActive: Date.now()
     });
-
   }
 }
 
@@ -94,127 +86,13 @@ async function loadProfile(uid) {
   document.getElementById("postsCount").textContent = profileData.posts || 0;
   document.getElementById("followersCount").textContent = (profileData.followers || []).length;
   document.getElementById("followingCount").textContent = (profileData.following || []).length;
-  document.getElementById("likesCount").textContent = profileData.likes || 0;
-
-  /* AVATAR */
-  const avatar = document.getElementById("avatar");
-
-  if (profileData.photo) {
-    avatar.innerHTML = `<img src="${profileData.photo}">`;
-  } else {
-    avatar.textContent = profileData.username?.[0]?.toUpperCase() || "U";
-  }
-
-  /* COVER */
-  const cover = document.getElementById("coverPhoto");
-
-  cover.style.background = profileData.coverPhoto
-    ? `url(${profileData.coverPhoto}) center/cover`
-    : "linear-gradient(135deg,#5bc0be,#1c2541)";
 }
 
-/* ================= NAV FIX ================= */
+/* ================= USER POSTS (FIXED SCOPE) ================= */
 
-window.goBack = function () {
-  if (history.length > 1) history.back();
-  else location.href = "dashboard.html";
-};
+function loadUserPosts(uid) {
 
-window.openInbox = () => location.href = "messages.html";
-
-/* ================= SETTINGS FIX ================= */
-
-window.openSettings = function () {
-
-  document.getElementById("settingsModal")?.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "settingsModal";
-
-  modal.innerHTML = `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999;">
-      <div style="background:#111b36;padding:20px;border-radius:16px;width:90%;max-width:360px;">
-
-        <h3 style="margin-bottom:15px;">Settings</h3>
-
-        <button onclick="editProfile()" style="width:100%;padding:12px;margin-bottom:10px;">
-          Edit Profile
-        </button>
-
-        <button onclick="document.getElementById('settingsModal').remove()" style="width:100%;padding:12px;">
-          Close
-        </button>
-
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-};
-
-/* ================= EDIT PROFILE ================= */
-
-window.editProfile = async function () {
-
-  const username = prompt("Username:", profileData.username);
-  if (!username) return;
-
-  const bio = prompt("Bio:", profileData.bio);
-  if (!bio) return;
-
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    username,
-    bio
-  });
-
-  loadProfile(currentUser.uid);
-};
-
-/* ================= FOLLOW SYSTEM ================= */
-
-window.toggleFollow = async function (targetUid) {
-
-  if (!targetUid || targetUid === currentUser.uid) return;
-
-  const meRef = doc(db, "users", currentUser.uid);
-  const themRef = doc(db, "users", targetUid);
-
-  const meSnap = await getDoc(meRef);
-  const themSnap = await getDoc(themRef);
-
-  const me = meSnap.data();
-  const them = themSnap.data();
-
-  let myFollowing = me.following || [];
-  let theirFollowers = them.followers || [];
-
-  const isFollowing = myFollowing.includes(targetUid);
-
-  if (isFollowing) {
-    myFollowing = myFollowing.filter(x => x !== targetUid);
-    theirFollowers = theirFollowers.filter(x => x !== currentUser.uid);
-  } else {
-    myFollowing.push(targetUid);
-    theirFollowers.push(currentUser.uid);
-  }
-
-  await updateDoc(meRef, { following: myFollowing });
-  await updateDoc(themRef, { followers: theirFollowers });
-
-  loadProfile(targetUid);
-};
-
-/* ================= PROFILE NAVIGATION FIX ================= */
-
-window.openUserProfile = function (uid) {
-  location.href = "profile.html?uid=" + uid;
-};
-
-/* ================= TIMELINE (FIXED CORE) ================= */
-
-function loadTimeline() {
-
-  const q = query(collection(db, "timeline"));
+  const q = query(collection(db, "timeline", uid, "posts"));
 
   onSnapshot(q, (snap) => {
 
@@ -226,24 +104,20 @@ function loadTimeline() {
       const p = docSnap.data();
       const id = docSnap.id;
 
-      const likes = p.likes || [];
-      const comments = p.comments || [];
-
       container.innerHTML += `
         <div class="post-box">
 
           <b>${p.username}</b>
-
           <p>${p.text}</p>
 
-          <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <div style="display:flex;gap:10px;margin-top:10px;">
 
-            <button onclick="likePost('${id}')">
-              ❤️ ${likes.length}
+            <button onclick="likePost('${uid}','${id}')">
+              ❤️ ${p.likes || 0}
             </button>
 
-            <button onclick="commentPost('${id}')">
-              💬 ${comments.length}
+            <button onclick="commentPost('${uid}','${id}')">
+              💬 ${(p.comments || []).length}
             </button>
 
             <button onclick="sharePost('${id}')">
@@ -252,8 +126,8 @@ function loadTimeline() {
 
           </div>
 
-          <div style="margin-top:10px;font-size:13px;opacity:.8;">
-            ${comments.slice(-3).map(c =>
+          <div style="margin-top:10px;font-size:13px;">
+            ${(p.comments || []).slice(-3).map(c =>
               `<div>💬 ${c.username}: ${c.text}</div>`
             ).join("")}
           </div>
@@ -264,39 +138,61 @@ function loadTimeline() {
     });
 
   });
+
 }
+
+/* ================= CREATE POST (FIXED) ================= */
+
+window.createTimelinePost = async function () {
+
+  const text = document.getElementById("timelinePost").value.trim();
+  if (!text) return;
+
+  const ref = collection(db, "timeline", currentUser.uid, "posts");
+
+  await addDoc(ref, {
+    text,
+    uid: currentUser.uid,
+    username: profileData.username,
+    likes: 0,
+    comments: [],
+    createdAt: serverTimestamp()
+  });
+
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    posts: increment(1)
+  });
+
+  document.getElementById("timelinePost").value = "";
+
+};
 
 /* ================= LIKE ================= */
 
-window.likePost = async function (postId) {
+window.likePost = async function(uid, postId) {
 
-  const ref = doc(db, "timeline", postId);
+  const ref = doc(db, "timeline", uid, "posts", postId);
   const snap = await getDoc(ref);
 
-  const data = snap.data();
-  let likes = data.likes || [];
+  let likes = snap.data().likes || 0;
 
-  if (likes.includes(currentUser.uid)) {
-    likes = likes.filter(x => x !== currentUser.uid);
-  } else {
-    likes.push(currentUser.uid);
-  }
+  await updateDoc(ref, {
+    likes: likes + 1
+  });
 
-  await updateDoc(ref, { likes });
 };
 
 /* ================= COMMENT ================= */
 
-window.commentPost = async function (postId) {
+window.commentPost = async function(uid, postId) {
 
-  const text = prompt("Write comment:");
+  const text = prompt("Comment:");
   if (!text) return;
 
-  const ref = doc(db, "timeline", postId);
+  const ref = doc(db, "timeline", uid, "posts", postId);
   const snap = await getDoc(ref);
 
-  const data = snap.data();
-  const comments = data.comments || [];
+  let comments = snap.data().comments || [];
 
   comments.push({
     uid: currentUser.uid,
@@ -306,20 +202,36 @@ window.commentPost = async function (postId) {
   });
 
   await updateDoc(ref, { comments });
+
 };
 
 /* ================= SHARE FIX (NO 404) ================= */
 
-window.sharePost = function (id) {
+window.sharePost = function(id) {
 
-  const url = location.origin + location.pathname.replace("profile.html", "") + "post.html?id=" + id;
+  const url = `${location.origin}/post.html?id=${id}`;
 
   if (navigator.share) {
     navigator.share({ title: "MCN Post", url });
   } else {
     navigator.clipboard.writeText(url);
-    alert("Link copied");
+    alert("Copied!");
   }
+
+};
+
+/* ================= SETTINGS ================= */
+
+window.openSettings = function () {
+  alert("Settings coming soon (safe stub)");
+};
+
+window.uploadAvatar = function () {
+  alert("Avatar upload coming soon");
+};
+
+window.uploadCover = function () {
+  alert("Cover upload coming soon");
 };
 
 /* ================= ONLINE USERS ================= */
@@ -331,6 +243,8 @@ function loadOnlineUsers() {
   onSnapshot(q, (snap) => {
 
     const box = document.getElementById("onlineUsers");
+    if (!box) return;
+
     box.innerHTML = "";
 
     snap.forEach(d => {
@@ -339,7 +253,7 @@ function loadOnlineUsers() {
       if (u.uid === currentUser.uid) return;
 
       box.innerHTML += `
-        <div onclick="openUserProfile('${u.uid}')" style="padding:10px;background:#16213e;margin:5px;border-radius:10px;cursor:pointer;">
+        <div onclick="openUserProfile('${u.uid}')">
           ${u.username}
         </div>
       `;
@@ -349,3 +263,15 @@ function loadOnlineUsers() {
   });
 
 }
+
+/* ================= NAV ================= */
+
+window.goBack = () => {
+  history.length > 1 ? history.back() : location.href = "dashboard.html";
+};
+
+window.openInbox = () => location.href = "messages.html";
+
+window.openUserProfile = (uid) => {
+  location.href = "profile.html?uid=" + uid;
+};
