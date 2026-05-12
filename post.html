@@ -1,220 +1,304 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>MCN Post View</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      margin:0;
-      font-family:Arial;
-      background:#071028;
-      color:white;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-    .wrap {
-      padding:15px;
-    }
+<title>MCN Post</title>
 
-    .card {
-      background:#16213e;
-      padding:15px;
-      border-radius:14px;
-      margin-bottom:12px;
-    }
+<style>
 
-    .btn {
-      padding:10px;
-      border:none;
-      border-radius:10px;
-      margin-right:5px;
-      background:#5bc0be;
-      color:black;
-      font-weight:bold;
-    }
+body{
+  margin:0;
+  font-family:Arial;
+  background:#071028;
+  color:white;
+}
 
-    .comment {
-      padding:10px;
-      background:#111b36;
-      border-radius:10px;
-      margin-top:8px;
-    }
+.topbar{
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 15px;
+  background:#111c44;
+  position:sticky;
+  top:0;
+}
 
-    input {
-      width:100%;
-      padding:12px;
-      border-radius:10px;
-      border:none;
-      margin-top:10px;
-      background:#111b36;
-      color:white;
-    }
-  </style>
+.icon-btn{
+  width:40px;
+  height:40px;
+  border:none;
+  border-radius:10px;
+  background:#5bc0be;
+  color:black;
+  font-weight:bold;
+}
+
+.container{
+  padding:15px;
+}
+
+.post{
+  background:#16213e;
+  padding:15px;
+  border-radius:16px;
+  margin-top:15px;
+}
+
+.username{
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.text{
+  font-size:15px;
+  line-height:1.5;
+  margin-bottom:15px;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+button{
+  border:none;
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+.like{
+  background:#5bc0be;
+  color:black;
+}
+
+.comment{
+  background:#1c2541;
+  color:white;
+}
+
+.share{
+  background:#2a3a6b;
+  color:white;
+}
+
+.comments{
+  margin-top:15px;
+  font-size:14px;
+  opacity:0.9;
+}
+
+.comment-box{
+  background:#111b36;
+  padding:10px;
+  border-radius:12px;
+  margin-top:8px;
+}
+
+.empty{
+  opacity:0.6;
+  text-align:center;
+  margin-top:20px;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<div class="wrap">
+<div class="topbar">
 
-  <div id="post" class="card">Loading...</div>
+  <button class="icon-btn" onclick="goBack()">←</button>
 
-  <div class="card">
-    <h3>Actions</h3>
+  <div>Post</div>
 
-    <button class="btn" id="likeBtn">❤️ Like</button>
-    <button class="btn" id="shareBtn">🔁 Share</button>
+  <button class="icon-btn" onclick="sharePost()">🔁</button>
 
-    <div id="stats" style="margin-top:10px;opacity:.8;"></div>
-  </div>
+</div>
 
-  <div class="card">
-    <h3>Comments</h3>
+<div class="container">
 
-    <input id="commentInput" placeholder="Write comment...">
-    <button class="btn" id="sendComment">Send</button>
-
-    <div id="comments"></div>
+  <div id="postContainer" class="post">
+    Loading post...
   </div>
 
 </div>
 
 <script type="module">
 
-import { db, auth } from "./firebase.js";
-import {
-  doc, getDoc, setDoc, deleteDoc,
-  collection, addDoc,
-  onSnapshot, serverTimestamp,
-  increment, updateDoc, query, orderBy
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { auth, db } from "./firebase.js";
 
 import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-let user;
-const postId = new URLSearchParams(location.search).get("id");
+import {
+  doc,
+  getDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* AUTH */
-onAuthStateChanged(auth, async (u) => {
-  if (!u) return location.href = "index.html";
-  user = u;
+/* ================= STATE ================= */
+
+let currentUser = null;
+let postOwnerUid = null;
+let postId = null;
+
+/* ================= AUTH ================= */
+
+onAuthStateChanged(auth, async (user) => {
+
+  if (!user) return location.href = "index.html";
+
+  currentUser = user;
+
+  const params = new URLSearchParams(location.search);
+
+  postOwnerUid = params.get("uid");
+  postId = params.get("postId");
+
+  if (!postOwnerUid || !postId) {
+    document.getElementById("postContainer").innerHTML =
+      "<div class='empty'>Invalid post link</div>";
+    return;
+  }
+
   loadPost();
-  loadComments();
+
 });
 
-/* LOAD POST */
+/* ================= LOAD POST ================= */
+
 async function loadPost() {
 
-  const snap = await getDoc(doc(db, "timeline", postId));
+  const ref = doc(db, "users", postOwnerUid, "posts", postId);
+  const snap = await getDoc(ref);
 
-  if (!snap.exists()) return;
+  if (!snap.exists()) {
+    document.getElementById("postContainer").innerHTML =
+      "<div class='empty'>Post not found</div>";
+    return;
+  }
 
   const p = snap.data();
 
-  document.getElementById("post").innerHTML = `
-    <b>${p.username}</b>
-    <p>${p.text}</p>
+  document.getElementById("postContainer").innerHTML = `
+
+    <div class="username">${p.username}</div>
+
+    <div class="text">${p.text}</div>
+
+    <div class="actions">
+
+      <button class="like" onclick="likePost()">
+        ❤️ ${p.likes?.length || 0}
+      </button>
+
+      <button class="comment" onclick="commentPost()">
+        💬 ${p.comments?.length || 0}
+      </button>
+
+      <button class="share" onclick="sharePost()">
+        🔁 Share
+      </button>
+
+    </div>
+
+    <div class="comments">
+
+      ${(p.comments || []).length === 0
+        ? "<div class='empty'>No comments yet</div>"
+        : p.comments.map(c => `
+          <div class="comment-box">
+            <b>${c.username}</b>: ${c.text}
+          </div>
+        `).join("")
+      }
+
+    </div>
+
   `;
 
-  const likeSnap = await getDoc(doc(db, "timeline", postId, "likes", user.uid));
-
-  document.getElementById("stats").innerText =
-    `❤️ Likes: ${p.likeCount || 0}`;
 }
 
-/* LIKE TOGGLE */
-document.getElementById("likeBtn").onclick = async () => {
+/* ================= LIKE ================= */
 
-  const likeRef = doc(db, "timeline", postId, "likes", user.uid);
-  const snap = await getDoc(likeRef);
+window.likePost = async function () {
 
-  if (snap.exists()) {
+  const ref = doc(db, "users", postOwnerUid, "posts", postId);
+  const snap = await getDoc(ref);
 
-    await deleteDoc(likeRef);
+  const data = snap.data();
+  let likes = data.likes || [];
 
-    await updateDoc(doc(db, "timeline", postId), {
-      likeCount: increment(-1)
-    });
-
+  if (likes.includes(currentUser.uid)) {
+    likes = likes.filter(x => x !== currentUser.uid);
   } else {
-
-    await setDoc(likeRef, {
-      uid: user.uid
-    });
-
-    await updateDoc(doc(db, "timeline", postId), {
-      likeCount: increment(1)
-    });
-
+    likes.push(currentUser.uid);
   }
+
+  await updateDoc(ref, { likes });
 
   loadPost();
-};
-
-/* SHARE */
-document.getElementById("shareBtn").onclick = async () => {
-
-  const url = location.origin + "/post.html?id=" + postId;
-
-  if (navigator.share) {
-    navigator.share({ title: "MCN Post", url });
-  } else {
-    await navigator.clipboard.writeText(url);
-    alert("Copied");
-  }
-
-  await updateDoc(doc(db, "timeline", postId), {
-    shareCount: increment(1)
-  });
 
 };
 
-/* COMMENTS */
-document.getElementById("sendComment").onclick = async () => {
+/* ================= COMMENT ================= */
 
-  const text = document.getElementById("commentInput").value;
+window.commentPost = async function () {
 
+  const text = prompt("Write comment:");
   if (!text) return;
 
-  await addDoc(collection(db, "timeline", postId, "comments"), {
-    uid: user.uid,
+  const ref = doc(db, "users", postOwnerUid, "posts", postId);
+  const snap = await getDoc(ref);
+
+  const data = snap.data();
+  const comments = data.comments || [];
+
+  comments.push({
+    uid: currentUser.uid,
+    username: currentUser.email.split("@")[0],
     text,
-    createdAt: serverTimestamp()
+    time: Date.now()
   });
 
-  document.getElementById("commentInput").value = "";
+  await updateDoc(ref, { comments });
+
+  loadPost();
+
 };
 
-/* LOAD COMMENTS */
-function loadComments() {
+/* ================= SHARE FIX ================= */
 
-  const q = query(
-    collection(db, "timeline", postId, "comments"),
-    orderBy("createdAt", "asc")
-  );
+window.sharePost = function () {
 
-  onSnapshot(q, (snap) => {
+  const url = `${location.origin}/post.html?uid=${postOwnerUid}&postId=${postId}`;
 
-    const box = document.getElementById("comments");
-    box.innerHTML = "";
-
-    snap.forEach(d => {
-
-      const c = d.data();
-
-      box.innerHTML += `
-        <div class="comment">
-          <b>${c.uid}</b><br>
-          ${c.text}
-        </div>
-      `;
-
+  if (navigator.share) {
+    navigator.share({
+      title: "MCN Post",
+      url
     });
+  } else {
+    navigator.clipboard.writeText(url);
+    alert("Link copied");
+  }
 
-  });
+};
 
-}
+/* ================= NAV ================= */
+
+window.goBack = function () {
+  if (history.length > 1) history.back();
+  else location.href = "profile.html";
+};
 
 </script>
 
