@@ -12,384 +12,250 @@ import {
   collection,
   query,
   onSnapshot,
-  deleteDoc
-  where,
-  orderBy
+  addDoc,
+  increment,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= STATE ================= */
 
 let currentUser = null;
 let profileData = null;
+let viewingUid = null;
 
-/* ================= AUTH ================= */
+/* ================= INIT ================= */
 
 onAuthStateChanged(auth, async (user) => {
-
-  if (!user) {
-
-    location.href = "index.html";
-
-    return;
-  }
+  if (!user) return (location.href = "index.html");
 
   currentUser = user;
 
-  await createProfileIfNeeded(user);
+  const params = new URLSearchParams(location.search);
+  viewingUid = params.get("uid") || user.uid;
 
-  await loadProfile(user.uid);
+  await ensureProfile(user);
 
+  loadProfile(viewingUid);
+  loadTimeline(viewingUid);
   loadOnlineUsers();
-
-  loadTimelinePosts();
-
-  /* UPDATE ONLINE STATUS */
-
-  setInterval(async () => {
-
-    try {
-
-      await updateDoc(
-        doc(db, "users", currentUser.uid),
-        {
-          lastActive: Date.now()
-        }
-      );
-
-    } catch (e) {}
-
-  }, 30000);
-
 });
 
-/* ================= CREATE PROFILE ================= */
+/* ================= PROFILE CREATE ================= */
 
-async function createProfileIfNeeded(user) {
-
-  const refDoc =
-  doc(db, "users", user.uid);
-
-  const snap =
-  await getDoc(refDoc);
+async function ensureProfile(user) {
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-
-    await setDoc(refDoc, {
-
+    await setDoc(ref, {
       uid: user.uid,
-
-      username:
-      user.email.split("@")[0],
-
+      username: user.email.split("@")[0],
       bio: "MCN Engine User",
-
       photo: "",
-
       coverPhoto: "",
-
-      followers: 0,
-
-      following: 0,
-
+      followers: [],
+      following: [],
       posts: 0,
-
       likes: 0,
-
-      privateAccount: false,
-
       createdAt: Date.now(),
-
       lastActive: Date.now()
-
     });
-
   }
-
 }
 
 /* ================= LOAD PROFILE ================= */
 
 async function loadProfile(uid) {
-
-  const snap =
-  await getDoc(
-    doc(db, "users", uid)
-  );
-
+  const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return;
 
   profileData = snap.data();
 
-  renderProfile(profileData);
+  document.getElementById("username").textContent = profileData.username;
+  document.getElementById("topUsername").textContent = profileData.username;
+  document.getElementById("bio").textContent = profileData.bio || "";
 
+  document.getElementById("postsCount").textContent = profileData.posts || 0;
+  document.getElementById("followersCount").textContent = (profileData.followers || []).length;
+  document.getElementById("followingCount").textContent = (profileData.following || []).length;
+
+  const avatar = document.getElementById("avatar");
+
+  if (profileData.photo) {
+    avatar.innerHTML = `<img src="${profileData.photo}">`;
+  } else {
+    avatar.textContent = profileData.username?.[0]?.toUpperCase() || "U";
+  }
 }
 
-/* ================= RENDER PROFILE ================= */
+/* ================= FOLLOW SYSTEM ================= */
 
-function renderProfile(user) {
+window.toggleFollow = async function(targetUid) {
 
-  document.getElementById(
-    "topUsername"
-  ).textContent =
-  user.username;
+  const meRef = doc(db, "users", currentUser.uid);
+  const themRef = doc(db, "users", targetUid);
 
-  document.getElementById(
-    "username"
-  ).textContent =
-  user.username;
+  const meSnap = await getDoc(meRef);
+  const themSnap = await getDoc(themRef);
 
-  document.getElementById(
-    "bio"
-  ).textContent =
-  user.bio || "No bio yet";
+  const me = meSnap.data();
+  const them = themSnap.data();
 
-  document.getElementById(
-    "postsCount"
-  ).textContent =
-  user.posts || 0;
+  let myFollowing = me.following || [];
+  let theirFollowers = them.followers || [];
 
-  document.getElementById(
-    "followersCount"
-  ).textContent =
-  user.followers || 0;
+  const isFollowing = myFollowing.includes(targetUid);
 
-  document.getElementById(
-    "followingCount"
-  ).textContent =
-  user.following || 0;
-
-  document.getElementById(
-    "likesCount"
-  ).textContent =
-  user.likes || 0;
-
-  /* COVER */
-
-  const cover =
-  document.getElementById(
-    "coverPhoto"
-  );
-
-  if (user.coverPhoto) {
-
-    cover.style.background =
-    `url(${user.coverPhoto}) center/cover`;
-
+  if (isFollowing) {
+    myFollowing = myFollowing.filter(id => id !== targetUid);
+    theirFollowers = theirFollowers.filter(id => id !== currentUser.uid);
   } else {
-
-    cover.style.background =
-    "linear-gradient(135deg,#5bc0be,#1c2541)";
-
+    myFollowing.push(targetUid);
+    theirFollowers.push(currentUser.uid);
   }
 
-  /* AVATAR */
+  await updateDoc(meRef, { following: myFollowing });
+  await updateDoc(themRef, { followers: theirFollowers });
 
-  const avatar =
-  document.getElementById(
-    "avatar"
-  );
+  loadProfile(targetUid);
+};
 
-  if (user.photo) {
+/* ================= OPEN PROFILE ================= */
 
-    avatar.innerHTML =
-    `<img src="${user.photo}">`;
+window.openUserProfile = (uid) => {
+  location.href = "profile.html?uid=" + uid;
+};
 
+/* ================= TIMELINE POSTS ================= */
+
+window.createTimelinePost = async function () {
+
+  const text = document.getElementById("timelinePost").value.trim();
+  if (!text) return;
+
+  await addDoc(collection(db, "timeline"), {
+    uid: currentUser.uid,
+    username: profileData.username,
+    userPhoto: profileData.photo || "",
+    text,
+    likes: [],
+    comments: [],
+    shares: 0,
+    createdAt: Date.now()
+  });
+
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    posts: increment(1)
+  });
+
+  document.getElementById("timelinePost").value = "";
+};
+
+/* ================= LIKE ================= */
+
+window.likePost = async function(postId, likes = []) {
+
+  const ref = doc(db, "timeline", postId);
+
+  let updated = likes || [];
+
+  if (updated.includes(currentUser.uid)) {
+    updated = updated.filter(id => id !== currentUser.uid);
   } else {
-
-    avatar.textContent =
-    user.username?.[0]?.toUpperCase() || "U";
-
+    updated.push(currentUser.uid);
   }
 
-}
-
-/* ================= COMING SOON ================= */
-
-window.uploadAvatar = function () {
-
-  alert(
-    "Avatar upload coming soon"
-  );
-
+  await updateDoc(ref, { likes: updated });
 };
 
-window.uploadCover = function () {
+/* ================= COMMENT ================= */
 
-  alert(
-    "Cover upload coming soon"
-  );
+window.commentPost = async function(postId, text) {
 
+  if (!text) return;
+
+  const ref = doc(db, "timeline", postId);
+  const snap = await getDoc(ref);
+
+  const data = snap.data();
+  const comments = data.comments || [];
+
+  comments.push({
+    uid: currentUser.uid,
+    text,
+    time: Date.now()
+  });
+
+  await updateDoc(ref, { comments });
 };
 
-/* ================= BUTTONS ================= */
+/* ================= SHARE ================= */
 
-window.goBack =
-() => location.href =
-"dashboard.html";
+window.sharePost = async function(postId) {
 
-window.openInbox =
-() => location.href =
-"messages.html";
+  const ref = doc(db, "timeline", postId);
+  const snap = await getDoc(ref);
 
-/* ================= EDIT PROFILE ================= */
-
-window.editProfile =
-async function () {
-
-  const username =
-  prompt(
-    "Username:",
-    profileData.username
-  );
-
-  if (username === null) return;
-
-  const bio =
-  prompt(
-    "Bio:",
-    profileData.bio
-  );
-
-  if (bio === null) return;
-
-  await updateDoc(
-
-    doc(
-      db,
-      "users",
-      currentUser.uid
-    ),
-
-    {
-      username,
-      bio
-    }
-
-  );
-
-  await loadProfile(
-    currentUser.uid
-  );
-
+  await updateDoc(ref, {
+    shares: (snap.data().shares || 0) + 1
+  });
 };
 
-/* ================= SETTINGS ================= */
+/* ================= TIMELINE LOAD ================= */
 
-window.openSettings =
-function () {
+function loadTimeline(uid) {
 
-  const existing =
-  document.getElementById(
-    "settingsModal"
-  );
+  const q = query(collection(db, "timeline"));
 
-  if (existing) {
-    existing.remove();
-  }
+  onSnapshot(q, (snap) => {
 
-  const modal =
-  document.createElement("div");
+    const container = document.getElementById("timelinePosts");
+    container.innerHTML = "";
 
-  modal.id =
-  "settingsModal";
+    snap.forEach(docSnap => {
 
-  modal.innerHTML = `
+      const p = docSnap.data();
+      const id = docSnap.id;
 
-    <div
-      style="
-        position:fixed;
-        inset:0;
-        background:rgba(0,0,0,0.7);
-        z-index:9999;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:20px;
-      "
-    >
+      container.innerHTML += `
+        <div class="post-box">
 
-      <div
-        style="
-          width:100%;
-          max-width:380px;
-          background:#111b36;
-          border-radius:24px;
-          padding:25px;
-          box-shadow:0 10px 40px rgba(0,0,0,0.5);
-        "
-      >
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="width:40px;height:40px;border-radius:50%;background:#5bc0be;overflow:hidden;">
+              ${p.userPhoto ? `<img src="${p.userPhoto}" style="width:100%;height:100%;object-fit:cover;">` : ""}
+            </div>
 
-        <div
-          style="
-            font-size:22px;
-            font-weight:bold;
-            margin-bottom:20px;
-          "
-        >
-          ⚙ Settings
+            <div>
+              <b>${p.username}</b>
+              <div style="font-size:12px;opacity:0.6">${new Date(p.createdAt).toLocaleString()}</div>
+            </div>
+          </div>
+
+          <p style="margin:10px 0">${p.text}</p>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+
+            <button onclick="likePost('${id}', ${JSON.stringify(p.likes || [])})">
+              ❤️ ${p.likes?.length || 0}
+            </button>
+
+            <button onclick="commentPost('${id}', prompt('Comment:'))">
+              💬 ${p.comments?.length || 0}
+            </button>
+
+            <button onclick="sharePost('${id}')">
+              🔁 ${p.shares || 0}
+            </button>
+
+          </div>
+
         </div>
+      `;
 
-        <button
-          id="editProfileBtn"
-          style="
-            width:100%;
-            border:none;
-            padding:15px;
-            border-radius:14px;
-            background:#16213e;
-            color:white;
-            margin-bottom:12px;
-            font-size:15px;
-            font-weight:bold;
-          "
-        >
-          ✏ Edit Profile
-        </button>
+    });
 
-        <button
-          id="closeSettingsBtn"
-          style="
-            width:100%;
-            border:none;
-            padding:15px;
-            border-radius:14px;
-            background:#1c2541;
-            color:white;
-            font-size:15px;
-            font-weight:bold;
-          "
-        >
-          Close
-        </button>
-
-      </div>
-
-    </div>
-  `;
-
-  document.body.appendChild(
-    modal
-  );
-
-  document.getElementById(
-    "closeSettingsBtn"
-  ).onclick = () => {
-
-    modal.remove();
-
-  };
-
-  document.getElementById(
-    "editProfileBtn"
-  ).onclick = async () => {
-
-    modal.remove();
-
-    editProfile();
-
-  };
-
-};
+  });
+}
 
 /* ================= ONLINE USERS ================= */
 
@@ -397,619 +263,22 @@ function loadOnlineUsers() {
 
   const q = query(collection(db, "users"));
 
-  onSnapshot(q, async (snap) => {
+  onSnapshot(q, (snap) => {
 
-    const box =
-    document.getElementById("onlineUsers");
-
+    const box = document.getElementById("onlineUsers");
     box.innerHTML = "";
 
-    snap.forEach(async (d) => {
+    snap.forEach(d => {
 
       const u = d.data();
-
       if (u.uid === currentUser.uid) return;
 
-      /* CHECK FOLLOW */
-
-      let following = false;
-
-      try {
-
-        const followId =
-        currentUser.uid + "_" + u.uid;
-
-        const followSnap =
-        await getDoc(
-          doc(db, "follows", followId)
-        );
-
-        following =
-        followSnap.exists();
-
-      } catch(e){}
-
       box.innerHTML += `
-
-        <div class="online-user">
-
-          <div
-            class="online-left"
-            style="cursor:pointer;"
-            onclick="openUserProfile('${u.uid}')"
-          >
-
-            <div
-              class="dot"
-              style="
-                background:
-                ${
-                  Date.now() -
-                  (u.lastActive || 0)
-                  < 120000
-                  ? '#00ff88'
-                  : 'gray'
-                };
-              "
-            ></div>
-
-            <div
-              style="
-                display:flex;
-                align-items:center;
-                gap:10px;
-              "
-            >
-
-              ${
-                u.photo
-                ? `
-                  <img
-                    src="${u.photo}"
-                    style="
-                      width:38px;
-                      height:38px;
-                      border-radius:50%;
-                      object-fit:cover;
-                    "
-                    onerror="
-                      this.style.display='none'
-                    "
-                  >
-                `
-                : `
-                  <div
-                    style="
-                      width:38px;
-                      height:38px;
-                      border-radius:50%;
-                      background:#5bc0be;
-                      display:flex;
-                      align-items:center;
-                      justify-content:center;
-                      color:black;
-                      font-weight:bold;
-                    "
-                  >
-                    ${
-                      u.username?.[0]
-                      ?.toUpperCase() || "U"
-                    }
-                  </div>
-                `
-              }
-
-              <div>
-
-                <div
-                  style="
-                    font-weight:bold;
-                  "
-                >
-                  ${u.username}
-                </div>
-
-                <div
-                  style="
-                    opacity:.6;
-                    font-size:12px;
-                  "
-                >
-                  ${
-                    u.followers || 0
-                  } followers
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <button
-            class="mini-btn"
-            onclick="toggleFollow(
-              '${u.uid}',
-              ${following}
-            )"
-          >
-
-            ${
-              following
-              ? "Following"
-              : "Follow"
-            }
-
-          </button>
-
+        <div onclick="openUserProfile('${u.uid}')"
+          style="padding:10px;background:#16213e;margin-bottom:8px;border-radius:10px;cursor:pointer;">
+          ${u.username}
         </div>
       `;
-
-    });
-
-  });
-}
-
-/* ================= OPEN USER PROFILE ================= */
-
-window.openUserProfile = function(uid) {
-
-  location.href =
-  "profile.html?uid=" + uid;
-};
-
-/* ================= FOLLOW SYSTEM ================= */
-
-window.toggleFollow =
-async function(targetUid, following) {
-
-  try {
-
-    const followId =
-    currentUser.uid +
-    "_" +
-    targetUid;
-
-    const followRef =
-    doc(
-      db,
-      "follows",
-      followId
-    );
-
-    const targetRef =
-    doc(
-      db,
-      "users",
-      targetUid
-    );
-
-    const myRef =
-    doc(
-      db,
-      "users",
-      currentUser.uid
-    );
-
-    const targetSnap =
-    await getDoc(targetRef);
-
-    const mySnap =
-    await getDoc(myRef);
-
-    const targetData =
-    targetSnap.data();
-
-    const myData =
-    mySnap.data();
-
-    if (!following) {
-
-      await setDoc(
-        followRef,
-        {
-          follower:
-          currentUser.uid,
-
-          following:
-          targetUid,
-
-          createdAt:
-          Date.now()
-        }
-      );
-
-      await updateDoc(
-        targetRef,
-        {
-          followers:
-          (targetData.followers || 0) + 1
-        }
-      );
-
-      await updateDoc(
-        myRef,
-        {
-          following:
-          (myData.following || 0) + 1
-        }
-      );
-
-    } else {
-
-      await deleteDoc(
-        followRef
-      );
-
-      await updateDoc(
-        targetRef,
-        {
-          followers:
-          Math.max(
-            0,
-            (targetData.followers || 1) - 1
-          )
-        }
-      );
-
-      await updateDoc(
-        myRef,
-        {
-          following:
-          Math.max(
-            0,
-            (myData.following || 1) - 1
-          )
-        }
-      );
-
-    }
-
-  } catch(err) {
-
-    console.error(err);
-
-    alert(
-      "Follow system error"
-    );
-  }
-};
-
-/* ================= TIMELINE ================= */
-
-window.createTimelinePost = async function () {
-
-  const text =
-  document.getElementById("timelinePost")
-  .value
-  .trim();
-
-  if (!text) {
-    alert("Write something first");
-    return;
-  }
-
-  try {
-
-    await setDoc(
-
-      doc(collection(db, "timeline")),
-
-      {
-        uid: currentUser.uid,
-        username: profileData.username,
-        userPhoto: profileData.photo || "",
-        text: text,
-        createdAt: Date.now()
-      }
-
-    );
-
-    /* UPDATE POSTS COUNT */
-
-    await updateDoc(
-
-      doc(db, "users", currentUser.uid),
-
-      {
-        posts: (profileData.posts || 0) + 1
-      }
-
-    );
-
-    document.getElementById(
-      "timelinePost"
-    ).value = "";
-
-    await loadProfile(currentUser.uid);
-
-    alert("Post published");
-
-  } catch (err) {
-
-    console.error(err);
-
-    alert("Failed to publish post");
-  }
-
-};
-
-/* ================= LOAD TIMELINE POSTS ================= */
-
-function loadTimelinePosts() {
-
-  const q =
-  query(collection(db, "timeline"));
-
-  onSnapshot(q, (snap) => {
-
-    const activityCard =
-    document.querySelectorAll(".card")[1];
-
-    let html = `
-
-      <div class="section-title">
-        📌 Activity
-      </div>
-
-      <textarea
-        id="timelinePost"
-        placeholder="What's on your mind?"
-        style="
-          width:100%;
-          background:#16213e;
-          border:none;
-          color:white;
-          padding:14px;
-          border-radius:14px;
-          margin-bottom:10px;
-          resize:none;
-          min-height:90px;
-        "
-      ></textarea>
-
-      <button
-        class="action-btn primary"
-        onclick="createTimelinePost()"
-        style="
-          width:100%;
-          margin-bottom:15px;
-        "
-      >
-        Post Update
-      </button>
-    `;
-
-    const posts = [];
-
-    snap.forEach((docSnap) => {
-
-      posts.push(docSnap.data());
-
-    });
-
-    posts.sort((a, b) =>
-      b.createdAt - a.createdAt
-    );
-
-    if (!posts.length) {
-
-      html += `
-
-        <div class="empty">
-          No posts yet
-        </div>
-      `;
-    }
-
-    posts.forEach((post) => {
-
-      html += `
-
-        <div class="post-box">
-
-          <div
-            style="
-              display:flex;
-              align-items:center;
-              gap:10px;
-              margin-bottom:10px;
-            "
-          >
-
-            <div
-              style="
-                width:42px;
-                height:42px;
-                border-radius:50%;
-                background:#5bc0be;
-                overflow:hidden;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-weight:bold;
-                color:black;
-              "
-            >
-
-              ${
-                post.userPhoto
-                ? `<img
-                    src="${post.userPhoto}"
-                    style="
-                      width:100%;
-                      height:100%;
-                      object-fit:cover;
-                    "
-                  >`
-                : post.username?.[0]?.toUpperCase()
-              }
-
-            </div>
-
-            <div>
-
-              <div
-                style="
-                  font-weight:bold;
-                "
-              >
-                ${post.username}
-              </div>
-
-              <div
-                style="
-                  opacity:.6;
-                  font-size:12px;
-                "
-              >
-                ${
-                  new Date(post.createdAt)
-                  .toLocaleString()
-                }
-              </div>
-
-            </div>
-
-          </div>
-
-          <div
-            style="
-              line-height:1.5;
-            "
-          >
-            ${post.text}
-          </div>
-
-        </div>
-      `;
-    });
-
-    activityCard.innerHTML = html;
-
-  });
-}
-
-/* ================= START TIMELINE ================= */
-
-loadTimelinePosts();
-
-  const postsBox =
-  document.getElementById(
-    "timelinePosts"
-  );
-
-  const q =
-  query(
-    collection(db, "timeline"),
-    orderBy("createdAt", "desc")
-  );
-
-  onSnapshot(q, (snap) => {
-
-    postsBox.innerHTML = "";
-
-    if (snap.empty) {
-
-      postsBox.innerHTML = `
-
-        <div class="empty">
-          No posts yet
-        </div>
-
-      `;
-
-      return;
-    }
-
-    snap.forEach((docSnap) => {
-
-      const post =
-      docSnap.data();
-
-      const div =
-      document.createElement("div");
-
-      div.className =
-      "post-box";
-
-      div.innerHTML = `
-
-        <div
-          style="
-            display:flex;
-            align-items:center;
-            gap:10px;
-            margin-bottom:10px;
-          "
-        >
-
-          <div
-            style="
-              width:42px;
-              height:42px;
-              border-radius:50%;
-              overflow:hidden;
-              background:#1c2541;
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              font-weight:bold;
-            "
-          >
-
-            ${
-              post.userPhoto
-
-              ? `<img
-                  src="${post.userPhoto}"
-                  style="
-                    width:100%;
-                    height:100%;
-                    object-fit:cover;
-                  "
-                >`
-
-              : post.username?.[0]?.toUpperCase() || "U"
-            }
-
-          </div>
-
-          <div>
-
-            <div
-              style="
-                font-weight:bold;
-              "
-            >
-              ${post.username}
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                opacity:.6;
-              "
-            >
-              ${new Date(post.createdAt).toLocaleString()}
-            </div>
-
-          </div>
-
-        </div>
-
-        <div
-          style="
-            line-height:1.5;
-          "
-        >
-          ${post.text}
-        </div>
-
-      `;
-
-      postsBox.appendChild(div);
-
     });
 
   });
