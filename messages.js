@@ -60,8 +60,37 @@ async function getUser(uid) {
 
 /* ================= CHAT ID ================= */
 
-function id(a, b) {
-  return [a, b].sort().join("_");
+function id(a,b){
+  return [a,b].sort().join("_");
+}
+
+function loadInbox(){
+
+  const q = query(collection(db,"dms"));
+
+  onSnapshot(q,(snap)=>{
+
+    const list = document.getElementById("inboxList");
+    list.innerHTML="";
+
+    snap.forEach(d=>{
+
+      const chat = d.data();
+
+      if(!chat.members?.includes(currentUser.uid)) return;
+
+      const other = chat.members.find(x=>x!==currentUser.uid);
+
+      list.innerHTML += `
+        <div onclick="openChat('${other}')" class="chat-item">
+          Chat with ${other}
+        </div>
+      `;
+
+    });
+
+  });
+
 }
 
 /* ================= FALLBACK AVATAR ================= */
