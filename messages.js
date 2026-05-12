@@ -43,10 +43,6 @@ let unsubscribeMessages = null;
 
 let unsubscribeTyping = null;
 
-let mediaRecorder = null;
-
-let audioChunks = [];
-
 let typingTimeout = null;
 
 /* ================= DOM ================= */
@@ -69,9 +65,6 @@ document.getElementById("searchInput");
 const typingIndicator =
 document.getElementById("typingIndicator");
 
-const voiceBtn =
-document.getElementById("voiceBtn");
-
 /* ================= AUTH ================= */
 
 onAuthStateChanged(auth, async (user) => {
@@ -90,8 +83,6 @@ onAuthStateChanged(auth, async (user) => {
   setupSearch();
 
   setupTypingSystem();
-
-  setupVoiceSystem();
 
   const params =
   new URLSearchParams(location.search);
@@ -311,11 +302,6 @@ function loadInbox() {
           currentUser.uid
         ] || 0;
 
-        const isOnline =
-        Date.now() -
-        (u.lastActive || 0)
-        < 120000;
-
         const div =
         document.createElement("div");
 
@@ -334,21 +320,12 @@ function loadInbox() {
               }"
             >
 
-            ${
-              isOnline
-              ? `<div class="online"></div>`
-              : ""
-            }
-
           </div>
 
           <div class="chat-info">
 
             <div class="chat-name">
-              ${
-                u.username ||
-                "User"
-              }
+              ${u.username || "User"}
             </div>
 
             <div class="chat-preview">
@@ -363,21 +340,6 @@ function loadInbox() {
           </div>
 
           <div class="chat-meta">
-
-            <div class="chat-time">
-
-              ${
-                chat.updatedAt?.seconds
-                ? new Date(
-                    chat.updatedAt.seconds * 1000
-                  ).toLocaleTimeString([], {
-                    hour:"2-digit",
-                    minute:"2-digit"
-                  })
-                : ""
-              }
-
-            </div>
 
             ${
               unread > 0
@@ -457,80 +419,31 @@ function loadMessages() {
         })
       : "";
 
-      /* TEXT */
+      div.innerHTML = `
 
-      if (m.type === "text") {
+        ${m.text}
 
-        div.innerHTML = `
+        <div class="meta">
 
-          ${m.text}
+          ${time}
 
-          <div class="meta">
+          ${
+            m.senderId === currentUser.uid
+            ? `
+              •
+              ${
+                m.seen
+                ? "Seen"
+                : "Sent"
+              }
+            `
+            : ""
+          }
 
-            ${time}
-
-            ${
-              m.senderId === currentUser.uid
-              ? `
-                •
-                ${
-                  m.seen
-                  ? "Seen"
-                  : "Sent"
-                }
-              `
-              : ""
-            }
-
-          </div>
-        `;
-      }
-
-      /* IMAGE */
-
-      else if (
-        m.type === "image"
-      ) {
-
-        div.innerHTML = `
-
-          <img
-            src="${m.fileUrl}"
-          >
-
-          <div class="meta">
-            ${time}
-            • Photo
-          </div>
-        `;
-      }
-
-      /* VOICE */
-
-      else if (
-        m.type === "voice"
-      ) {
-
-        div.innerHTML = `
-
-          <audio controls>
-
-            <source
-              src="${m.fileUrl}"
-            >
-
-          </audio>
-
-          <div class="meta">
-            ${time}
-            • Voice message
-          </div>
-        `;
-      }
+        </div>
+      `;
 
       chatBox.appendChild(div);
-
-      /* MARK SEEN */
 
       if (
 
@@ -592,8 +505,6 @@ async function() {
     ),
 
     {
-
-      type:"text",
 
       text,
 
@@ -801,258 +712,29 @@ async function resetUnread() {
   } catch(e){}
 }
 
-/* ================= FILE UPLOAD ================= */
+/* ================= COMING SOON ================= */
 
 window.pickFile =
 function() {
 
-  document.getElementById(
-    "fileInput"
-  ).click();
+  alert("Photo upload coming soon");
 };
 
 document.getElementById(
-  "fileInput"
-).onchange =
-async (e) => {
+  "voiceBtn"
+).onclick =
+function() {
 
-  const file =
-  e.target.files[0];
-
-  if (!file) return;
-
-  const form =
-  new FormData();
-
-  form.append(
-    "file",
-    file
-  );
-
-  form.append(
-    "upload_preset",
-    "ml_default"
-  );
-
-  const res =
-  await fetch(
-
-    "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
-
-    {
-      method:"POST",
-      body:form
-    }
-
-  );
-
-  const data =
-  await res.json();
-
-  await addDoc(
-
-    collection(
-      db,
-      "dms",
-      currentChatId,
-      "messages"
-    ),
-
-    {
-
-      type:"image",
-
-      fileUrl:
-      data.secure_url,
-
-      senderId:
-      currentUser.uid,
-
-      receiverId:
-      currentTargetUser,
-
-      seen:false,
-
-      createdAt:
-      serverTimestamp()
-
-    }
-
-  );
-
-  await updateDoc(
-
-    doc(
-      db,
-      "dms",
-      currentChatId
-    ),
-
-    {
-
-      lastMessage:
-      "📷 Photo",
-
-      updatedAt:
-      serverTimestamp(),
-
-      [`unread.${currentTargetUser}`]:
-      increment(1)
-
-    }
-
-  );
+  alert("Voice messages coming soon");
 };
 
-/* ================= VOICE ================= */
+window.startCall =
+function() {
 
-function setupVoiceSystem() {
-
-  let recording = false;
-
-  voiceBtn.onclick =
-  async function() {
-
-    if (!recording) {
-
-      const stream =
-      await navigator
-      .mediaDevices
-      .getUserMedia({
-        audio:true
-      });
-
-      mediaRecorder =
-      new MediaRecorder(
-        stream
-      );
-
-      audioChunks = [];
-
-      mediaRecorder
-      .ondataavailable =
-      e => {
-
-        audioChunks.push(
-          e.data
-        );
-      };
-
-      mediaRecorder.onstop =
-      uploadVoice;
-
-      mediaRecorder.start();
-
-      recording = true;
-
-      voiceBtn.innerHTML =
-      "⏹";
-
-    } else {
-
-      mediaRecorder.stop();
-
-      recording = false;
-
-      voiceBtn.innerHTML =
-      "🎤";
-    }
-
-  };
-}
-
-async function uploadVoice() {
-
-  const blob =
-  new Blob(
-    audioChunks,
-    {
-      type:"audio/webm"
-    }
+  alert(
+    "MCN Voice & Video calls coming soon"
   );
-
-  const form =
-  new FormData();
-
-  form.append(
-    "file",
-    blob
-  );
-
-  form.append(
-    "upload_preset",
-    "ml_default"
-  );
-
-  const res =
-  await fetch(
-
-    "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload",
-
-    {
-      method:"POST",
-      body:form
-    }
-
-  );
-
-  const data =
-  await res.json();
-
-  await addDoc(
-
-    collection(
-      db,
-      "dms",
-      currentChatId,
-      "messages"
-    ),
-
-    {
-
-      type:"voice",
-
-      fileUrl:
-      data.secure_url,
-
-      senderId:
-      currentUser.uid,
-
-      receiverId:
-      currentTargetUser,
-
-      seen:false,
-
-      createdAt:
-      serverTimestamp()
-
-    }
-
-  );
-
-  await updateDoc(
-
-    doc(
-      db,
-      "dms",
-      currentChatId
-    ),
-
-    {
-
-      lastMessage:
-      "🎤 Voice message",
-
-      updatedAt:
-      serverTimestamp(),
-
-      [`unread.${currentTargetUser}`]:
-      increment(1)
-
-    }
-
-  );
-}
+};
 
 /* ================= DELETE ================= */
 
@@ -1098,16 +780,6 @@ async function() {
   );
 
   closeChat();
-};
-
-/* ================= CALL ================= */
-
-window.startCall =
-function() {
-
-  alert(
-    "MCN Voice & Video calls coming soon"
-  );
 };
 
 /* ================= ENTER SEND ================= */
