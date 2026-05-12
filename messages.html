@@ -3,11 +3,7 @@
 <head>
 
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
-/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>MCN Messenger Neo</title>
 
@@ -19,8 +15,7 @@
   box-sizing:border-box;
 }
 
-html,
-body{
+html, body{
   width:100%;
   height:100%;
   overflow:hidden;
@@ -42,34 +37,22 @@ body{
 /* ================= SIDEBAR ================= */
 
 .sidebar{
-
   width:100%;
   max-width:380px;
-
   background:#0d1736;
-
   border-right:1px solid rgba(255,255,255,0.05);
-
   display:flex;
   flex-direction:column;
-
   flex-shrink:0;
 }
 
 .topbar{
-
   height:70px;
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   padding:0 15px;
-
   background:#111c44;
-
   border-bottom:1px solid rgba(255,255,255,0.05);
 }
 
@@ -84,20 +67,13 @@ body{
 }
 
 .icon-btn{
-
   width:42px;
   height:42px;
-
   border:none;
-
   border-radius:12px;
-
   background:#1b2b5d;
-
   color:white;
-
   font-size:18px;
-
   cursor:pointer;
 }
 
@@ -108,53 +84,33 @@ body{
 }
 
 .search{
-
   width:100%;
-
   height:48px;
-
   border:none;
-
   outline:none;
-
   border-radius:14px;
-
   background:#131f49;
-
   color:white;
-
   padding:0 15px;
-
   font-size:15px;
 }
 
 /* ================= INBOX ================= */
 
 .inbox{
-
   flex:1;
-
   overflow-y:auto;
-
   padding:10px;
 }
 
 .chat-item{
-
   display:flex;
-
   align-items:center;
-
   gap:12px;
-
   padding:12px;
-
   border-radius:16px;
-
   cursor:pointer;
-
   transition:0.2s;
-
   margin-bottom:8px;
 }
 
@@ -167,30 +123,10 @@ body{
 }
 
 .avatar{
-
   width:55px;
   height:55px;
-
   border-radius:50%;
-
   object-fit:cover;
-}
-
-.online{
-
-  width:13px;
-  height:13px;
-
-  border-radius:50%;
-
-  background:#00ff88;
-
-  position:absolute;
-
-  bottom:2px;
-  right:2px;
-
-  border:2px solid #0d1736;
 }
 
 .chat-info{
@@ -199,111 +135,50 @@ body{
 }
 
 .chat-name{
-
   font-size:15px;
   font-weight:bold;
-
   margin-bottom:5px;
 }
 
 .chat-preview{
-
   font-size:13px;
-
   opacity:0.7;
-
   white-space:nowrap;
-
   overflow:hidden;
-
   text-overflow:ellipsis;
-}
-
-.chat-meta{
-  text-align:right;
-}
-
-.chat-time{
-
-  font-size:11px;
-
-  opacity:0.6;
-
-  margin-bottom:6px;
-}
-
-.badge{
-
-  min-width:22px;
-  height:22px;
-
-  border-radius:50%;
-
-  background:#5bc0be;
-
-  color:black;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  font-size:12px;
-
-  font-weight:bold;
-
-  margin-left:auto;
 }
 
 /* ================= CHAT AREA ================= */
 
 .chat-screen{
-
   flex:1;
-
   display:flex;
-
   flex-direction:column;
-
   background:#071028;
-
   position:relative;
 }
 
-/* ================= CHAT HEADER ================= */
+/* ================= HEADER ================= */
 
 .chat-header{
-
   height:70px;
-
   background:#111c44;
-
   border-bottom:1px solid rgba(255,255,255,0.05);
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   padding:0 15px;
 }
 
 .chat-user{
-
   display:flex;
-
   align-items:center;
-
   gap:12px;
 }
 
 .chat-user img{
-
   width:45px;
   height:45px;
-
   border-radius:50%;
 }
 
@@ -312,106 +187,54 @@ body{
 }
 
 .typing{
-
   font-size:12px;
-
   color:#5bc0be;
-
   margin-top:3px;
 }
 
 /* ================= CHAT BODY ================= */
 
 .chat-body{
-
   flex:1;
-
   overflow-y:auto;
-
   padding:15px;
-
   display:flex;
-
   flex-direction:column;
-
   gap:10px;
 }
 
 /* ================= MESSAGE ================= */
 
 .msg{
-
   max-width:78%;
-
   padding:12px;
-
   border-radius:18px;
-
   word-wrap:break-word;
-
   line-height:1.4;
-
-  position:relative;
 }
 
 .me{
-
   align-self:flex-end;
-
   background:#5bc0be;
-
   color:black;
-
   border-bottom-right-radius:6px;
 }
 
 .them{
-
   align-self:flex-start;
-
   background:#16285d;
-
   border-bottom-left-radius:6px;
-}
-
-.msg img{
-
-  max-width:100%;
-
-  border-radius:12px;
-}
-
-.msg audio{
-  width:220px;
-}
-
-.meta{
-
-  margin-top:5px;
-
-  font-size:11px;
-
-  opacity:0.7;
-
-  text-align:right;
 }
 
 /* ================= INPUT ================= */
 
 .input-bar{
-
   min-height:75px;
-
   background:#111c44;
-
   border-top:1px solid rgba(255,255,255,0.05);
-
   display:flex;
-
   align-items:center;
-
   gap:10px;
-
   padding:12px;
 }
 
@@ -421,43 +244,26 @@ body{
 }
 
 .msg-input{
-
   flex:1;
-
   height:48px;
-
   border:none;
-
   outline:none;
-
   border-radius:16px;
-
   background:#16285d;
-
   color:white;
-
   padding:0 15px;
-
   font-size:15px;
 }
 
 .send-btn{
-
   width:50px;
   height:50px;
-
   border:none;
-
   border-radius:16px;
-
   background:#5bc0be;
-
   color:black;
-
   font-size:18px;
-
   font-weight:bold;
-
   cursor:pointer;
 }
 
@@ -475,17 +281,12 @@ body{
   }
 
   .chat-screen{
-
     position:absolute;
-
     top:0;
     left:100%;
-
     width:100%;
     height:100%;
-
     z-index:50;
-
     transition:0.25s ease;
   }
 
@@ -507,150 +308,67 @@ body{
 <div class="app">
 
   <!-- SIDEBAR -->
-
   <div class="sidebar">
 
     <div class="topbar">
-
-      <div class="logo">
-        Messages
-      </div>
+      <div class="logo">Messages</div>
 
       <div class="top-actions">
+        <button class="icon-btn">🔍</button>
 
-        <button class="icon-btn">
-          🔍
-        </button>
-
-        <button
-          class="icon-btn"
-          onclick="location.href='dashboard.html'"
-        >
+        <button class="icon-btn"
+          onclick="location.href='dashboard.html'">
           🏠
         </button>
-
       </div>
-
     </div>
 
     <div class="search-wrap">
-
-      <input
-        id="searchInput"
-        class="search"
-        placeholder="Search conversations..."
-      >
-
+      <input id="searchInput" class="search" placeholder="Search conversations...">
     </div>
 
-    <div
-      id="inboxList"
-      class="inbox"
-    ></div>
+    <!-- SINGLE INBOX TARGET (FIXED DUPLICATION SOURCE) -->
+    <div id="inboxList" class="inbox"></div>
 
   </div>
 
   <!-- CHAT -->
-
-  <div
-    id="chatScreen"
-    class="chat-screen"
-  >
-
-    <!-- HEADER -->
+  <div id="chatScreen" class="chat-screen">
 
     <div class="chat-header">
 
       <div class="chat-user">
 
-        <button
-          class="icon-btn mobile-back"
-          onclick="closeChat()"
-        >
-          ←
-        </button>
+        <button class="icon-btn mobile-back" onclick="closeChat()">←</button>
 
-        <img
-          id="chatAvatar"
-          src="https://via.placeholder.com/100"
-        >
+        <img id="chatAvatar" src="https://via.placeholder.com/100">
 
         <div class="chat-user-info">
-
-          <h3 id="chatUsername">
-            User
-          </h3>
-
-          <div
-            id="typingIndicator"
-            class="typing"
-          ></div>
-
+          <h3 id="chatUsername">User</h3>
+          <div id="typingIndicator" class="typing"></div>
         </div>
 
       </div>
 
       <div class="top-actions">
-
-        <button
-          class="icon-btn"
-          onclick="startCall()"
-        >
-          📞
-        </button>
-
-        <button
-          class="icon-btn"
-          onclick="deleteChat()"
-        >
-          🗑
-        </button>
-
+        <button class="icon-btn">📞</button>
+        <button class="icon-btn">🗑</button>
       </div>
 
     </div>
 
-    <!-- BODY -->
-
-    <div
-      id="chatBox"
-      class="chat-body"
-    ></div>
-
-    <!-- INPUT -->
+    <div id="chatBox" class="chat-body"></div>
 
     <div class="input-bar">
 
       <div class="input-actions">
-
-        <button
-          class="icon-btn"
-          onclick="pickFile()"
-        >
-          📎
-        </button>
-
-        <button
-          id="voiceBtn"
-          class="icon-btn"
-        >
-          🎤
-        </button>
-
+        <button class="icon-btn">📎</button>
+        <button class="icon-btn">🎤</button>
       </div>
 
-      <input
-        id="msgInput"
-        class="msg-input"
-        placeholder="Type message..."
-      >
+      <input id="msgInput" class="msg-input" placeholder="Type message...">
 
-      <button
-        class="send-btn"
-        onclick="sendMsg()"
-      >
-        ➤
-      </button>
+      <button class="send-btn" onclick="sendMsg()">➤</button>
 
     </div>
 
@@ -658,18 +376,10 @@ body{
 
 </div>
 
-<input
-  type="file"
-  id="fileInput"
-  hidden
-/>
+<input type="file" id="fileInput" hidden/>
 
 <script type="module" src="./messages.js"></script>
-
-<script
-  type="module"
-  src="./maintenance-check.js"
-></script>
+<script type="module" src="./maintenance-check.js"></script>
 
 </body>
 </html>
