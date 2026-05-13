@@ -1,21 +1,27 @@
 /* =========================================
-   MCN ADMIN LOADER V2
+   MCN ADMIN LOADER V3
 ========================================= */
 
 (async function () {
 
   try {
 
-    console.log("🧠 Booting MCN Admin V2...");
+    console.log("🧠 Booting MCN Admin V3...");
+
+    await import("./admin-auth.js");
+
+    if (!window.__MCN_ADMIN_AUTH) {
+      throw new Error("Admin authentication failed");
+    }
 
     await import("./admin.js");
     await import("./emergency-control.js");
 
-    console.log("✅ Admin V2 Loaded Successfully");
+    console.log("✅ MCN Admin Fully Loaded");
 
   } catch (err) {
 
-    console.error("BOOT ERROR:", err);
+    console.error("ADMIN BOOT ERROR:", err);
 
     document.body.innerHTML = `
       <div style="
@@ -31,7 +37,18 @@
       ">
         <div>
           <h1>⚠ Admin Boot Failed</h1>
-          <p>${err.message}</p>
+
+          <p style="margin-top:10px;">
+            ${err.message}
+          </p>
+
+          <p style="
+            margin-top:15px;
+            color:#5bc0be;
+            font-size:13px;
+          ">
+            Check console for full details
+          </p>
         </div>
       </div>
     `;
