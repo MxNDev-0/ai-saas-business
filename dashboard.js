@@ -1,103 +1,32 @@
-import { auth, db } from "./firebase.js";
+import { auth } from "./firebase.js";
 
 import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-import {
-  doc,
-  getDoc,
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
-  where
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-/* ================= USER STATE ================= */
+/* ================= AUTH ================= */
 let currentUser = null;
 
-/* ================= AUTH ================= */
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
 
   if (!user) {
-
-    if (!sessionStorage.getItem("redirectAfterLogin")) {
-      sessionStorage.setItem(
-        "redirectAfterLogin",
-        window.location.href
-      );
-    }
-
     window.location.href = "index.html?login=required";
     return;
   }
 
   currentUser = user;
 
-  try {
+  console.log("Dashboard loaded (clean mode)");
 
-    const snap = await getDoc(
-      doc(db, "users", user.uid)
-    );
-
-    if (!snap.exists()) {
-      alert("User profile not found");
-      window.location.href = "index.html";
-      return;
-    }
-
-    console.log("Dashboard Loaded");
-
-    loadNotifications();
-    loadLivePrices();
-    loadDiscover();
-    loadFeatured();
-    loadTrending();
-    loadSponsoredAds();
-
-  } catch (err) {
-
-    console.error(err);
-    alert("Dashboard failed to load");
-  }
+  loadLivePrices();
+  loadDiscover();
+  loadFeatured();
+  loadTrending();
+  loadSponsoredAds();
 });
 
-/* ================= REAL-TIME NOTIFICATIONS ================= */
-function loadNotifications() {
-
-  const panel = document.getElementById("notifPanel");
-
-  const q = query(
-    collection(db, "notifications"),
-    orderBy("createdAt", "desc"),
-    limit(10)
-  );
-
-  onSnapshot(q, (snap) => {
-
-    panel.innerHTML = "";
-
-    if (snap.empty) {
-      panel.innerHTML = `<button>No notifications</button>`;
-      return;
-    }
-
-    snap.forEach(d => {
-
-      const n = d.data();
-
-      panel.innerHTML += `
-        <button>🔔 ${n.title || "Update"}</button>
-      `;
-    });
-
-  });
-}
-
-/* ================= REAL-TIME LIVE PRICES ================= */
+/* ================= LIVE PRICES ================= */
 function loadLivePrices() {
 
   const box = document.getElementById("priceBox");
@@ -113,14 +42,8 @@ function loadLivePrices() {
     box.innerHTML = "";
 
     prices.forEach(p => {
-
       box.innerHTML += `
-        <div style="
-          padding:10px;
-          margin-bottom:8px;
-          background:#0b132b;
-          border-radius:8px;
-        ">
+        <div style="padding:10px;margin-bottom:8px;background:#0b132b;border-radius:8px;">
           <b>${p.name}</b> (${p.symbol})<br>
           <span style="color:#5bc0be;">$${p.price}</span>
         </div>
@@ -132,41 +55,40 @@ function loadLivePrices() {
   setInterval(render, 5000);
 }
 
-/* ================= DISCOVER (REAL-TIME) ================= */
+/* ================= DISCOVER (CLEAN RSS/API FEED) ================= */
 function loadDiscover() {
 
   const box = document.getElementById("discoverBox");
 
-  const q = query(
-    collection(db, "posts"),
-    where("visibility.dashboard", "==", true),
-    limit(5)
-  );
+  box.innerHTML = "Loading feed...";
 
-  onSnapshot(q, (snap) => {
+  fetch("https://mxm-backend.onrender.com/blog/latest?limit=5")
+    .then(res => res.json())
+    .then(posts => {
 
-    box.innerHTML = "";
+      box.innerHTML = "";
 
-    if (snap.empty) {
-      box.innerHTML = "No posts available";
-      return;
-    }
+      if (!posts || posts.length === 0) {
+        box.innerHTML = "No content available";
+        return;
+      }
 
-    snap.forEach(docSnap => {
+      posts.forEach(p => {
 
-      const post = docSnap.data();
-
-      box.innerHTML += `
-        <div class="card" onclick="openPost('${docSnap.id}')">
-          <b>${post.title}</b>
-          <div style="font-size:12px;opacity:0.7;">
-            ${(post.content || "").substring(0,120)}...
+        box.innerHTML += `
+          <div class="card" onclick="openPost('${p.id}')">
+            <b>${p.title}</b>
+            <div style="font-size:12px;opacity:0.7;">
+              ${(p.content || "").substring(0,120)}...
+            </div>
           </div>
-        </div>
-      `;
-    });
+        `;
+      });
 
-  });
+    })
+    .catch(() => {
+      box.innerHTML = "Failed to load feed";
+    });
 }
 
 /* ================= FEATURED ================= */
@@ -174,33 +96,23 @@ function loadFeatured() {
 
   const box = document.getElementById("featuredBox");
 
-  const q = query(
-    collection(db, "posts"),
-    where("visibility.featured", "==", true),
-    limit(3)
-  );
+  fetch("https://mxm-backend.onrender.com/blog/latest?limit=3")
+    .then(res => res.json())
+    .then(posts => {
 
-  onSnapshot(q, (snap) => {
+      if (!posts || !posts.length) {
+        box.innerHTML = "No featured content";
+        return;
+      }
 
-    box.innerHTML = "";
+      const featured = posts[0];
 
-    if (snap.empty) {
-      box.innerHTML = "No featured posts";
-      return;
-    }
-
-    snap.forEach(docSnap => {
-
-      const p = docSnap.data();
-
-      box.innerHTML += `
-        <div class="card" onclick="openPost('${docSnap.id}')">
-          ⭐ ${p.title}
+      box.innerHTML = `
+        <div class="card">
+          ⭐ ${featured.title}
         </div>
       `;
     });
-
-  });
 }
 
 /* ================= TRENDING ================= */
@@ -208,73 +120,32 @@ function loadTrending() {
 
   const box = document.getElementById("trendingBox");
 
-  const q = query(
-    collection(db, "posts"),
-    where("visibility.trending", "==", true),
-    limit(5)
-  );
+  fetch("https://mxm-backend.onrender.com/blog/latest?limit=5")
+    .then(res => res.json())
+    .then(posts => {
 
-  onSnapshot(q, (snap) => {
+      box.innerHTML = "";
 
-    box.innerHTML = "";
-
-    if (snap.empty) {
-      box.innerHTML = "No trending posts";
-      return;
-    }
-
-    snap.forEach(docSnap => {
-
-      const p = docSnap.data();
-
-      box.innerHTML += `
-        <div class="card" onclick="openPost('${docSnap.id}')">
-          🔥 ${p.title}
-        </div>
-      `;
+      posts.forEach(p => {
+        box.innerHTML += `
+          <div class="card">
+            🔥 ${p.title}
+          </div>
+        `;
+      });
     });
-
-  });
 }
 
-/* ================= SPONSORED ADS ================= */
+/* ================= ADS ================= */
 function loadSponsoredAds() {
 
   const slider = document.getElementById("adsSlider");
 
-  const q = query(
-    collection(db, "posts"),
-    where("sponsored.isSponsored", "==", true),
-    limit(10)
-  );
-
-  onSnapshot(q, (snap) => {
-
-    slider.innerHTML = "";
-
-    if (snap.empty) {
-      slider.innerHTML = `
-        <div class="ad">
-          <div class="ad-box">🚀 No sponsored ads yet</div>
-        </div>
-      `;
-      return;
-    }
-
-    snap.forEach(docSnap => {
-
-      const post = docSnap.data();
-
-      slider.innerHTML += `
-        <div class="ad">
-          <div class="ad-box" onclick="openPost('${docSnap.id}')">
-            💰 ${post.title}
-          </div>
-        </div>
-      `;
-    });
-
-  });
+  slider.innerHTML = `
+    <div class="ad">
+      <div class="ad-box">🚀 Ads loading...</div>
+    </div>
+  `;
 }
 
 /* ================= ADS SLIDER ================= */
@@ -288,18 +159,13 @@ setInterval(() => {
 
   index = (index + 1) % slider.children.length;
 
-  slider.style.transform =
-    `translateX(-${index * 100}%)`;
+  slider.style.transform = `translateX(-${index * 100}%)`;
 
 }, 3500);
 
-/* ================= ROUTING ================= */
+/* ================= ROUTING (CLEAN ONLY) ================= */
 window.openPost = function (id) {
   window.location.href = "post.html?id=" + encodeURIComponent(id);
-};
-
-window.toggleNotif = function () {
-  document.getElementById("notifPanel").classList.toggle("active");
 };
 
 window.logout = async function () {
@@ -307,16 +173,11 @@ window.logout = async function () {
   window.location.href = "index.html";
 };
 
+/* ONLY KEEP NAVIGATION YOU NEED */
 window.goHome = () => location.href = "dashboard.html";
-window.goProfile = () => location.href = "profile.html";
-window.goMessages = () => location.href = "messages.html";
 window.goAdSpace = () => location.href = "ads.html";
 window.goBlog = () => location.href = "blog/index.html";
 window.goFaq = () => location.href = "faq.html";
 window.goAbout = () => location.href = "about.html";
 window.goContact = () => location.href = "contact.html";
 window.goDMCA = () => location.href = "dmca.html";
-
-window.donate = function () {
-  alert("Donation system coming soon 🚀");
-};
