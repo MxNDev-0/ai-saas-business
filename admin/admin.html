@@ -1,185 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
+  <title>MCN Engine V17 - AI Admin Control Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>MCN Admin Panel V17 (RESTORED + MERGED)</title>
+  <style>
+    body {
+      background: #0b132b;
+      color: #fff;
+      font-family: Arial;
+      margin: 0;
+      padding: 20px;
+    }
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    h2 { margin-bottom: 15px; }
 
-<style>
-body {
-  background:#0b132b;
-  color:#fff;
-  font-family:Arial;
-  margin:0;
-  padding:20px;
-}
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+    }
 
-.grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:15px;
-}
+    .card {
+      background: #1c2541;
+      padding: 12px;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
 
-.card {
-  background:#1c2541;
-  padding:12px;
-  border-radius:10px;
-}
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: none;
+      background: #0b132b;
+      color: white;
+      box-sizing: border-box;
+    }
 
-input, textarea, select {
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:8px;
-  border:none;
-  background:#0b132b;
-  color:white;
-}
+    textarea { min-height: 90px; resize: none; }
 
-button {
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#5bc0be;
-  font-weight:bold;
-  cursor:pointer;
-}
+    button {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: #5bc0be;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      margin-top: 5px;
+    }
 
-.danger { background:red; }
+    .danger { background: red; color: white; }
 
-.monitor {
-  background:#05070f;
-  color:#00ff88;
-  height:250px;
-  overflow:auto;
-  font-family:monospace;
-  padding:10px;
-  border-radius:10px;
-}
+    .list-box {
+      max-height: 220px;
+      overflow-y: auto;
+      background: #0b132b;
+      border-radius: 8px;
+      padding: 6px;
+    }
 
-/* placeholders */
-.placeholder-box {
-  background:#0b132b;
-  padding:10px;
-  border-radius:8px;
-}
+    .item {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #16213e;
+      border-radius: 8px;
+    }
 
-.toggle-row {
-  display:flex;
-  justify-content:space-between;
-  font-size:13px;
-  margin:4px 0;
-}
+    .monitor {
+      background: linear-gradient(145deg, #05070f, #0a0f1f);
+      color: #00ff88;
+      height: 260px;
+      overflow-y: auto;
+      font-family: monospace;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #1c2541;
+    }
 
-.section-title {
-  margin-top:10px;
-  font-size:13px;
-  opacity:0.7;
-}
-</style>
+    .small-btn {
+      width: auto;
+      padding: 4px 6px;
+      font-size: 12px;
+      margin-left: 5px;
+    }
+  </style>
 </head>
 
 <body>
 
-<h2>👑 MCN Admin Panel V17 (FINAL MERGED)</h2>
+<h2>👑 MCN Admin Panel V17 (AI Powered)</h2>
 
 <div class="grid">
 
-  <!-- SYSTEM MONITOR -->
+  <!-- MONITOR -->
   <div class="card">
     <h3>🖥 System Monitor</h3>
     <div id="monitor" class="monitor"></div>
   </div>
 
+  <!-- 🤖 AI BLOG GENERATOR -->
+  <div class="card">
+    <h3>🤖 AI Blog Writer</h3>
+    <input id="aiTopic" placeholder="Enter topic (e.g Crypto trends 2026)">
+    <button onclick="generateAI()">Generate Article</button>
+  </div>
+
+  <!-- ⏱ AI SCHEDULER -->
+  <div class="card">
+    <h3>⏱ Auto Scheduler</h3>
+    <input id="scheduleTitle" placeholder="Blog Title">
+    <textarea id="scheduleContent" placeholder="Content"></textarea>
+    <input id="scheduleTime" type="datetime-local">
+    <button onclick="schedulePost()">Schedule Post</button>
+  </div>
+
+  <!-- BLOG -->
+  <div class="card">
+    <h3>📝 Create Blog</h3>
+    <input id="blogTitle" placeholder="Blog Title">
+    <textarea id="blogContent" placeholder="Blog Content"></textarea>
+    <input id="blogImage" placeholder="Image URL">
+    <button onclick="createBlog()">Publish Blog</button>
+  </div>
+
+  <!-- BROADCAST -->
+  <div class="card">
+    <h3>🔔 Broadcast</h3>
+    <input id="broadcastTitle" placeholder="Title">
+    <textarea id="broadcastMessage" placeholder="Message"></textarea>
+    <button onclick="sendBroadcast()">Send</button>
+  </div>
+
+  <!-- USERS -->
+  <div class="card">
+    <h3>👥 Users</h3>
+    <div id="usersList" class="list-box"></div>
+  </div>
+
+  <!-- ADS -->
+  <div class="card">
+    <h3>📢 Ad Requests</h3>
+    <div id="upgradeList" class="list-box"></div>
+  </div>
+
   <!-- POSTS -->
   <div class="card">
     <h3>💬 Post Manager</h3>
-    <div id="postsList"></div>
+    <div id="postsList" class="list-box"></div>
 
     <h3>✏️ Edit Post</h3>
-
-    <input id="editPostId" placeholder="Post ID">
-    <input id="editTitle" placeholder="Title">
-    <textarea id="editContent" placeholder="Content"></textarea>
-
-    <div class="section-title">Post Flags</div>
-
-    <div class="toggle-row">
-      <label>Homepage</label>
-      <input type="checkbox" id="e_homepage">
-    </div>
-
-    <div class="toggle-row">
-      <label>Featured</label>
-      <input type="checkbox" id="e_featured">
-    </div>
-
-    <div class="toggle-row">
-      <label>Trending</label>
-      <input type="checkbox" id="e_trending">
-    </div>
-
-    <div class="toggle-row">
-      <label>Sponsored</label>
-      <input type="checkbox" id="e_sponsored">
-    </div>
-
-    <div class="section-title">Monetization Controls</div>
-
-    <input id="e_adExpiry" type="datetime-local" placeholder="Expiry">
-    <input id="e_adPriority" type="number" placeholder="Priority (0-10)">
+    <input id="editPostId" readonly>
+    <input id="editPostTitle">
+    <textarea id="editPostContent"></textarea>
 
     <button onclick="updatePost()">Update Post</button>
   </div>
 
-  <!-- PLACEHOLDER CONTROL -->
+  <!-- REJECTED ADS -->
   <div class="card">
-    <h3>⭐ Placeholder Control</h3>
-
-    <div class="placeholder-box">
-
-      <div class="toggle-row">
-        <label>Homepage Slot</label>
-        <input type="checkbox" id="c_homepage">
-      </div>
-
-      <div class="toggle-row">
-        <label>Featured Slot</label>
-        <input type="checkbox" id="c_featured">
-      </div>
-
-      <div class="toggle-row">
-        <label>Trending Slot</label>
-        <input type="checkbox" id="c_trending">
-      </div>
-
-      <div class="toggle-row">
-        <label>Sponsored Slot</label>
-        <input type="checkbox" id="c_sponsored">
-      </div>
-
-      <div class="section-title">Ad Placement Slots</div>
-
-      <select id="placeholderSlot">
-        <option value="">None</option>
-        <option value="hero">Hero Banner</option>
-        <option value="featured1">Featured 1</option>
-        <option value="featured2">Featured 2</option>
-        <option value="sidebar">Sidebar</option>
-        <option value="popup">Popup</option>
-      </select>
-
-      <input id="placeholderText" placeholder="Placeholder Text">
-
-    </div>
+    <h3>❌ Rejected Ads</h3>
+    <div id="rejectedList" class="list-box"></div>
+    <button class="danger" onclick="clearRejected()">Clear Rejected</button>
   </div>
 
 </div>
 
-<script type="module" src="./admin-loader.js"></script>
+<script type="module" src="./admin.js"></script>
 
 </body>
 </html>
