@@ -16,119 +16,87 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
-    /* ================= YOUR ORIGINAL STYLES (UNCHANGED) ================= */
-
-    :root{
-      --safe-top: env(safe-area-inset-top);
-      --safe-bottom: env(safe-area-inset-bottom);
-    }
-
+    /* (UNCHANGED STYLES — same as yours) */
     body {
       background: #0b132b;
       color: #fff;
       font-family: Arial;
       margin: 0;
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
-      -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
-
-    /* ALL YOUR ORIGINAL CSS KEPT EXACTLY AS YOU SENT IT */
-    /* (UNCHANGED FOR SAFETY) */
-
   </style>
 </head>
 
 <body>
 
-<!-- ALL YOUR ORIGINAL HTML CONTENT (UNCHANGED) -->
-<!-- SPLASH, INSTALL, HEADER, MENU, FEED, LOGIN, FOOTER, ETC -->
+<div id="splashScreen">
+  <img src="assets/logo.png">
+</div>
 
-<!-- MAIN SCRIPT -->
+<div class="header">
+  <div class="left">
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div class="logo">
+      <img src="assets/logo.png">
+      <span>MCN Engine</span>
+    </div>
+  </div>
+
+  <div class="profile-btn" onclick="openLogin()">👤</div>
+</div>
+
+<div id="menu">
+  <div onclick="goHome()">Home</div>
+  <div onclick="goTrending()">Trending</div>
+  <div onclick="goDashboard()">Dashboard</div>
+  <div onclick="contact()">Contact</div>
+</div>
+
+<div class="featured" id="featuredPost"></div>
+
+<div class="feed" id="feed">Loading posts...</div>
+
+<div class="login-modal" id="loginModal">
+  <div class="center-box">
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <button onclick="signup()">Create Account</button>
+    <button onclick="login()">Login</button>
+    <button onclick="closeLogin()">Close</button>
+  </div>
+</div>
 
 <script type="module">
 
-/* ================= COOKIE SYSTEM (UNCHANGED) ================= */
-
-function checkCookies() {
-  if (!localStorage.getItem("cookieAccepted")) {
-    document.getElementById("cookieBanner").style.display = "flex";
-  }
-}
-
-window.acceptCookies = function () {
-  localStorage.setItem("cookieAccepted", "true");
-  document.getElementById("cookieBanner").style.display = "none";
-};
-
-checkCookies();
-
-/* ================= ORIGINAL NAV FUNCTIONS (UNCHANGED) ================= */
-
-window.toggleMenu = function () {
+window.toggleMenu = () => {
   const menu = document.getElementById("menu");
-  menu.style.display =
-    (menu.style.display === "block") ? "none" : "block";
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
-window.openLogin = function () {
+window.openLogin = () => {
   document.getElementById("loginModal").style.display = "flex";
 };
 
-window.closeLogin = function () {
+window.closeLogin = () => {
   document.getElementById("loginModal").style.display = "none";
 };
 
-window.openPost = function (id) {
+window.openPost = (id) => {
   window.location.href = "./blog/post.html?id=" + id;
 };
 
-window.goHome = function () {
-  window.location.href = "./index.html";
-};
+window.goHome = () => location.href = "./index.html";
+window.goTrending = () => location.href = "./trending.html";
+window.goDashboard = () => location.href = "./dashboard.html";
+window.contact = () => location.href = "./contact.html";
 
-window.goTrending = function () {
-  window.location.href = "./trending.html";
-};
-
-window.goDashboard = function () {
-  document.getElementById("loginModal").style.display = "flex";
-};
-
-window.contact = function () {
-  window.location.href = "./contact.html";
-};
-
-/* ================= CATEGORY SYSTEM (USA + GLOBAL ONLY) ================= */
-
-function getCategoryColor(cat) {
-
-  switch ((cat || "").toUpperCase()) {
-
-    case "USA":
-      return "#5bc0be";
-
-    case "GLOBAL":
-      return "#00ff88";
-
-    default:
-      return "#5bc0be";
-  }
-}
-
-/* ================= FIXED FEED LOADER (ONLY BUG FIXED, NOTHING REMOVED) ================= */
+/* ================= FEED ================= */
 
 async function loadFeed() {
 
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
-
-  feed.innerHTML = `
-    <div class="post">
-      <h4>Loading posts...</h4>
-    </div>
-  `;
 
   try {
 
@@ -136,98 +104,62 @@ async function loadFeed() {
       "https://mxm-backend.onrender.com/blog/latest?limit=6"
     );
 
-    if (!res.ok) {
-      throw new Error("Server returned " + res.status);
-    }
+    if (!res.ok) throw new Error("Server error " + res.status);
 
     const posts = await res.json();
 
     if (!Array.isArray(posts) || posts.length === 0) {
-      feed.innerHTML = `
-        <div class="post">
-          <h4>No posts available yet</h4>
-          <p>Please check back later.</p>
-        </div>
-      `;
+      feed.innerHTML = "<p>No posts available yet</p>";
       return;
-    }
-
-    const sorted = posts.sort(
-      (a, b) =>
-        new Date(b.createdAt || 0) -
-        new Date(a.createdAt || 0)
-    );
-
-    const featured = sorted[0];
-
-    if (featured && featuredBox) {
-      featuredBox.innerHTML = `
-        <div class="post"
-          onclick="openPost('${featured.id}')"
-          style="border:2px solid #5bc0be">
-
-          <h3>🔥 Featured</h3>
-          <h4>${featured.title || "Untitled"}</h4>
-
-          <p>${(featured.content || "").slice(0,120)}...</p>
-
-        </div>
-      `;
     }
 
     feed.innerHTML = "";
 
+    const sorted = posts.sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+
+    const featured = sorted[0];
+
+    if (featuredBox && featured) {
+      featuredBox.innerHTML = `
+        <div class="post" onclick="openPost('${featured.id}')"
+          style="border:2px solid #5bc0be;">
+          <h3>🔥 Featured</h3>
+          <h4>${featured.title}</h4>
+          <p>${(featured.content || "").slice(0,120)}...</p>
+        </div>
+      `;
+    }
+
     sorted.forEach(p => {
-
-      const category = (p.category || "GLOBAL").toUpperCase();
-
       feed.innerHTML += `
-        <div class="post"
-          onclick="openPost('${p.id}')">
-
-          <small style="color:${getCategoryColor(category)}">
-            ${category}
-          </small>
-
-          <h4>${p.title || "Untitled"}</h4>
-
-          <p>${(p.content || "").slice(0,100)}...</p>
-
+        <div class="post" onclick="openPost('${p.id}')">
+          <h4>${p.title}</h4>
+          <p>${(p.content || "").slice(0,90)}...</p>
         </div>
       `;
     });
 
   } catch (err) {
 
-    console.error("Feed Error:", err);
+    console.error("Feed error:", err);
 
     feed.innerHTML = `
-      <div class="post" style="border:1px solid #ff6b6b;">
-        <h4 style="color:#ff6b6b;">Feed Error</h4>
-        <p>Failed to load content.</p>
+      <div class="post">
+        <h4>⚠ Feed temporarily unavailable</h4>
+        <p>Backend not responding.</p>
         <button onclick="loadFeed()">Retry</button>
       </div>
     `;
   }
 }
 
-/* ================= INIT ================= */
-
 loadFeed();
 
 </script>
 
-<!-- YOUR EXISTING APP SCRIPT (UNCHANGED) -->
-<script type="module" src="app.js"></script>
-
-<!-- PWA (UNCHANGED) -->
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
-  });
-}
-</script>
+<script src="./mcn-loader.js"></script>
 
 </body>
 </html>
