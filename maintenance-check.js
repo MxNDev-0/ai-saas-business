@@ -20,16 +20,27 @@ async function checkMaintenance() {
     if (data.enabled === true) {
 
       const allowedPages = [
+
         "admin.html",
-        "maintenance.html"
+
+        "maintenance.html",
+
+        "admin-pwa.html"
       ];
 
       const current =
         location.pathname.split("/").pop();
 
-      if (!allowedPages.includes(current)) {
+      const isAdminRoute =
+        location.pathname.includes("/admin/");
 
-        location.href = "maintenance.html";
+      if (
+        !allowedPages.includes(current)
+        && !isAdminRoute
+      ) {
+
+        location.href =
+          "./admin/maintenance.html";
       }
     }
 
