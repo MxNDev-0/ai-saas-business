@@ -18,6 +18,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
+
     :root{
       --safe-top: env(safe-area-inset-top);
       --safe-bottom: env(safe-area-inset-bottom);
@@ -53,11 +54,19 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
-    /* ✅ MODERN INSTALL BANNER */
+    /* INSTALL BANNER */
+
     #installBanner {
       position: fixed;
       top: 0;
@@ -128,7 +137,8 @@
       flex-shrink: 0;
     }
 
-    /* HEADER IMPROVEMENT */
+    /* HEADER */
+
     .header {
       display: flex;
       justify-content: space-between;
@@ -187,10 +197,12 @@
     }
 
     @keyframes fadeMenu {
+
       from {
         opacity: 0;
         transform: translateY(-5px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -209,9 +221,13 @@
       background: rgba(255,255,255,0.05);
     }
 
+    /* FEATURED */
+
     .featured {
       padding: 15px;
     }
+
+    /* FEED */
 
     .feed {
       padding: 15px;
@@ -246,6 +262,8 @@
       color: #ccc;
       line-height: 1.5;
     }
+
+    /* LOGIN */
 
     .login-modal {
       display: none;
@@ -296,6 +314,8 @@
       color: #5bc0be;
     }
 
+    /* FOOTER */
+
     .footer {
       text-align: center;
       padding: 20px;
@@ -309,7 +329,8 @@
       text-decoration: none;
     }
 
-    /* ✅ COOKIE BANNER FIX */
+    /* COOKIE */
+
     .cookie-banner {
       position: fixed;
       bottom: 0;
@@ -343,30 +364,12 @@
       border-radius: 10px;
     }
 
-    /* ✅ MOBILE RESPONSIVE */
+    /* MOBILE */
+
     @media (max-width: 600px) {
 
-      .install-box {
-        gap: 10px;
-        padding: 12px;
-      }
-
-      .install-content strong {
-        font-size: 15px;
-      }
-
-      .install-content p {
-        font-size: 12px;
-      }
-
-      .install-btn {
-        min-width: 74px;
-        padding: 9px 12px !important;
-        font-size: 13px;
-      }
-
-      .close-install {
-        font-size: 20px;
+      .feed {
+        grid-template-columns: 1fr;
       }
 
       .cookie-banner {
@@ -377,24 +380,23 @@
       .cookie-banner button {
         width: 100% !important;
       }
-
-      .feed {
-        grid-template-columns: 1fr;
-      }
-
     }
+
   </style>
 </head>
 
 <body>
 
-<!-- 🔥 SPLASH -->
+<!-- SPLASH -->
+
 <div id="splashScreen">
   <img src="assets/logo.png">
 </div>
 
-<!-- 🔥 INSTALL BANNER -->
+<!-- INSTALL -->
+
 <div id="installBanner">
+
   <div class="install-box">
 
     <img src="icons/icon-192.png">
@@ -404,74 +406,170 @@
       <p>Get faster access with the app experience</p>
     </div>
 
-    <button class="install-btn" onclick="installApp()">
+    <button class="install-btn"
+      onclick="installApp()">
+
       Install
+
     </button>
 
-    <span class="close-install" onclick="closeInstall()">✕</span>
+    <span class="close-install"
+      onclick="closeInstall()">
+
+      ✕
+
+    </span>
 
   </div>
+
 </div>
 
+<!-- HEADER -->
+
 <div class="header">
+
   <div class="left">
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+    <div class="menu-btn"
+      onclick="toggleMenu()">
+
+      ☰
+
+    </div>
 
     <div class="logo">
       <img src="assets/logo.png">
       <span>MCN Engine</span>
     </div>
+
   </div>
 
-  <div class="profile-btn" onclick="openLogin()">👤</div>
+  <div class="profile-btn"
+    onclick="openLogin()">
+
+    👤
+
+  </div>
+
 </div>
+
+<!-- MENU -->
 
 <div id="menu">
+
   <div onclick="goHome()">Home</div>
+
   <div onclick="goTrending()">Trending</div>
+
   <div onclick="goDashboard()">Dashboard</div>
+
   <div onclick="contact()">Contact</div>
+
 </div>
 
-<div class="featured" id="featuredPost"></div>
+<!-- FEATURED -->
 
-<div class="feed" id="feed">
+<div class="featured"
+  id="featuredPost">
+
+</div>
+
+<!-- FEED -->
+
+<div class="feed"
+  id="feed">
+
   Loading posts...
+
 </div>
 
-<div id="cookieBanner" class="cookie-banner">
+<!-- COOKIE -->
+
+<div id="cookieBanner"
+  class="cookie-banner">
+
   <span>
+
     We use cookies to improve your experience.
     By using this site, you agree to our
     <a href="privacy.html">Privacy Policy</a>.
+
   </span>
 
-  <button onclick="acceptCookies()">Accept</button>
+  <button onclick="acceptCookies()">
+
+    Accept
+
+  </button>
+
 </div>
 
-<div class="login-modal" id="loginModal">
+<!-- LOGIN -->
+
+<div class="login-modal"
+  id="loginModal">
+
   <div class="center-box">
 
-    <div style="text-align:center;margin-bottom:10px;">
-      <img src="assets/logo.png" style="height:50px;">
-      <h3 style="margin-top:8px;">MCN Engine</h3>
-      <p style="font-size:12px;color:#aaa;">Login / Register</p>
+    <div style="
+      text-align:center;
+      margin-bottom:10px;
+    ">
+
+      <img src="assets/logo.png"
+        style="height:50px;">
+
+      <h3 style="margin-top:8px;">
+
+        MCN Engine
+
+      </h3>
+
+      <p style="
+        font-size:12px;
+        color:#aaa;
+      ">
+
+        Login / Register
+
+      </p>
+
     </div>
 
-    <input id="email" placeholder="Email">
+    <input id="email"
+      placeholder="Email">
 
-    <input id="password" type="password" placeholder="Password">
+    <input id="password"
+      type="password"
+      placeholder="Password">
 
-    <button onclick="signup()">Create Account</button>
+    <button onclick="signup()">
 
-    <button class="secondary-btn" onclick="login()">Login</button>
+      Create Account
 
-    <button onclick="closeLogin()">Close</button>
+    </button>
+
+    <button class="secondary-btn"
+      onclick="login()">
+
+      Login
+
+    </button>
+
+    <button onclick="closeLogin()">
+
+      Close
+
+    </button>
 
   </div>
+
 </div>
 
+<!-- FOOTER -->
+
 <div class="footer">
+
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
   <a href="privacy.html">Privacy</a> |
@@ -483,28 +581,57 @@
 
   <br><br>
 
-  <img src="assets/logo.png" style="height:18px;vertical-align:middle;margin-right:6px;">
+  <img src="assets/logo.png"
+    style="
+      height:18px;
+      vertical-align:middle;
+      margin-right:6px;
+    ">
 
   © MCN Engine • All rights reserved
+
 </div>
+
+<!-- MAIN SCRIPT -->
 
 <script type="module">
 
+/* ===============================
+   COOKIE
+=============================== */
+
 function checkCookies() {
+
   if (!localStorage.getItem("cookieAccepted")) {
-    document.getElementById("cookieBanner").style.display = "flex";
+
+    document.getElementById(
+      "cookieBanner"
+    ).style.display = "flex";
   }
 }
 
 window.acceptCookies = function () {
-  localStorage.setItem("cookieAccepted", "true");
-  document.getElementById("cookieBanner").style.display = "none";
+
+  localStorage.setItem(
+    "cookieAccepted",
+    "true"
+  );
+
+  document.getElementById(
+    "cookieBanner"
+  ).style.display = "none";
 };
 
 checkCookies();
 
+/* ===============================
+   MENU
+=============================== */
+
 window.toggleMenu = function () {
-  const menu = document.getElementById("menu");
+
+  const menu =
+    document.getElementById("menu");
 
   menu.style.display =
     (menu.style.display === "block")
@@ -513,33 +640,57 @@ window.toggleMenu = function () {
 };
 
 window.openLogin = function () {
-  document.getElementById("loginModal").style.display = "flex";
+
+  document.getElementById(
+    "loginModal"
+  ).style.display = "flex";
 };
 
 window.closeLogin = function () {
-  document.getElementById("loginModal").style.display = "none";
+
+  document.getElementById(
+    "loginModal"
+  ).style.display = "none";
 };
+
+/* ===============================
+   NAVIGATION
+=============================== */
 
 window.openPost = function (id) {
-  window.location.href = "./blog/post.html?id=" + id;
+
+  window.location.href =
+    "./blog/post.html?id=" + id;
 };
 
-/* ✅ MENU NAVIGATION */
 window.goHome = function () {
-  window.location.href = "./index.html";
+
+  window.location.href =
+    "./index.html";
 };
 
 window.goTrending = function () {
-  window.location.href = "./trending.html";
+
+  window.location.href =
+    "./trending.html";
 };
 
 window.goDashboard = function () {
-  document.getElementById("loginModal").style.display = "flex";
+
+  document.getElementById(
+    "loginModal"
+  ).style.display = "flex";
 };
 
 window.contact = function () {
-  window.location.href = "./contact.html";
+
+  window.location.href =
+    "./contact.html";
 };
+
+/* ===============================
+   CATEGORY COLORS
+=============================== */
 
 function getCategoryColor(cat) {
 
@@ -562,86 +713,335 @@ function getCategoryColor(cat) {
   }
 }
 
+/* ===============================
+   FEED LOADER
+=============================== */
+
 async function loadFeed() {
 
-  const res = await fetch(
-  "https://mxm-backend.onrender.com/blog/latest?limit=6"
-);
-  const posts = await res.json();
-
-  const feed = document.getElementById("feed");
+  const feed =
+    document.getElementById("feed");
 
   const featuredBox =
     document.getElementById("featuredPost");
 
-  feed.innerHTML = "";
-
-  if (!posts || posts.length === 0) {
-    feed.innerHTML = "<p>No posts yet</p>";
-    return;
-  }
-
-  const sorted = posts.sort((a, b) =>
-    new Date(b.createdAt || 0)
-    - new Date(a.createdAt || 0)
-  );
-
-  const featured =
-    sorted.find(p => p.featured) || sorted[0];
-
-  featuredBox.innerHTML = `
-    <div class="post"
-      onclick="openPost('${featured.id}')"
-      style="border:2px solid #5bc0be">
-
-      <h3>🔥 Featured</h3>
-
-      <h4>${featured.title}</h4>
-
-      <p>${(featured.content || "")
-        .slice(0,120)}...</p>
-
+  feed.innerHTML = `
+    <div class="post">
+      Loading MCN content...
     </div>
   `;
 
-  sorted.forEach(p => {
+  try {
 
-    feed.innerHTML += `
+    const res = await fetch(
+      "https://mxm-backend.onrender.com/blog/latest?limit=12"
+    );
+
+    const posts = await res.json();
+
+    feed.innerHTML = "";
+
+    if (!posts || posts.length === 0) {
+
+      feed.innerHTML = `
+        <div class="post">
+          No posts available
+        </div>
+      `;
+
+      return;
+    }
+
+    const sorted = posts.sort((a, b) =>
+      new Date(b.createdAt || 0)
+      - new Date(a.createdAt || 0)
+    );
+
+    /* FEATURED */
+
+    const featured =
+      sorted.find(p => p.featured)
+      || sorted[0];
+
+    featuredBox.innerHTML = `
+
       <div class="post"
-        onclick="openPost('${p.id}')">
+        onclick="openPost('${featured.id}')"
+        style="
+          border:2px solid #5bc0be;
+          margin-bottom:18px;
+        ">
 
-        <small
-          style="color:${getCategoryColor(p.category)}">
+        <h3 style="
+          margin-top:0;
+          color:#5bc0be;
+        ">
+          🔥 Featured Post
+        </h3>
 
-          ${p.category || "General"}
+        ${
+          featured.image
+            ? `
+            <img
+              src="${featured.image}"
+              style="
+                width:100%;
+                border-radius:14px;
+                margin-bottom:12px;
+                max-height:220px;
+                object-fit:cover;
+              "
+            >
+          `
+            : ""
+        }
+
+        <h2 style="margin:8px 0;">
+          ${featured.title || "Untitled"}
+        </h2>
+
+        <p style="
+          color:#ccc;
+          line-height:1.6;
+        ">
+          ${(featured.content || "")
+            .slice(0, 180)}...
+        </p>
+
+      </div>
+
+      <!-- NEWS SLIDER -->
+
+      <div id="newsSlider"
+        style="
+          overflow:hidden;
+          position:relative;
+          border-radius:18px;
+          margin-bottom:20px;
+        ">
+
+        <div id="newsTrack"
+          style="
+            display:flex;
+            transition:transform .5s ease;
+          ">
+
+          <div class="post"
+            style="
+              min-width:100%;
+              box-sizing:border-box;
+            ">
+
+            <h3 style="color:#ffcc00;">
+              📰 Google News
+            </h3>
+
+            <p>
+              AI, crypto, tech and monetization
+              updates are now integrated
+              into MCN Engine.
+            </p>
+
+          </div>
+
+          <div class="post"
+            style="
+              min-width:100%;
+              box-sizing:border-box;
+            ">
+
+            <h3 style="color:#00ff88;">
+              🚀 MCN Engine
+            </h3>
+
+            <p>
+              Modern monetization network
+              with AI blog system,
+              ads engine and live updates.
+            </p>
+
+          </div>
+
+          <div class="post"
+            style="
+              min-width:100%;
+              box-sizing:border-box;
+            ">
+
+            <h3 style="color:#5bc0be;">
+              📈 Trending
+            </h3>
+
+            <p>
+              Discover opportunities,
+              tools, websites and online
+              business trends daily.
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- AD -->
+
+      <div class="post"
+        style="
+          border:1px dashed #5bc0be;
+          margin-bottom:20px;
+        ">
+
+        <small style="color:#aaa;">
+
+          Sponsored
 
         </small>
 
-        <h4>${p.title}</h4>
+        <h3>
 
-        <p>${(p.content || "")
-          .slice(0,90)}...</p>
+          📢 Promote Your Brand on MCN
+
+        </h3>
+
+        <p>
+
+          Reach users interested in
+          AI, monetization, crypto,
+          tech and online growth.
+
+        </p>
 
       </div>
+
     `;
-  });
+
+    /* POSTS */
+
+    sorted.forEach(p => {
+
+      feed.innerHTML += `
+
+        <div class="post"
+          onclick="openPost('${p.id}')">
+
+          ${
+            p.image
+              ? `
+              <img
+                src="${p.image}"
+                style="
+                  width:100%;
+                  height:150px;
+                  object-fit:cover;
+                  border-radius:12px;
+                  margin-bottom:10px;
+                "
+              >
+            `
+              : ""
+          }
+
+          <small
+            style="
+              color:${getCategoryColor(p.category)};
+            ">
+
+            ${p.category || "General"}
+
+          </small>
+
+          <h4>
+            ${p.title || "Untitled"}
+          </h4>
+
+          <p>
+
+            ${(p.content || "")
+              .slice(0, 120)}...
+
+          </p>
+
+        </div>
+
+      `;
+    });
+
+    /* AUTO SLIDER */
+
+    let currentSlide = 0;
+
+    const track =
+      document.getElementById(
+        "newsTrack"
+      );
+
+    const totalSlides = 3;
+
+    setInterval(() => {
+
+      currentSlide++;
+
+      if (currentSlide >= totalSlides) {
+        currentSlide = 0;
+      }
+
+      track.style.transform =
+        `translateX(-${currentSlide * 100}%)`;
+
+    }, 3000);
+
+  } catch (err) {
+
+    console.error(err);
+
+    feed.innerHTML = `
+
+      <div class="post">
+
+        <h3 style="color:red;">
+
+          Feed Error
+
+        </h3>
+
+        <p>
+
+          Failed to load content.
+
+        </p>
+
+      </div>
+
+    `;
+  }
 }
 
 loadFeed();
 
 </script>
 
-<script type="module" src="app.js"></script>
+<!-- APP -->
 
-<!-- 🔥 PWA + INSTALL LOGIC -->
+<script type="module"
+  src="app.js">
+
+</script>
+
+<!-- PWA -->
+
 <script>
 
 if ('serviceWorker' in navigator) {
 
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
-  });
+  window.addEventListener(
+    'load',
+    () => {
 
+      navigator.serviceWorker
+        .register('/sw.js');
+    }
+  );
 }
 
 let deferredPrompt;
@@ -654,9 +1054,14 @@ window.addEventListener(
 
     deferredPrompt = e;
 
-    if (!localStorage.getItem("installDismissed")) {
+    if (!localStorage.getItem(
+      "installDismissed"
+    )) {
+
       document
-        .getElementById("installBanner")
+        .getElementById(
+          "installBanner"
+        )
         .classList.add("show");
     }
 });
@@ -672,7 +1077,9 @@ window.installApp = async function () {
   deferredPrompt = null;
 
   document
-    .getElementById("installBanner")
+    .getElementById(
+      "installBanner"
+    )
     .classList.remove("show");
 };
 
@@ -684,37 +1091,50 @@ window.closeInstall = function () {
   );
 
   document
-    .getElementById("installBanner")
+    .getElementById(
+      "installBanner"
+    )
     .classList.remove("show");
 };
 
-window.addEventListener("appinstalled", () => {
+window.addEventListener(
+  "appinstalled",
+  () => {
 
-  document
-    .getElementById("installBanner")
-    .classList.remove("show");
+    document
+      .getElementById(
+        "installBanner"
+      )
+      .classList.remove("show");
 
-  localStorage.setItem(
-    "installDismissed",
-    "true"
-  );
+    localStorage.setItem(
+      "installDismissed",
+      "true"
+    );
 });
 
-window.addEventListener("load", () => {
+window.addEventListener(
+  "load",
+  () => {
 
-  setTimeout(() => {
+    setTimeout(() => {
 
-    const splash =
-      document.getElementById("splashScreen");
+      const splash =
+        document.getElementById(
+          "splashScreen"
+        );
 
-    splash.style.transition =
-      "opacity 0.5s ease";
+      splash.style.transition =
+        "opacity 0.5s ease";
 
-    splash.style.opacity = "0";
+      splash.style.opacity = "0";
 
-    setTimeout(() => splash.remove(), 500);
+      setTimeout(
+        () => splash.remove(),
+        500
+      );
 
-  }, 1500);
+    }, 1500);
 });
 
 </script>
