@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MCN Post Manager</title>
+
+  <style>
+    body{
+      margin:0;
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+      padding:15px;
+    }
+
+    .card{
+      background:#1c2541;
+      padding:10px;
+      margin-bottom:10px;
+      border-radius:10px;
+    }
+
+    input,textarea{
+      width:100%;
+      padding:8px;
+      margin:5px 0;
+      border:none;
+      border-radius:6px;
+      background:#0b132b;
+      color:white;
+    }
+
+    button{
+      padding:8px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      background:#5bc0be;
+      margin-top:5px;
+    }
+
+    .danger{background:red;}
+  </style>
+</head>
+
+<body>
+
+<h2>🧠 Post Manager V2</h2>
+
+<input id="searchPosts" placeholder="Search posts..." oninput="searchPosts()">
+
+<div id="list">Loading...</div>
+
+<script type="module">
+
+import { db } from "../firebase.js";
+
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* LOAD */
+
+async function load() {
+
+  const snap = await getDocs(collection(db,"posts"));
+
+  const box = document.getElementById("list");
+  box.innerHTML = "";
+
+  snap.forEach(p => {
+
+    const d = p.data();
+
+    box.innerHTML += `
+      <div class="card">
+        <input id="t-${p.id}" value="${d.title}">
+        <textarea id="c-${p.id}">${d.content}</textarea>
+
+        <button onclick="update('${p.id}')">Update</button>
+        <button class="danger" onclick="remove('${p.id}')">Delete</button>
+      </div>
+    `;
+  });
+}
+
+/* UPDATE */
+
+window.update = async function(id){
+
+  const title = document.getElementById("t-"+id).value;
+  const content = document.getElementById("c-"+id).value;
+
+  await updateDoc(doc(db,"posts",id),{
+    title,
+    content
+  });
+
+  load();
+};
+
+/* DELETE */
+
+window.remove = async function(id){
+
+  await deleteDoc(doc(db,"posts",id));
+  load();
+};
+
+/* SEARCH */
+
+window.searchPosts = function(){
+  const val = document.getElementById("searchPosts").value;
+  console.log("Search:", val);
+};
+
+load();
+
+</script>
+
+</body>
+</html>
