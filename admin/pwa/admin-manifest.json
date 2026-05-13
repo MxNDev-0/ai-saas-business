@@ -1,7 +1,8 @@
 {
   "name": "MCN Admin Control",
   "short_name": "MCN Admin",
-  "start_url": "../admin.html",
+  "start_url": "./admin-pwa.html",
+  "scope": "/admin/pwa/",
   "display": "standalone",
   "background_color": "#0b132b",
   "theme_color": "#5bc0be",
