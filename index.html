@@ -596,42 +596,21 @@
 
 <script type="module">
 
-/* ===============================
-   COOKIE
-=============================== */
-
 function checkCookies() {
-
   if (!localStorage.getItem("cookieAccepted")) {
-
-    document.getElementById(
-      "cookieBanner"
-    ).style.display = "flex";
+    document.getElementById("cookieBanner").style.display = "flex";
   }
 }
 
 window.acceptCookies = function () {
-
-  localStorage.setItem(
-    "cookieAccepted",
-    "true"
-  );
-
-  document.getElementById(
-    "cookieBanner"
-  ).style.display = "none";
+  localStorage.setItem("cookieAccepted", "true");
+  document.getElementById("cookieBanner").style.display = "none";
 };
 
 checkCookies();
 
-/* ===============================
-   MENU
-=============================== */
-
 window.toggleMenu = function () {
-
-  const menu =
-    document.getElementById("menu");
+  const menu = document.getElementById("menu");
 
   menu.style.display =
     (menu.style.display === "block")
@@ -640,57 +619,33 @@ window.toggleMenu = function () {
 };
 
 window.openLogin = function () {
-
-  document.getElementById(
-    "loginModal"
-  ).style.display = "flex";
+  document.getElementById("loginModal").style.display = "flex";
 };
 
 window.closeLogin = function () {
-
-  document.getElementById(
-    "loginModal"
-  ).style.display = "none";
+  document.getElementById("loginModal").style.display = "none";
 };
-
-/* ===============================
-   NAVIGATION
-=============================== */
 
 window.openPost = function (id) {
-
-  window.location.href =
-    "./blog/post.html?id=" + id;
+  window.location.href = "./blog/post.html?id=" + id;
 };
 
+/* ✅ MENU NAVIGATION */
 window.goHome = function () {
-
-  window.location.href =
-    "./index.html";
+  window.location.href = "./index.html";
 };
 
 window.goTrending = function () {
-
-  window.location.href =
-    "./trending.html";
+  window.location.href = "./trending.html";
 };
 
 window.goDashboard = function () {
-
-  document.getElementById(
-    "loginModal"
-  ).style.display = "flex";
+  document.getElementById("loginModal").style.display = "flex";
 };
 
 window.contact = function () {
-
-  window.location.href =
-    "./contact.html";
+  window.location.href = "./contact.html";
 };
-
-/* ===============================
-   CATEGORY COLORS
-=============================== */
 
 function getCategoryColor(cat) {
 
@@ -714,8 +669,8 @@ function getCategoryColor(cat) {
 }
 
 /* ===============================
-   FEED LOADER
-=============================== */
+   SAFE FEED LOADER
+================================= */
 
 async function loadFeed() {
 
@@ -727,292 +682,122 @@ async function loadFeed() {
 
   feed.innerHTML = `
     <div class="post">
-      Loading MCN content...
+      <h4>Loading latest posts...</h4>
     </div>
   `;
 
   try {
 
     const res = await fetch(
-      "https://mxm-backend.onrender.com/blog/latest?limit=12"
+      "https://mxm-backend.onrender.com/blog/latest?limit=6",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
     );
+
+    if (!res.ok) {
+      throw new Error(
+        "Server returned " + res.status
+      );
+    }
 
     const posts = await res.json();
 
-    feed.innerHTML = "";
-
-    if (!posts || posts.length === 0) {
+    if (!Array.isArray(posts) || posts.length === 0) {
 
       feed.innerHTML = `
         <div class="post">
-          No posts available
+          <h4>No posts available yet</h4>
+          <p>Please check back later.</p>
         </div>
       `;
 
       return;
     }
 
+    feed.innerHTML = "";
+
     const sorted = posts.sort((a, b) =>
       new Date(b.createdAt || 0)
       - new Date(a.createdAt || 0)
     );
 
-    /* FEATURED */
-
     const featured =
-      sorted.find(p => p.featured)
-      || sorted[0];
+      sorted.find(p => p.featured) || sorted[0];
 
     featuredBox.innerHTML = `
-
       <div class="post"
         onclick="openPost('${featured.id}')"
         style="
           border:2px solid #5bc0be;
-          margin-bottom:18px;
         ">
 
-        <h3 style="
-          margin-top:0;
-          color:#5bc0be;
-        ">
-          🔥 Featured Post
-        </h3>
+        <h3>🔥 Featured</h3>
 
-        ${
-          featured.image
-            ? `
-            <img
-              src="${featured.image}"
-              style="
-                width:100%;
-                border-radius:14px;
-                margin-bottom:12px;
-                max-height:220px;
-                object-fit:cover;
-              "
-            >
-          `
-            : ""
-        }
-
-        <h2 style="margin:8px 0;">
-          ${featured.title || "Untitled"}
-        </h2>
-
-        <p style="
-          color:#ccc;
-          line-height:1.6;
-        ">
-          ${(featured.content || "")
-            .slice(0, 180)}...
-        </p>
-
-      </div>
-
-      <!-- NEWS SLIDER -->
-
-      <div id="newsSlider"
-        style="
-          overflow:hidden;
-          position:relative;
-          border-radius:18px;
-          margin-bottom:20px;
-        ">
-
-        <div id="newsTrack"
-          style="
-            display:flex;
-            transition:transform .5s ease;
-          ">
-
-          <div class="post"
-            style="
-              min-width:100%;
-              box-sizing:border-box;
-            ">
-
-            <h3 style="color:#ffcc00;">
-              📰 Google News
-            </h3>
-
-            <p>
-              AI, crypto, tech and monetization
-              updates are now integrated
-              into MCN Engine.
-            </p>
-
-          </div>
-
-          <div class="post"
-            style="
-              min-width:100%;
-              box-sizing:border-box;
-            ">
-
-            <h3 style="color:#00ff88;">
-              🚀 MCN Engine
-            </h3>
-
-            <p>
-              Modern monetization network
-              with AI blog system,
-              ads engine and live updates.
-            </p>
-
-          </div>
-
-          <div class="post"
-            style="
-              min-width:100%;
-              box-sizing:border-box;
-            ">
-
-            <h3 style="color:#5bc0be;">
-              📈 Trending
-            </h3>
-
-            <p>
-              Discover opportunities,
-              tools, websites and online
-              business trends daily.
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- AD -->
-
-      <div class="post"
-        style="
-          border:1px dashed #5bc0be;
-          margin-bottom:20px;
-        ">
-
-        <small style="color:#aaa;">
-
-          Sponsored
-
-        </small>
-
-        <h3>
-
-          📢 Promote Your Brand on MCN
-
-        </h3>
+        <h4>${featured.title || "Untitled"}</h4>
 
         <p>
-
-          Reach users interested in
-          AI, monetization, crypto,
-          tech and online growth.
-
+          ${String(featured.content || "")
+            .slice(0,120)}...
         </p>
 
       </div>
-
     `;
-
-    /* POSTS */
 
     sorted.forEach(p => {
 
       feed.innerHTML += `
-
         <div class="post"
           onclick="openPost('${p.id}')">
 
-          ${
-            p.image
-              ? `
-              <img
-                src="${p.image}"
-                style="
-                  width:100%;
-                  height:150px;
-                  object-fit:cover;
-                  border-radius:12px;
-                  margin-bottom:10px;
-                "
-              >
-            `
-              : ""
-          }
-
           <small
             style="
-              color:${getCategoryColor(p.category)};
+              color:${getCategoryColor(p.category)}
             ">
 
             ${p.category || "General"}
 
           </small>
 
-          <h4>
-            ${p.title || "Untitled"}
-          </h4>
+          <h4>${p.title || "Untitled"}</h4>
 
           <p>
-
-            ${(p.content || "")
-              .slice(0, 120)}...
-
+            ${String(p.content || "")
+              .slice(0,90)}...
           </p>
 
         </div>
-
       `;
     });
 
-    /* AUTO SLIDER */
-
-    let currentSlide = 0;
-
-    const track =
-      document.getElementById(
-        "newsTrack"
-      );
-
-    const totalSlides = 3;
-
-    setInterval(() => {
-
-      currentSlide++;
-
-      if (currentSlide >= totalSlides) {
-        currentSlide = 0;
-      }
-
-      track.style.transform =
-        `translateX(-${currentSlide * 100}%)`;
-
-    }, 3000);
-
   } catch (err) {
 
-    console.error(err);
+    console.error("Feed Error:", err);
+
+    featuredBox.innerHTML = "";
 
     feed.innerHTML = `
+      <div class="post"
+        style="
+          border:1px solid #ff6b6b;
+        ">
 
-      <div class="post">
-
-        <h3 style="color:red;">
-
+        <h4 style="color:#ff6b6b;">
           Feed Error
-
-        </h3>
+        </h4>
 
         <p>
-
           Failed to load content.
-
         </p>
 
-      </div>
+        <button onclick="loadFeed()">
+          Retry
+        </button>
 
+      </div>
     `;
   }
 }
