@@ -60,15 +60,27 @@
       width:90%;
 
       max-width:400px;
+
+      box-sizing:border-box;
     }
 
+    h1{
+      margin-top:0;
+    }
+
+    p{
+      color:#ccc;
+      line-height:1.6;
+    }
+
+    button,
     a{
 
       display:block;
 
-      margin-top:20px;
+      margin-top:15px;
 
-      padding:12px;
+      padding:14px;
 
       background:#5bc0be;
 
@@ -79,6 +91,19 @@
       border-radius:10px;
 
       font-weight:bold;
+
+      border:none;
+
+      cursor:pointer;
+
+      width:100%;
+
+      box-sizing:border-box;
+    }
+
+    #installBtn{
+
+      display:none;
     }
 
   </style>
@@ -95,22 +120,85 @@
     Standalone Admin PWA Launcher
   </p>
 
+  <button id="installBtn">
+    📲 Install Admin App
+  </button>
+
   <a href="../admin.html">
-
-    Open Admin Panel
-
+    🚀 Open Admin Panel
   </a>
 
 </div>
 
 <script>
 
+let deferredPrompt = null;
+
+const installBtn =
+  document.getElementById(
+    "installBtn"
+  );
+
+/* ================= PWA INSTALL ================= */
+
+window.addEventListener(
+  "beforeinstallprompt",
+  (e) => {
+
+    e.preventDefault();
+
+    deferredPrompt = e;
+
+    installBtn.style.display =
+      "block";
+  }
+);
+
+installBtn.addEventListener(
+  "click",
+  async () => {
+
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+
+    const result =
+      await deferredPrompt.userChoice;
+
+    console.log(
+      "PWA Install:",
+      result.outcome
+    );
+
+    deferredPrompt = null;
+
+    installBtn.style.display =
+      "none";
+  }
+);
+
+/* ================= SERVICE WORKER ================= */
+
 if ("serviceWorker" in navigator) {
 
   navigator.serviceWorker.register(
     "./admin-sw.js"
-  );
+  )
+  .then(() => {
 
+    console.log(
+      "✅ Admin SW Ready"
+    );
+
+  })
+  .catch(err => {
+
+    console.error(
+      "SW Failed:",
+      err
+    );
+
+  });
 }
 
 </script>
