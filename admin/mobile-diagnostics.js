@@ -1,17 +1,36 @@
-export function runDiagnostics() {
+/* =========================================
+   MCN MOBILE DIAGNOSTICS
+========================================= */
 
-  const report = {
-    screen: window.innerWidth + "x" + window.innerHeight,
-    userAgent: navigator.userAgent,
-    online: navigator.onLine,
-    memory: navigator.deviceMemory || "unknown",
-    time: new Date().toISOString()
+(function () {
+
+  const diagnostics = {
+
+    userAgent:
+      navigator.userAgent,
+
+    online:
+      navigator.onLine,
+
+    language:
+      navigator.language,
+
+    memory:
+      navigator.deviceMemory || "unknown",
+
+    cores:
+      navigator.hardwareConcurrency || "unknown",
+
+    screen:
+      `${screen.width}x${screen.height}`,
+
+    platform:
+      navigator.platform
   };
 
-  console.log("📊 MCN Diagnostics:", report);
+  console.table(diagnostics);
 
-  alert(
-    "Device Check:\n" +
-    JSON.stringify(report, null, 2)
-  );
-}
+  window.mcnDiagnostics =
+    diagnostics;
+
+})();
