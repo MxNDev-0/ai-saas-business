@@ -37,12 +37,6 @@
       pointer-events: none;
     }
 
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
     .menu {
       display: none;
       flex-direction: column;
@@ -56,9 +50,7 @@
       overflow: hidden;
     }
 
-    .menu.active {
-      display: flex;
-    }
+    .menu.active { display: flex; }
 
     .menu button {
       padding: 12px;
@@ -85,197 +77,88 @@
       border-radius: 10px;
     }
 
-    .ads-container {
-      overflow: hidden;
-      position: relative;
-      padding: 10px 0;
-    }
-
-    .ads-slider {
-      display: flex;
-      transition: transform 0.6s ease;
-    }
-
-    .ad {
-      min-width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .ad-box {
-      width: 80%;
-      max-width: 320px;
-      text-align: center;
-      padding: 14px;
-      background: linear-gradient(135deg, #5bc0be, #3a86ff);
-      color: #000;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      cursor: pointer;
-    }
-
-    #discoverBox .card,
-    #featuredBox .card,
-    #trendingBox .card {
-      cursor: pointer;
+    .news-item {
       padding: 10px;
-    }
-
-    #discoverBox img {
-      width: 100%;
-      border-radius: 8px;
       margin-bottom: 8px;
+      background: #0b132b;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
-    .card-title {
-      color: #5bc0be;
+    .news-title {
       font-weight: bold;
-      margin-top: 6px;
+      color: #5bc0be;
     }
 
-    .card-text {
-      font-size: 12px;
-      opacity: 0.8;
+    .news-date {
+      font-size: 11px;
+      opacity: 0.7;
     }
-
-    .badge {
-      background: red;
-      color: white;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 50%;
-      margin-left: 4px;
-    }
-
   </style>
 </head>
 
 <body>
 
 <div class="navbar">
-
   <div class="nav-left">
     <button onclick="toggleMenu()">☰</button>
   </div>
 
   <div class="nav-title">MCN Engine</div>
-
-  <div class="nav-right">
-    <button onclick="logout()">Logout</button>
-  </div>
 </div>
 
 <div id="menu" class="menu">
-  <button onclick="goHome(); closeMenu()">🏠 Home</button>
-
-  <button onclick="goAdSpace(); closeMenu()">🚀 Ads</button>
-  <button onclick="goBlog(); closeMenu()">📰 Blog</button>
-  <button onclick="goFaq(); closeMenu()">❓ FAQ</button>
-  <button onclick="goAbout(); closeMenu()">ℹ️ About</button>
-  <button onclick="goContact(); closeMenu()">📩 Contact</button>
-  <button onclick="goDMCA(); closeMenu()">⚖️ DMCA</button>
-
-  <button onclick="donate(); closeMenu()">💰 Donate</button>
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goAdSpace()">🚀 Ads</button>
+  <button onclick="goBlog()">📰 Blog</button>
+  <button onclick="goFaq()">❓ FAQ</button>
+  <button onclick="goAbout()">ℹ️ About</button>
+  <button onclick="goContact()">📩 Contact</button>
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div class="container">
 
+  <!-- 📰 NEWS (REPLACED LIVE PRICES) -->
   <div class="card">
-    <h4>🔥 Sponsored Ads</h4>
-
-    <div class="ads-container">
-      <div class="ads-slider" id="adsSlider">
-        <div class="ad">
-          <div class="ad-box">🚀 Loading sponsored ads...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h4>📊 Live Prices</h4>
-
-    <button onclick="refreshPrices()" style="
-      padding:8px;
-      background:#5bc0be;
-      border:none;
-      border-radius:8px;
-      margin-bottom:10px;
-      font-weight:bold;
-      cursor:pointer;
-    ">
-      🔄 Refresh Prices
-    </button>
-
-    <div id="priceBox">Loading...</div>
+    <h4>📰 Live US News Feed</h4>
+    <div id="newsBox">Loading news...</div>
   </div>
 
   <div class="card">
     <h4>⭐ Featured Posts</h4>
-    <div id="featuredBox">Loading featured posts...</div>
+    <div id="featuredBox">Loading...</div>
   </div>
 
   <div class="card">
     <h4>🔥 Trending Posts</h4>
-    <div id="trendingBox">Loading trending posts...</div>
+    <div id="trendingBox">Loading...</div>
   </div>
 
   <div class="card">
     <h4>📰 Discover Feed</h4>
-    <div id="discoverBox">Loading feed...</div>
+    <div id="discoverBox">Loading...</div>
   </div>
 
 </div>
 
 <script type="module" src="dashboard.js"></script>
 
-<script type="module">
-
-import { db } from "./firebase.js";
-import {
-  collection, query, where, limit, getDocs
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+<script>
 window.toggleMenu = function () {
   document.getElementById("menu").classList.toggle("active");
 };
 
-window.closeMenu = function () {
-  document.getElementById("menu").classList.remove("active");
-};
-
-window.refreshPrices = async function () {
-  if (typeof loadLivePrices === "function") {
-    loadLivePrices();
-  }
-};
-
-window.openPost = function(id){
-  location.href = "post.html?id=" + id;
-};
-
-window.logout = async function () {
+window.logout = function () {
   location.href = "index.html";
 };
 
-function loadDiscover(){ /* unchanged */ }
-function loadFeatured(){ /* unchanged */ }
-function loadTrending(){ /* unchanged */ }
-
-loadDiscover();
-loadFeatured();
-loadTrending();
-
-setInterval(() => {
-  if (typeof loadDiscover === "function") loadDiscover();
-  if (typeof loadFeatured === "function") loadFeatured();
-  if (typeof loadTrending === "function") loadTrending();
-}, 20000);
-
+window.goHome = () => location.href = "dashboard.html";
+window.goAdSpace = () => location.href = "ads.html";
+window.goBlog = () => location.href = "blog/index.html";
+window.goFaq = () => location.href = "faq.html";
+window.goAbout = () => location.href = "about.html";
+window.goContact = () => location.href = "contact.html";
 </script>
 
 </body>
