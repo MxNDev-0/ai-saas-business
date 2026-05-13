@@ -11,9 +11,8 @@ import {
   collection,
   onSnapshot,
   query,
-  orderBy,
-  limit,
-  where
+  where,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= USER STATE ================= */
@@ -64,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* ================= NEWS (REPLACES CRYPTO PRICES) ================= */
+/* ================= USA NEWS ENGINE (REPLACES CRYPTO PRICES) ================= */
 function loadLiveNews() {
 
   const box = document.getElementById("priceBox");
@@ -74,7 +73,7 @@ function loadLiveNews() {
     try {
 
       const res = await fetch(
-        "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
+        "https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/news/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en"
       );
 
       const data = await res.json();
@@ -91,7 +90,8 @@ function loadLiveNews() {
             border-radius:8px;
           ">
             <b>${item.title}</b><br>
-            <a href="${item.link}" target="_blank" style="color:#5bc0be;font-size:12px;">
+            <a href="${item.link}" target="_blank"
+              style="color:#5bc0be;font-size:12px;">
               Read more →
             </a>
           </div>
@@ -107,7 +107,7 @@ function loadLiveNews() {
   setInterval(render, 60000);
 }
 
-/* ================= REAL-TIME DISCOVER ================= */
+/* ================= DISCOVER ================= */
 function loadDiscover() {
 
   const box = document.getElementById("discoverBox");
