@@ -150,23 +150,6 @@
       margin-left: 4px;
     }
 
-    /* FIX NOTIF PANEL */
-    #notifPanel {
-      display: none;
-      position: absolute;
-      right: 10px;
-      top: 50px;
-      width: 220px;
-      background: #1c2541;
-      border-radius: 10px;
-      flex-direction: column;
-      z-index: 9999;
-    }
-
-    #notifPanel.active {
-      display: flex;
-    }
-
   </style>
 </head>
 
@@ -187,20 +170,17 @@
 
 <div id="menu" class="menu">
   <button onclick="goHome(); closeMenu()">🏠 Home</button>
-  <button onclick="goProfile(); closeMenu()">👤 Profile</button>
-  <button onclick="goMessages(); closeMenu()">💬 Messages</button>
+
   <button onclick="goAdSpace(); closeMenu()">🚀 Ads</button>
   <button onclick="goBlog(); closeMenu()">📰 Blog</button>
   <button onclick="goFaq(); closeMenu()">❓ FAQ</button>
   <button onclick="goAbout(); closeMenu()">ℹ️ About</button>
   <button onclick="goContact(); closeMenu()">📩 Contact</button>
   <button onclick="goDMCA(); closeMenu()">⚖️ DMCA</button>
-  <button onclick="toggleNotif()">🔔 Notifications</button>
+
   <button onclick="donate(); closeMenu()">💰 Donate</button>
   <button onclick="logout()">🚪 Logout</button>
 </div>
-
-<div id="notifPanel"></div>
 
 <div class="container">
 
@@ -278,10 +258,6 @@ window.openPost = function(id){
   location.href = "post.html?id=" + id;
 };
 
-window.toggleNotif = function () {
-  document.getElementById("notifPanel").classList.toggle("active");
-};
-
 window.logout = async function () {
   location.href = "index.html";
 };
@@ -301,7 +277,6 @@ setInterval(() => {
 }, 20000);
 
 </script>
-
 
 </body>
 </html>
