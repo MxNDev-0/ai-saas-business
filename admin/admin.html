@@ -1,141 +1,184 @@
-<!-- CLEAN MCN ADMIN PANEL -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MCN Admin Control Room</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
 
-  <style>
-    body {
-      background:#0b132b;
-      color:white;
-      font-family:Arial;
-      margin:0;
-      padding:20px;
-    }
+<title>MCN Admin Panel V17 (RESTORED + MERGED)</title>
 
-    .grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-      gap:15px;
-    }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    .card {
-      background:#1c2541;
-      padding:12px;
-      border-radius:10px;
-    }
+<style>
+body {
+  background:#0b132b;
+  color:#fff;
+  font-family:Arial;
+  margin:0;
+  padding:20px;
+}
 
-    input,textarea,select {
-      width:100%;
-      padding:10px;
-      margin:6px 0;
-      border-radius:8px;
-      border:none;
-      background:#0b132b;
-      color:white;
-    }
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:15px;
+}
 
-    button {
-      width:100%;
-      padding:10px;
-      border:none;
-      border-radius:8px;
-      background:#5bc0be;
-      font-weight:bold;
-      cursor:pointer;
-      margin-top:6px;
-    }
+.card {
+  background:#1c2541;
+  padding:12px;
+  border-radius:10px;
+}
 
-    .danger { background:red; }
+input, textarea, select {
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+  background:#0b132b;
+  color:white;
+}
 
-    .list-box {
-      max-height:220px;
-      overflow:auto;
-      background:#0b132b;
-      padding:6px;
-      border-radius:8px;
-    }
+button {
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#5bc0be;
+  font-weight:bold;
+  cursor:pointer;
+}
 
-    .item {
-      background:#16213e;
-      padding:8px;
-      margin-bottom:6px;
-      border-radius:8px;
-    }
-  </style>
+.danger { background:red; }
+
+.monitor {
+  background:#05070f;
+  color:#00ff88;
+  height:250px;
+  overflow:auto;
+  font-family:monospace;
+  padding:10px;
+  border-radius:10px;
+}
+
+/* placeholders */
+.placeholder-box {
+  background:#0b132b;
+  padding:10px;
+  border-radius:8px;
+}
+
+.toggle-row {
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  margin:4px 0;
+}
+
+.section-title {
+  margin-top:10px;
+  font-size:13px;
+  opacity:0.7;
+}
+</style>
 </head>
 
 <body>
 
-<h2>👑 MCN Admin Panel</h2>
+<h2>👑 MCN Admin Panel V17 (FINAL MERGED)</h2>
 
 <div class="grid">
 
-  <!-- SYSTEM -->
+  <!-- SYSTEM MONITOR -->
   <div class="card">
     <h3>🖥 System Monitor</h3>
-    <div id="monitor">Online</div>
+    <div id="monitor" class="monitor"></div>
   </div>
 
-  <!-- BLOG -->
+  <!-- POSTS -->
   <div class="card">
-    <h3>📝 Create Blog</h3>
+    <h3>💬 Post Manager</h3>
+    <div id="postsList"></div>
 
-    <input id="blogTitle" placeholder="Title">
-    <textarea id="blogContent" placeholder="Content"></textarea>
-    <input id="blogImage" placeholder="Image URL">
+    <h3>✏️ Edit Post</h3>
 
-    <button onclick="createBlog()">Publish</button>
+    <input id="editPostId" placeholder="Post ID">
+    <input id="editTitle" placeholder="Title">
+    <textarea id="editContent" placeholder="Content"></textarea>
 
-    <button onclick="openPostManager()">
-      Open Post Manager
-    </button>
+    <div class="section-title">Post Flags</div>
+
+    <div class="toggle-row">
+      <label>Homepage</label>
+      <input type="checkbox" id="e_homepage">
+    </div>
+
+    <div class="toggle-row">
+      <label>Featured</label>
+      <input type="checkbox" id="e_featured">
+    </div>
+
+    <div class="toggle-row">
+      <label>Trending</label>
+      <input type="checkbox" id="e_trending">
+    </div>
+
+    <div class="toggle-row">
+      <label>Sponsored</label>
+      <input type="checkbox" id="e_sponsored">
+    </div>
+
+    <div class="section-title">Monetization Controls</div>
+
+    <input id="e_adExpiry" type="datetime-local" placeholder="Expiry">
+    <input id="e_adPriority" type="number" placeholder="Priority (0-10)">
+
+    <button onclick="updatePost()">Update Post</button>
   </div>
 
-  <!-- ADS -->
+  <!-- PLACEHOLDER CONTROL -->
   <div class="card">
-    <h3>📢 Ad Requests</h3>
-    <div id="upgradeList" class="list-box"></div>
-  </div>
+    <h3>⭐ Placeholder Control</h3>
 
-  <!-- POSTS CONTROL -->
-  <div class="card">
-    <h3>⚙ Post Control</h3>
-    <p style="font-size:12px;opacity:0.7;">
-      Use Post Manager for edit/delete operations
-    </p>
+    <div class="placeholder-box">
 
-    <button onclick="openPostManager()">
-      Manage Posts
-    </button>
-  </div>
+      <div class="toggle-row">
+        <label>Homepage Slot</label>
+        <input type="checkbox" id="c_homepage">
+      </div>
 
-  <!-- MAINTENANCE -->
-  <div class="card">
-    <h3>🛠 Maintenance</h3>
+      <div class="toggle-row">
+        <label>Featured Slot</label>
+        <input type="checkbox" id="c_featured">
+      </div>
 
-    <label>
-      <input type="checkbox" id="maintenanceToggle">
-      Enable Maintenance
-    </label>
+      <div class="toggle-row">
+        <label>Trending Slot</label>
+        <input type="checkbox" id="c_trending">
+      </div>
 
-    <button onclick="saveMaintenanceMode()">
-      Save
-    </button>
+      <div class="toggle-row">
+        <label>Sponsored Slot</label>
+        <input type="checkbox" id="c_sponsored">
+      </div>
+
+      <div class="section-title">Ad Placement Slots</div>
+
+      <select id="placeholderSlot">
+        <option value="">None</option>
+        <option value="hero">Hero Banner</option>
+        <option value="featured1">Featured 1</option>
+        <option value="featured2">Featured 2</option>
+        <option value="sidebar">Sidebar</option>
+        <option value="popup">Popup</option>
+      </select>
+
+      <input id="placeholderText" placeholder="Placeholder Text">
+
+    </div>
   </div>
 
 </div>
 
-<script>
-function openPostManager(){
-  window.location.href = "./post-manager.html";
-}
-</script>
-
-<script type="module" src="./admin-auth.js"></script>
-<script type="module" src="./emergency-control.js"></script>
 <script type="module" src="./admin-loader.js"></script>
 
 </body>
