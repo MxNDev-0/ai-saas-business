@@ -1,15 +1,47 @@
 /* =========================================
-   MCN POST MANAGER MODULE (CLEAN VERSION)
+   MCN POST MANAGER MODULE (WITH SEARCH)
 ========================================= */
 
 const API = "https://mxm-backend.onrender.com/blog";
 
 let postsCache = [];
+let filteredPosts = [];
 
 /* ================= INIT ================= */
 document.addEventListener("DOMContentLoaded", () => {
+  injectSearchBox();
   loadPosts();
 });
+
+/* ================= SEARCH UI INJECTION ================= */
+function injectSearchBox() {
+  const container = document.getElementById("postsList");
+
+  const searchHTML = `
+    <div style="margin-bottom:10px;">
+      <input
+        id="postSearch"
+        placeholder="🔍 Search posts..."
+        style="
+          width:100%;
+          padding:8px;
+          border-radius:8px;
+          border:none;
+          background:#0b132b;
+          color:white;
+        "
+      />
+    </div>
+  `;
+
+  container.innerHTML = searchHTML + container.innerHTML;
+
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "postSearch") {
+      handleSearch(e.target.value);
+    }
+  });
+}
 
 /* ================= LOAD POSTS ================= */
 async function loadPosts() {
@@ -18,8 +50,9 @@ async function loadPosts() {
     const posts = await res.json();
 
     postsCache = posts || [];
+    filteredPosts = postsCache;
 
-    renderPosts(postsCache);
+    renderPosts(filteredPosts);
 
   } catch (err) {
     console.error("Failed to load posts:", err);
@@ -28,14 +61,35 @@ async function loadPosts() {
   }
 }
 
+/* ================= SEARCH FILTER ================= */
+function handleSearch(query) {
+  const q = query.toLowerCase().trim();
+
+  if (!q) {
+    filteredPosts = postsCache;
+  } else {
+    filteredPosts = postsCache.filter(p =>
+      (p.title || "").toLowerCase().includes(q) ||
+      (p.content || "").toLowerCase().includes(q) ||
+      (p.id || "").toLowerCase().includes(q)
+    );
+  }
+
+  renderPosts(filteredPosts);
+}
+
 /* ================= RENDER ================= */
 function renderPosts(posts) {
   const box = document.getElementById("postsList");
 
+  // keep search box
+  const searchBox = box.querySelector("#postSearch");
+
   box.innerHTML = "";
+  if (searchBox) box.appendChild(searchBox.parentElement);
 
   if (!posts.length) {
-    box.innerHTML = "<div class='item'>No posts found</div>";
+    box.innerHTML += "<div class='item'>No posts found</div>";
     return;
   }
 
@@ -135,7 +189,6 @@ window.updatePost = async function () {
     });
 
     alert("Post updated successfully");
-
     loadPosts();
 
   } catch (err) {
@@ -155,7 +208,6 @@ window.deletePost = async function (id) {
     });
 
     alert("Post deleted");
-
     loadPosts();
 
   } catch (err) {
