@@ -1,121 +1,193 @@
 /* =========================================
-   MCN EMERGENCY CONTROL SYSTEM v1
+   MCN EMERGENCY CONTROL
 ========================================= */
 
-import { db } from "../firebase.js";
+let emergencyActive = false;
 
-import {
-  doc,
-  setDoc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+function createEmergencyWidget() {
 
-/* ================= STATE ================= */
+  if (
+    document.getElementById(
+      "mcnEmergencyPanel"
+    )
+  ) return;
 
-let emergencyState = false;
+  const panel =
+    document.createElement("div");
 
-/* ================= INIT ================= */
+  panel.id =
+    "mcnEmergencyPanel";
 
-async function loadState() {
+  panel.style.cssText = `
+    position:fixed;
+    left:10px;
+    bottom:90px;
+    width:55px;
+    background:#1c2541;
+    color:white;
+    border-radius:14px;
+    overflow:hidden;
+    z-index:999999;
+    box-shadow:0 0 20px rgba(0,0,0,0.4);
+    transition:all 0.3s ease;
+    font-family:Arial;
+  `;
 
-  const snap =
-    await getDoc(doc(db, "system", "emergency"));
+  panel.innerHTML = `
 
-  if (!snap.exists()) {
+    <div id="emergencyMiniBtn"
+      style="
+        padding:12px;
+        text-align:center;
+        cursor:pointer;
+        background:#0b132b;
+        font-size:20px;
+      ">
+      🚨
+    </div>
 
-    await setDoc(doc(db, "system", "emergency"), {
-      enabled: false,
-      updatedAt: Date.now()
-    });
-  }
+    <div id="emergencyContent"
+      style="
+        max-height:0;
+        overflow:hidden;
+        padding:0 12px;
+        transition:all 0.3s ease;
+      ">
 
-  emergencyState =
-    snap.exists() ? snap.data().enabled : false;
+      <h3>Emergency Control</h3>
 
-  renderUI();
-}
+      <button id="activateEmergency"
+        style="
+          width:100%;
+          padding:10px;
+          border:none;
+          border-radius:10px;
+          background:#5bc0be;
+          font-weight:bold;
+          margin-bottom:10px;
+          cursor:pointer;
+        ">
+        ACTIVATE
+      </button>
 
-/* ================= ACTIONS ================= */
-
-async function setEmergency(state) {
-
-  emergencyState = state;
-
-  await setDoc(doc(db, "system", "emergency"), {
-    enabled: state,
-    updatedAt: Date.now()
-  }, { merge: true });
-
-  console.log(
-    state
-      ? "🚨 EMERGENCY ACTIVATED"
-      : "🟢 EMERGENCY DISABLED"
-  );
-
-  renderUI();
-}
-
-/* ================= UI CONTROLLER ================= */
-
-function renderUI() {
-
-  let panel = document.getElementById("emergencyPanel");
-
-  if (!panel) {
-
-    panel = document.createElement("div");
-
-    panel.id = "emergencyPanel";
-
-    panel.style.cssText = `
-      position:fixed;
-      top:50%;
-      left:10px;
-      transform:translateY(-50%);
-      background:#1c2541;
-      color:white;
-      padding:10px;
-      border-radius:12px;
-      z-index:999999;
-      width:160px;
-      font-family:Arial;
-      box-shadow:0 0 20px rgba(0,0,0,0.4);
-    `;
-
-    panel.innerHTML = `
-      <b>🚨 Emergency Control</b>
-      <hr style="border:0;border-top:1px solid #444">
-
-      <button id="emOn">ACTIVATE</button>
-      <button id="emOff" style="margin-top:5px;background:red;color:white;">
+      <button id="disableEmergency"
+        style="
+          width:100%;
+          padding:10px;
+          border:none;
+          border-radius:10px;
+          background:red;
+          color:white;
+          font-weight:bold;
+          cursor:pointer;
+        ">
         DISABLE
       </button>
 
-      <p id="emStatus" style="margin-top:10px;font-size:12px;">
-      Status: UNKNOWN
+      <p id="emergencyStatus">
+        Status: NORMAL
       </p>
-    `;
 
-    document.body.appendChild(panel);
+    </div>
+  `;
 
-    document.getElementById("emOn").onclick =
-      () => setEmergency(true);
+  document.body.appendChild(panel);
 
-    document.getElementById("emOff").onclick =
-      () => setEmergency(false);
-  }
+  const miniBtn =
+    document.getElementById(
+      "emergencyMiniBtn"
+    );
+
+  const content =
+    document.getElementById(
+      "emergencyContent"
+    );
+
+  let expanded = false;
+
+  miniBtn.onclick = () => {
+
+    expanded = !expanded;
+
+    if (expanded) {
+
+      panel.style.width = "260px";
+
+      content.style.maxHeight =
+        "400px";
+
+      content.style.padding =
+        "12px";
+
+    } else {
+
+      panel.style.width = "55px";
+
+      content.style.maxHeight =
+        "0";
+
+      content.style.padding =
+        "0 12px";
+    }
+  };
+
+  document
+    .getElementById(
+      "activateEmergency"
+    )
+    .onclick = activateEmergency;
+
+  document
+    .getElementById(
+      "disableEmergency"
+    )
+    .onclick = disableEmergency;
+}
+
+/* ================= ACTIVATE ================= */
+
+function activateEmergency() {
+
+  emergencyActive = true;
 
   const status =
-    document.getElementById("emStatus");
+    document.getElementById(
+      "emergencyStatus"
+    );
 
   if (status) {
 
-    status.textContent =
-      "Status: " +
-      (emergencyState ? "ACTIVE 🚨" : "NORMAL 🟢");
+    status.innerHTML =
+      "Status: ACTIVE 🚨";
   }
+
+  console.log(
+    "🚨 Emergency Mode Activated"
+  );
+}
+
+/* ================= DISABLE ================= */
+
+function disableEmergency() {
+
+  emergencyActive = false;
+
+  const status =
+    document.getElementById(
+      "emergencyStatus"
+    );
+
+  if (status) {
+
+    status.innerHTML =
+      "Status: NORMAL";
+  }
+
+  console.log(
+    "✅ Emergency Mode Disabled"
+  );
 }
 
 /* ================= BOOT ================= */
 
-loadState();
+createEmergencyWidget();
