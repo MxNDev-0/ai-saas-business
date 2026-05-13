@@ -3,7 +3,12 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
 <title>MCN Engine Profile</title>
 
 <style>
@@ -21,6 +26,8 @@ body{
   min-height:100vh;
 }
 
+/* ================= TOPBAR ================= */
+
 .topbar{
   height:65px;
   background:#101935;
@@ -34,27 +41,33 @@ body{
 }
 
 .icon-btn{
-  width:42px;
-  height:42px;
+  width:46px;
+  height:46px;
   border:none;
-  border-radius:12px;
+  border-radius:14px;
   background:#5bc0be;
   color:black;
   font-size:18px;
   font-weight:bold;
 }
 
+/* ================= PROFILE HEADER ================= */
+
 .profile-header{
   position:relative;
-  padding-bottom:25px;
+  padding-bottom:30px;
   background:#101935;
-  border-bottom-left-radius:25px;
-  border-bottom-right-radius:25px;
+  border-bottom-left-radius:28px;
+  border-bottom-right-radius:28px;
 }
 
 .cover{
   height:180px;
-  background:linear-gradient(135deg,#5bc0be,#1c2541);
+  background:linear-gradient(
+    135deg,
+    #5bc0be,
+    #1c2541
+  );
 }
 
 .avatar{
@@ -82,13 +95,13 @@ body{
 }
 
 .profile-info{
-  margin-top:70px;
+  margin-top:75px;
   text-align:center;
   padding:0 20px;
 }
 
 .username{
-  font-size:28px;
+  font-size:34px;
   font-weight:bold;
   margin-bottom:10px;
 }
@@ -96,8 +109,10 @@ body{
 .bio{
   color:#aaa;
   line-height:1.5;
-  margin-bottom:20px;
+  margin-bottom:25px;
 }
+
+/* ================= STATS ================= */
 
 .stats{
   display:grid;
@@ -108,29 +123,32 @@ body{
 
 .stat{
   background:#16213e;
-  padding:14px 10px;
-  border-radius:16px;
+  padding:16px 10px;
+  border-radius:18px;
 }
 
 .stat-number{
   color:#5bc0be;
-  font-size:20px;
+  font-size:22px;
   font-weight:bold;
   margin-bottom:5px;
 }
 
+/* ================= ACTION BUTTONS ================= */
+
 .actions{
   display:flex;
   gap:10px;
-  margin-top:10px;
+  margin-top:15px;
 }
 
 .action-btn{
   flex:1;
   border:none;
-  padding:13px;
-  border-radius:14px;
+  padding:15px;
+  border-radius:16px;
   font-weight:bold;
+  font-size:15px;
 }
 
 .primary{
@@ -143,31 +161,35 @@ body{
   color:white;
 }
 
+/* ================= SECTION ================= */
+
 .section{
   padding:15px;
 }
 
 .card{
   background:#111b36;
-  padding:15px;
-  border-radius:18px;
-  margin-bottom:15px;
+  padding:18px;
+  border-radius:22px;
+  margin-bottom:18px;
 }
 
 .section-title{
   font-size:18px;
   font-weight:bold;
-  margin-bottom:15px;
+  margin-bottom:18px;
 }
+
+/* ================= USERS ================= */
 
 .user-item{
   display:flex;
   align-items:center;
   justify-content:space-between;
   background:#16213e;
-  padding:12px;
-  border-radius:12px;
-  margin-bottom:10px;
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:12px;
 }
 
 .user-left{
@@ -194,26 +216,55 @@ body{
   border:none;
   background:#5bc0be;
   color:black;
-  padding:8px 14px;
+  padding:10px 14px;
   border-radius:10px;
   font-weight:bold;
 }
 
+/* ================= POSTS ================= */
+
 .post-box{
   background:#16213e;
   padding:15px;
-  border-radius:14px;
-  margin-bottom:12px;
+  border-radius:16px;
+  margin-bottom:14px;
 }
 
 textarea{
   width:100%;
-  padding:12px;
-  border-radius:12px;
+  min-height:120px;
+  padding:15px;
+  border-radius:16px;
   background:#16213e;
   color:white;
   border:none;
+  resize:none;
+  font-size:15px;
+  margin-bottom:15px;
 }
+
+textarea:focus{
+  outline:none;
+}
+
+/* ================= POST BUTTON FIX ================= */
+
+.post-action{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.post-btn{
+  border:none;
+  background:#5bc0be;
+  color:black;
+  padding:14px 24px;
+  border-radius:14px;
+  font-weight:bold;
+  font-size:15px;
+}
+
+/* ================= EMPTY ================= */
 
 .empty{
   opacity:0.7;
@@ -228,81 +279,182 @@ textarea{
   text-align:center;
 }
 
+/* ================= MOBILE ================= */
+
+@media(max-width:480px){
+
+  .username{
+    font-size:28px;
+  }
+
+  .stats{
+    grid-template-columns:
+      repeat(2,1fr);
+  }
+
+}
+
 </style>
 
 </head>
 
 <body>
 
+<!-- ================= TOPBAR ================= -->
+
 <div class="topbar">
 
-  <button class="icon-btn" onclick="goBack()">←</button>
+  <button
+    class="icon-btn"
+    onclick="goBack()"
+  >
+    ←
+  </button>
 
-  <div id="topUsername">Profile</div>
+  <div id="topUsername">
+    Profile
+  </div>
 
-  <button class="icon-btn" onclick="location.href='dashboard.html'">🏠</button>
+  <button
+    class="icon-btn"
+    onclick="location.href='dashboard.html'"
+  >
+    🏠
+  </button>
 
 </div>
 
+<!-- ================= PROFILE ================= -->
+
 <div class="profile-header">
 
-  <div class="cover" id="coverPhoto"></div>
+  <div
+    class="cover"
+    id="coverPhoto"
+  ></div>
 
-  <div class="avatar" id="avatar">U</div>
+  <div
+    class="avatar"
+    id="avatar"
+  >
+    U
+  </div>
 
   <div class="profile-info">
 
-    <div class="username" id="username">Username</div>
+    <div
+      class="username"
+      id="username"
+    >
+      Username
+    </div>
 
-    <div class="bio" id="bio">User bio...</div>
+    <div
+      class="bio"
+      id="bio"
+    >
+      User bio...
+    </div>
+
+    <!-- ================= STATS ================= -->
 
     <div class="stats">
 
       <div class="stat">
-        <div class="stat-number" id="postsCount">0</div>
+
+        <div
+          class="stat-number"
+          id="postsCount"
+        >
+          0
+        </div>
+
         <div>Posts</div>
+
       </div>
 
       <div class="stat">
-        <div class="stat-number" id="followersCount">0</div>
+
+        <div
+          class="stat-number"
+          id="followersCount"
+        >
+          0
+        </div>
+
         <div>Followers</div>
+
       </div>
 
       <div class="stat">
-        <div class="stat-number" id="followingCount">0</div>
+
+        <div
+          class="stat-number"
+          id="followingCount"
+        >
+          0
+        </div>
+
         <div>Following</div>
+
       </div>
 
       <div class="stat">
-        <div class="stat-number" id="likesCount">0</div>
+
+        <div
+          class="stat-number"
+          id="likesCount"
+        >
+          0
+        </div>
+
         <div>Likes</div>
+
       </div>
 
     </div>
 
-    <div class="actions" id="ownerActions">
+    <!-- ================= OWNER ACTIONS ================= -->
 
-      <button class="action-btn primary" onclick="editProfile()">
+    <div
+      class="actions"
+      id="ownerActions"
+    >
+
+      <button
+        class="action-btn primary"
+        onclick="editProfile()"
+      >
         Edit Profile
       </button>
 
-      <button class="action-btn secondary"
-        onclick="location.href='messages.html'">
+      <button
+        class="action-btn secondary"
+        onclick="location.href='messages.html'"
+      >
         Messages
       </button>
 
     </div>
 
-    <div class="actions" id="visitorActions" style="display:none;">
+    <!-- ================= VISITOR ACTIONS ================= -->
 
-      <button id="followBtn"
+    <div
+      class="actions"
+      id="visitorActions"
+      style="display:none;"
+    >
+
+      <button
         class="action-btn primary"
-        onclick="toggleFollow()">
+      >
         Follow
       </button>
 
-      <button class="action-btn secondary"
-        onclick="messageUser()">
+      <button
+        class="action-btn secondary"
+        onclick="messageUser()"
+      >
         Message
       </button>
 
@@ -312,48 +464,87 @@ textarea{
 
 </div>
 
+<!-- ================= MAIN SECTION ================= -->
+
 <div class="section">
+
+  <!-- ================= ACTIVITY ================= -->
 
   <div class="card">
 
-    <div class="section-title">📌 Activity</div>
+    <div class="section-title">
+      📌 Activity
+    </div>
 
     <div id="postCreator">
 
-      <textarea id="timelinePost"
-        placeholder="What's on your mind?"></textarea>
+      <textarea
+        id="timelinePost"
+        placeholder="What's on your mind?"
+      ></textarea>
 
-      <button class="action-btn primary"
-        style="margin-top:10px;"
-        onclick="createTimelinePost()">
-        Post
-      </button>
+      <div class="post-action">
+
+        <button
+          class="post-btn"
+          onclick="createTimelinePost()"
+        >
+          Post
+        </button>
+
+      </div>
 
     </div>
 
-    <div id="timelinePosts" style="margin-top:15px;"></div>
+    <div
+      id="timelinePosts"
+      style="margin-top:20px;"
+    ></div>
 
   </div>
 
+  <!-- ================= ONLINE USERS ================= -->
+
   <div class="card">
 
-    <div class="section-title">🟢 Online Users</div>
+    <div class="section-title">
+      🟢 Online Users
+    </div>
 
-    <div id="onlineUsers"></div>
+    <div id="onlineUsers">
+
+      <div class="empty">
+        Loading online users...
+      </div>
+
+    </div>
 
   </div>
 
+  <!-- ================= SUGGESTED USERS ================= -->
+
   <div class="card">
 
-    <div class="section-title">👥 Suggested Users</div>
+    <div class="section-title">
+      👥 Suggested Users
+    </div>
 
-    <div id="suggestedUsers"></div>
+    <div id="suggestedUsers">
+
+      <div class="empty">
+        Loading users...
+      </div>
+
+    </div>
 
   </div>
 
 </div>
 
-<script type="module" src="./profile.js"></script>
+<script
+  type="module"
+  src="./profile.js"
+></script>
 
 </body>
 </html>
