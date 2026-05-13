@@ -1,18 +1,21 @@
+/* =========================================
+   MCN ADMIN LOADER V2
+========================================= */
+
 (async function () {
 
   try {
 
-    console.log("🧠 Loading MCN Admin Core...");
+    console.log("🧠 Booting MCN Admin V2...");
 
-    await import("./admin-auth.js");
-    await import("./emergency-control.js");
     await import("./admin.js");
+    await import("./emergency-control.js");
 
-    console.log("✅ MCN Admin Fully Loaded");
+    console.log("✅ Admin V2 Loaded Successfully");
 
   } catch (err) {
 
-    console.error("Admin Boot Failed:", err);
+    console.error("BOOT ERROR:", err);
 
     document.body.innerHTML = `
       <div style="
