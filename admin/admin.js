@@ -1,6 +1,5 @@
 /* =========================================
-   MCN ADMIN AI v6 — CORE CONTROL EDITION
-   (Upgraded: Auth + Emergency + Diagnostics)
+   MCN ADMIN AI v7 — MOBILE FIX EDITION
 ========================================= */
 
 import { auth, db } from "../firebase.js";
@@ -16,7 +15,6 @@ import {
   collection,
   onSnapshot,
   deleteDoc,
-  updateDoc,
   query,
   orderBy,
   serverTimestamp,
@@ -24,27 +22,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* =========================================
-   SYSTEM CORE STATE
+   SYSTEM STATE
 ========================================= */
 
 let systemHealth = 100;
-let performanceScore = 100;
-
-let errorHistory = [];
-let warnHistory = [];
-
 let emergencyMode = false;
-let autonomousMode = true;
-
-let autosaveTimer = null;
-
-let systemMap = {
-  firestore: "stable",
-  ui: "stable",
-  auth: "stable",
-  modules: "stable",
-  emergency: "inactive"
-};
 
 /* =========================================
    LOG ENGINE
@@ -53,296 +35,182 @@ let systemMap = {
 function aiLog(msg, type = "ok") {
 
   const box = document.getElementById("monitor");
-  if (!box) return console.warn(msg);
 
-  const color =
-    type === "error" ? "#ff4d4d" :
-    type === "warn" ? "#ffaa00" :
-    "#00ff88";
+  if (!box) return;
 
   const div = document.createElement("div");
 
-  div.style.color = color;
-  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  div.style.color =
+    type === "error"
+      ? "#ff4d4d"
+      : "#00ff88";
+
+  div.textContent =
+    `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
+
   box.scrollTop = box.scrollHeight;
 
-  if (type === "error") systemHealth -= 5;
-  if (type === "warn") systemHealth -= 2;
-
-  updateHealthUI();
-  updateSystemMapUI();
+  updateDiagnostics();
 }
 
 /* =========================================
-   AUTH LAYER (ADMIN LOCK)
+   AUTH
 ========================================= */
 
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async(user)=>{
 
-  if (!user) {
-    location.href = "index.html";
+  if(!user){
+
+    location.href = "../index.html";
     return;
+
   }
 
-  try {
+  try{
 
-    const snap = await getDoc(doc(db, "users", user.uid));
+    const snap =
+      await getDoc(
+        doc(db,"users",user.uid)
+      );
 
-    if (!snap.exists()) {
-      location.href = "index.html";
+    if(!snap.exists()){
+
+      location.href="../index.html";
       return;
+
     }
 
     const data = snap.data();
 
-    if (data.role !== "admin") {
-      location.href = "dashboard.html";
+    if(data.role !== "admin"){
+
+      location.href="../dashboard.html";
       return;
+
     }
 
     aiLog("🧠 Admin Core Activated");
 
-    loadMaintenanceMode();
     loadPosts();
     loadUsers();
     loadAds();
 
     initDiagnostics();
-    initEmergencyListener();
+    initEmergencyControl();
 
-  } catch (err) {
+  }catch(err){
+
     console.error(err);
-    aiLog("Auth failure", "error");
+
+    aiLog(
+      "Auth Failure",
+      "error"
+    );
   }
+
 });
 
 /* =========================================
-   MAINTENANCE CONTROL
+   🚨 EMERGENCY CONTROL
 ========================================= */
 
-window.saveMaintenanceMode = async function () {
+function initEmergencyControl(){
 
-  const toggle = document.getElementById("maintenanceToggle");
-  if (!toggle) return;
+  if(document.getElementById("emergencyFab"))
+    return;
 
-  const enabled = toggle.checked;
+  const wrapper =
+    document.createElement("div");
 
-  await setDoc(doc(db, "system", "maintenance"), {
-    enabled,
-    updatedAt: Date.now()
-  }, { merge: true });
+  wrapper.id = "emergencyFab";
 
-  aiLog(
-    enabled
-      ? "🛠 Maintenance ENABLED"
-      : "✅ Maintenance DISABLED"
-  );
-};
-
-async function loadMaintenanceMode() {
-
-  const snap = await getDoc(doc(db, "system", "maintenance"));
-
-  if (!snap.exists()) {
-    await setDoc(doc(db, "system", "maintenance"), {
-      enabled: false
-    });
-  }
-
-  const data = snap.exists() ? snap.data() : { enabled: false };
-
-  const toggle = document.getElementById("maintenanceToggle");
-  if (toggle) toggle.checked = data.enabled;
-}
-
-/* =========================================
-   🚨 EMERGENCY CONTROL SYSTEM
-========================================= */
-
-function initEmergencyListener() {
-
-  window.triggerEmergencyShutdown = async function () {
-
-    emergencyMode = true;
-
-    systemMap.emergency = "ACTIVE";
-
-    aiLog("🚨 EMERGENCY MODE ACTIVATED", "error");
-
-    await setDoc(doc(db, "system", "emergency"), {
-      enabled: true,
-      timestamp: Date.now()
-    });
-
-    document.body.style.filter = "grayscale(1) brightness(0.6)";
-
-  };
-
-  window.disableEmergency = async function () {
-
-    emergencyMode = false;
-
-    systemMap.emergency = "inactive";
-
-    aiLog("🟢 Emergency mode OFF");
-
-    await setDoc(doc(db, "system", "emergency"), {
-      enabled: false,
-      timestamp: Date.now()
-    });
-
-    document.body.style.filter = "none";
-  };
-}
-
-/* =========================================
-   SYSTEM DIAGNOSTICS (MOBILE FRIENDLY)
-========================================= */
-
-function initDiagnostics() {
-
-  const panel = document.createElement("div");
-
-  panel.id = "mobileDiag";
-
-  panel.style.cssText = `
+  wrapper.style.cssText = `
     position:fixed;
-    bottom:70px;
-    left:10px;
-    background:#1c2541;
-    color:#fff;
-    padding:10px;
-    border-radius:10px;
-    font-size:12px;
-    z-index:99999;
-    max-width:180px;
+    bottom:20px;
+    left:15px;
+    z-index:999999;
   `;
 
-  panel.innerHTML = `
-    <b>📡 Diagnostics</b><br>
-    Health: ${systemHealth}%<br>
-    Mode: ${emergencyMode ? "EMERGENCY" : "NORMAL"}
+  wrapper.innerHTML = `
+
+    <button id="emergencyToggle"
+      style="
+        width:60px;
+        height:60px;
+        border:none;
+        border-radius:50%;
+        background:#ff3b30;
+        color:white;
+        font-size:24px;
+        box-shadow:0 0 20px rgba(0,0,0,.4);
+      ">
+      🚨
+    </button>
+
+    <div id="emergencyPanel"
+      style="
+        display:none;
+        margin-top:12px;
+        width:230px;
+        background:#1c2541;
+        border-radius:18px;
+        padding:15px;
+        color:white;
+        box-shadow:0 0 20px rgba(0,0,0,.4);
+      ">
+
+      <h3 style="margin-top:0;">
+        Emergency Control
+      </h3>
+
+      <button id="activateEmergency"
+        style="
+          width:100%;
+          padding:14px;
+          border:none;
+          border-radius:12px;
+          background:#5bc0be;
+          color:black;
+          font-weight:bold;
+          margin-bottom:10px;
+        ">
+        ACTIVATE
+      </button>
+
+      <button id="disableEmergencyBtn"
+        style="
+          width:100%;
+          padding:14px;
+          border:none;
+          border-radius:12px;
+          background:red;
+          color:white;
+          font-weight:bold;
+        ">
+        DISABLE
+      </button>
+
+      <div id="emergencyStatus"
+        style="
+          margin-top:10px;
+          font-size:13px;
+          opacity:.8;
+        ">
+        Status: NORMAL
+      </div>
+
+    </div>
   `;
 
-  document.body.appendChild(panel);
-}
+  document.body.appendChild(wrapper);
 
-/* =========================================
-   UI SYSTEMS (UNCHANGED CORE)
-========================================= */
+  const toggle =
+    document.getElementById(
+      "emergencyToggle"
+    );
 
-function updateHealthUI() {
-  let panel = document.getElementById("mcnHealthPanel");
-  if (!panel) return;
-
-  const content = document.getElementById("mcnHealthContent");
-  if (!content) return;
-
-  content.innerHTML = `
-    <b>MCN AI Core</b><br><hr>
-    Health: ${systemHealth}%<br>
-    Performance: ${performanceScore}%<br>
-    Errors: ${errorHistory.length}<br>
-    Emergency: ${emergencyMode ? "YES" : "NO"}
-  `;
-}
-
-function updateSystemMapUI() {
-  let panel = document.getElementById("mcnSystemMap");
-  if (!panel) return;
-
-  const content = document.getElementById("mapContent");
-  if (!content) return;
-
-  content.innerHTML = `
-    <b>System Map</b><br><hr>
-    Firestore: ${systemMap.firestore}<br>
-    UI: ${systemMap.ui}<br>
-    Auth: ${systemMap.auth}<br>
-    Emergency: ${systemMap.emergency}
-  `;
-}
-
-/* =========================================
-   POSTS / USERS / ADS (UNCHANGED CORE)
-========================================= */
-
-window.createBlog = async function () {
-  const title = document.getElementById("blogTitle").value;
-  const content = document.getElementById("blogContent").value;
-
-  if (!title || !content) return;
-
-  await addDoc(collection(db, "posts"), {
-    title,
-    content,
-    createdAt: serverTimestamp()
-  });
-
-  aiLog("Post created");
-};
-
-function loadPosts() {
-
-  const box = document.getElementById("postsList");
-  if (!box) return;
-
-  onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) => {
-
-    box.innerHTML = "";
-
-    snap.forEach((d) => {
-
-      const p = d.data();
-
-      box.innerHTML += `
-        <div class="item">
-          <b>${p.title}</b><br><br>
-          <button onclick="deletePost('${d.id}')">Delete</button>
-        </div>
-      `;
-    });
-  });
-}
-
-window.deletePost = async function (id) {
-  await deleteDoc(doc(db, "posts", id));
-  aiLog("Post deleted");
-};
-
-function loadUsers() {
-
-  const box = document.getElementById("usersList");
-  if (!box) return;
-
-  onSnapshot(collection(db, "users"), (snap) => {
-
-    box.innerHTML = "";
-
-    snap.forEach((d) => {
-      box.innerHTML += `<div class="item">${d.data().email}</div>`;
-    });
-  });
-}
-
-function loadAds() {
-
-  const box = document.getElementById("upgradeList");
-  if (!box) return;
-
-  onSnapshot(collection(db, "adRequests"), (snap) => {
-
-    box.innerHTML = "";
-
-    snap.forEach((d) => {
-
-      box.innerHTML += `
-        <div class="item">
-          ${d.data().title || "Ad"}
-        </div>
-      `;
-    });
-  });
-}
+  const panel =
+    document.getElementById(
+      "
