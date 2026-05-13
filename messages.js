@@ -13,50 +13,143 @@ import {
   collection,
   query,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  orderBy,
+  where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* ================= STATE ================= */
+
 let currentUser = null;
+
 let chatId = null;
+
 let targetUser = null;
+
+let unsubscribeMessages = null;
+
+let unsubscribeInbox = null;
 
 /* ================= AUTH ================= */
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async(user)=>{
 
-  if (!user) return location.href = "index.html";
+  if(!user){
+
+    location.href = "index.html";
+    return;
+
+  }
 
   currentUser = user;
 
   loadInbox();
 
+  checkDirectOpen();
+
 });
 
-/* ================= CHAT ID ================= */
+/* ================= HELPERS ================= */
 
 function id(a,b){
+
   return [a,b].sort().join("_");
+
 }
 
-/* ================= USER FETCH ================= */
+async function getUser(uid){
 
-async function getUser(uid) {
-  const snap = await getDoc(doc(db,"users",uid));
-  return snap.exists() ? snap.data() : { uid, username:"Unknown" };
+  const snap =
+    await getDoc(
+      doc(db,"users",uid)
+    );
+
+  if(!snap.exists()){
+
+    return {
+      uid,
+      username:"Unknown User",
+      photo:"",
+      lastActive:0
+    };
+
+  }
+
+  return snap.data();
+
+}
+
+/* ================= DIRECT OPEN ================= */
+
+async function checkDirectOpen(){
+
+  const params =
+    new URLSearchParams(
+      location.search
+    );
+
+  const uid =
+    params.get("uid");
+
+  if(uid){
+
+    openChat(uid);
+
+  }
+
 }
 
 /* ================= OPEN CHAT ================= */
 
 window.openChat = async function(uid){
 
-  chatId = id(currentUser.uid, uid);
-  targetUser = await getUser(uid);
+  try{
 
-  document.getElementById("chatUsername").textContent = targetUser.username;
+    chatId =
+      id(currentUser.uid,uid);
 
-  document.getElementById("chatScreen").classList.add("active");
+    targetUser =
+      await getUser(uid);
 
-  loadMessages();
+    document.getElementById(
+      "chatUsername"
+    ).textContent =
+      targetUser.username || "User";
+
+    document.getElementById(
+      "chatAvatar"
+    ).src =
+      targetUser.photo ||
+      "https://via.placeholder.com/100";
+
+    /* ONLINE STATUS */
+
+    const typing =
+      document.getElementById(
+        "typingIndicator"
+      );
+
+    const online =
+      Date.now() -
+      (targetUser.lastActive || 0)
+      < 120000;
+
+    typing.textContent =
+      online
+      ? "🟢 Online"
+      : "⚫ Offline";
+
+    document.getElementById(
+      "chatScreen"
+    ).classList.add("active");
+
+    loadMessages();
+
+  }catch(err){
+
+    console.error(err);
+
+  }
 
 };
 
@@ -64,99 +157,129 @@ window.openChat = async function(uid){
 
 window.sendMsg = async function(){
 
-  const input = document.getElementById("msgInput");
-  const text = input.value.trim();
+  try{
 
-  if(!text || !chatId) return;
+    const input =
+      document.getElementById(
+        "msgInput"
+      );
 
-  input.value = "";
+    const text =
+      input.value.trim();
 
-  await addDoc(collection(db,"dms",chatId,"messages"),{
-    text,
-    senderId: currentUser.uid,
-    receiverId: targetUser.uid,
-    createdAt: serverTimestamp(),
-    seen:false
-  });
+    if(!text || !chatId)
+      return;
 
-  await setDoc(doc(db,"dms",chatId),{
-    members:[currentUser.uid, targetUser.uid],
-    lastMessage:text,
-    updatedAt:serverTimestamp()
-  }, { merge:true });
+    input.value = "";
+
+    await addDoc(
+      collection(
+        db,
+        "dms",
+        chatId,
+        "messages"
+      ),
+      {
+        text,
+        senderId:
+          currentUser.uid,
+        receiverId:
+          targetUser.uid,
+        createdAt:
+          serverTimestamp(),
+        seen:false
+      }
+    );
+
+    await setDoc(
+      doc(db,"dms",chatId),
+      {
+        members:[
+          currentUser.uid,
+          targetUser.uid
+        ],
+        lastMessage:text,
+        updatedAt:
+          serverTimestamp(),
+        lastSender:
+          currentUser.uid
+      },
+      { merge:true }
+    );
+
+  }catch(err){
+
+    console.error(err);
+
+    alert(
+      "Failed to send message"
+    );
+
+  }
 
 };
+
+/* ================= ENTER TO SEND ================= */
+
+document.addEventListener(
+  "keydown",
+  (e)=>{
+
+    const input =
+      document.getElementById(
+        "msgInput"
+      );
+
+    if(
+      e.key === "Enter" &&
+      document.activeElement === input
+    ){
+
+      e.preventDefault();
+
+      sendMsg();
+
+    }
+
+  }
+);
 
 /* ================= LOAD MESSAGES ================= */
 
 function loadMessages(){
 
-  const q = query(collection(db,"dms",chatId,"messages"));
+  if(unsubscribeMessages){
 
-  onSnapshot(q,(snap)=>{
+    unsubscribeMessages();
 
-    const box = document.getElementById("chatBox");
-    box.innerHTML = "";
+  }
 
-    snap.forEach(d=>{
+  const q =
+    query(
+      collection(
+        db,
+        "dms",
+        chatId,
+        "messages"
+      ),
+      orderBy(
+        "createdAt",
+        "asc"
+      )
+    );
 
-      const m = d.data();
+  unsubscribeMessages =
+    onSnapshot(q,(snap)=>{
 
-      box.innerHTML += `
-        <div class="msg ${m.senderId===currentUser.uid?'me':'them'}">
-          ${m.text}
-        </div>
-      `;
+      const box =
+        document.getElementById(
+          "chatBox"
+        );
 
-    });
+      box.innerHTML = "";
 
-    box.scrollTop = box.scrollHeight;
+      snap.forEach((d)=>{
 
-  });
+        const m = d.data();
 
-}
-
-/* ================= INBOX (NO DUPLICATES FIX) ================= */
-
-function loadInbox(){
-
-  const q = query(collection(db,"dms"));
-
-  onSnapshot(q,(snap)=>{
-
-    const list = document.getElementById("inboxList");
-    list.innerHTML = "";
-
-    const seen = new Set();
-
-    snap.forEach(d=>{
-
-      const chat = d.data();
-
-      if(!chat.members?.includes(currentUser.uid)) return;
-
-      const other = chat.members.find(x=>x!==currentUser.uid);
-
-      const key = id(currentUser.uid, other);
-      if(seen.has(key)) return;
-      seen.add(key);
-
-      list.innerHTML += `
-        <div onclick="openChat('${other}')" class="chat-item">
-          Chat
-        </div>
-      `;
-
-    });
-
-  });
-
-}
-
-/* ================= CLOSE CHAT ================= */
-
-window.closeChat = function(){
-  document.getElementById("chatScreen").classList.remove("active");
-  chatId = null;
-  targetUser = null;
-};
+        const
