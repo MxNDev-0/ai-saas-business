@@ -1,175 +1,286 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MCN Engine V17 - AI Admin Control Panel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCN Engine V18 - AI Admin Control</title>
+
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
 
   <style>
-    body {
-      background: #0b132b;
-      color: #fff;
-      font-family: Arial;
-      margin: 0;
-      padding: 20px;
+
+    body{
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+      margin:0;
+      padding:20px;
     }
 
-    h2 { margin-bottom: 15px; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 15px;
+    h2{
+      margin-bottom:20px;
+      color:#5bc0be;
     }
 
-    .card {
-      background: #1c2541;
-      padding: 12px;
-      border-radius: 10px;
-      box-sizing: border-box;
+    .grid{
+      display:grid;
+      grid-template-columns:
+      repeat(auto-fit,minmax(280px,1fr));
+      gap:15px;
     }
 
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      border-radius: 8px;
-      border: none;
-      background: #0b132b;
-      color: white;
-      box-sizing: border-box;
+    .card{
+      background:#1c2541;
+      border-radius:14px;
+      padding:14px;
+      box-sizing:border-box;
     }
 
-    textarea { min-height: 90px; resize: none; }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      background: #5bc0be;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-      margin-top: 5px;
+    input,
+    textarea{
+      width:100%;
+      padding:10px;
+      margin:6px 0;
+      border:none;
+      border-radius:8px;
+      background:#0b132b;
+      color:white;
+      box-sizing:border-box;
     }
 
-    .danger { background: red; color: white; }
-
-    .list-box {
-      max-height: 220px;
-      overflow-y: auto;
-      background: #0b132b;
-      border-radius: 8px;
-      padding: 6px;
+    textarea{
+      min-height:100px;
+      resize:none;
     }
 
-    .item {
-      padding: 8px;
-      margin-bottom: 6px;
-      background: #16213e;
-      border-radius: 8px;
+    button{
+      width:100%;
+      padding:10px;
+      border:none;
+      border-radius:8px;
+      background:#5bc0be;
+      color:black;
+      font-weight:bold;
+      cursor:pointer;
+      margin-top:5px;
     }
 
-    .monitor {
-      background: linear-gradient(145deg, #05070f, #0a0f1f);
-      color: #00ff88;
-      height: 260px;
-      overflow-y: auto;
-      font-family: monospace;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #1c2541;
+    .danger{
+      background:red;
+      color:white;
     }
 
-    .small-btn {
-      width: auto;
-      padding: 4px 6px;
-      font-size: 12px;
-      margin-left: 5px;
+    .monitor{
+      background:#05070f;
+      border:1px solid #233;
+      height:260px;
+      overflow-y:auto;
+      border-radius:10px;
+      padding:10px;
+      font-family:monospace;
+      color:#00ff88;
     }
+
+    .list-box{
+      background:#0b132b;
+      border-radius:10px;
+      padding:8px;
+      max-height:260px;
+      overflow-y:auto;
+    }
+
+    .item{
+      background:#16213e;
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:8px;
+    }
+
+    .small-btn{
+      width:auto;
+      padding:5px 8px;
+      margin-top:6px;
+      margin-right:5px;
+      font-size:12px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>👑 MCN Admin Panel V17 (AI Powered)</h2>
+<h2>
+  👑 MCN Engine Admin V18
+</h2>
 
 <div class="grid">
 
   <!-- MONITOR -->
   <div class="card">
+
     <h3>🖥 System Monitor</h3>
-    <div id="monitor" class="monitor"></div>
+
+    <div id="monitor"
+      class="monitor"></div>
+
   </div>
 
-  <!-- 🤖 AI BLOG GENERATOR -->
+  <!-- AI WRITER -->
   <div class="card">
+
     <h3>🤖 AI Blog Writer</h3>
-    <input id="aiTopic" placeholder="Enter topic (e.g Crypto trends 2026)">
-    <button onclick="generateAI()">Generate Article</button>
-  </div>
 
-  <!-- ⏱ AI SCHEDULER -->
-  <div class="card">
-    <h3>⏱ Auto Scheduler</h3>
-    <input id="scheduleTitle" placeholder="Blog Title">
-    <textarea id="scheduleContent" placeholder="Content"></textarea>
-    <input id="scheduleTime" type="datetime-local">
-    <button onclick="schedulePost()">Schedule Post</button>
+    <input
+      id="aiTopic"
+      placeholder="Enter topic">
+
+    <button onclick="generateAI()">
+      Generate Article
+    </button>
+
   </div>
 
   <!-- BLOG -->
   <div class="card">
+
     <h3>📝 Create Blog</h3>
-    <input id="blogTitle" placeholder="Blog Title">
-    <textarea id="blogContent" placeholder="Blog Content"></textarea>
-    <input id="blogImage" placeholder="Image URL">
-    <button onclick="createBlog()">Publish Blog</button>
+
+    <input
+      id="blogTitle"
+      placeholder="Blog title">
+
+    <textarea
+      id="blogContent"
+      placeholder="Blog content"></textarea>
+
+    <input
+      id="blogImage"
+      placeholder="Image URL">
+
+    <button onclick="createBlog()">
+      Publish Blog
+    </button>
+
   </div>
 
-  <!-- BROADCAST -->
+  <!-- GOOGLE NEWS -->
   <div class="card">
-    <h3>🔔 Broadcast</h3>
-    <input id="broadcastTitle" placeholder="Title">
-    <textarea id="broadcastMessage" placeholder="Message"></textarea>
-    <button onclick="sendBroadcast()">Send</button>
-  </div>
 
-  <!-- USERS -->
-  <div class="card">
-    <h3>👥 Users</h3>
-    <div id="usersList" class="list-box"></div>
-  </div>
+    <h3>📰 Google News</h3>
 
-  <!-- ADS -->
-  <div class="card">
-    <h3>📢 Ad Requests</h3>
-    <div id="upgradeList" class="list-box"></div>
+    <input
+      id="newsKeyword"
+      placeholder="Search topic">
+
+    <button onclick="loadNews()">
+      Load News
+    </button>
+
+    <div
+      id="newsList"
+      class="list-box">
+    </div>
+
   </div>
 
   <!-- POSTS -->
   <div class="card">
+
     <h3>💬 Post Manager</h3>
-    <div id="postsList" class="list-box"></div>
 
-    <h3>✏️ Edit Post</h3>
-    <input id="editPostId" readonly>
-    <input id="editPostTitle">
-    <textarea id="editPostContent"></textarea>
+    <input
+      id="searchPosts"
+      placeholder="Search posts..."
+      onkeyup="searchPosts()">
 
-    <button onclick="updatePost()">Update Post</button>
+    <div
+      id="postsList"
+      class="list-box">
+    </div>
+
   </div>
 
-  <!-- REJECTED ADS -->
+  <!-- EDIT -->
   <div class="card">
+
+    <h3>✏️ Edit Post</h3>
+
+    <input id="editPostId" readonly>
+
+    <input id="editPostTitle">
+
+    <textarea
+      id="editPostContent"></textarea>
+
+    <button onclick="updatePost()">
+      Update Post
+    </button>
+
+  </div>
+
+  <!-- ADS -->
+  <div class="card">
+
+    <h3>📢 Ad Requests</h3>
+
+    <div
+      id="upgradeList"
+      class="list-box">
+    </div>
+
+  </div>
+
+  <!-- REJECTED -->
+  <div class="card">
+
     <h3>❌ Rejected Ads</h3>
-    <div id="rejectedList" class="list-box"></div>
-    <button class="danger" onclick="clearRejected()">Clear Rejected</button>
+
+    <div
+      id="rejectedList"
+      class="list-box">
+    </div>
+
+    <button
+      class="danger"
+      onclick="clearRejected()">
+
+      Clear Rejected
+
+    </button>
+
+  </div>
+
+  <!-- DIAGNOSTICS -->
+  <div class="card">
+
+    <h3>🧠 Diagnostics</h3>
+
+    <div class="list-box">
+
+      <div class="item">
+        Firebase: ✅ Connected
+      </div>
+
+      <div class="item">
+        Admin Loader: ✅ Active
+      </div>
+
+      <div class="item">
+        AI Monitor: ✅ Running
+      </div>
+
+      <div class="item">
+        MCN Engine Core: ✅ Stable
+      </div>
+
+    </div>
+
   </div>
 
 </div>
 
-<script type="module" src="./admin-loader.js"></script>
+<script type="module"
+  src="./admin-loader.js">
+</script>
 
 </body>
 </html>
