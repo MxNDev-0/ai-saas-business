@@ -1,5 +1,5 @@
 /* =========================================
-   MCN ADMIN AI v7 — MOBILE FIX EDITION
+   MCN ADMIN CORE V2 (CLEAN)
 ========================================= */
 
 import { auth, db } from "../firebase.js";
@@ -11,206 +11,113 @@ import {
 import {
   doc,
   getDoc,
-  addDoc,
   collection,
   onSnapshot,
-  deleteDoc,
   query,
   orderBy,
-  serverTimestamp,
-  setDoc
+  deleteDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* =========================================
-   SYSTEM STATE
-========================================= */
+/* ================= LOG ================= */
 
-let systemHealth = 100;
-let emergencyMode = false;
-
-/* =========================================
-   LOG ENGINE
-========================================= */
-
-function aiLog(msg, type = "ok") {
-
-  const box = document.getElementById("monitor");
-
-  if (!box) return;
-
-  const div = document.createElement("div");
-
-  div.style.color =
-    type === "error"
-      ? "#ff4d4d"
-      : "#00ff88";
-
-  div.textContent =
-    `[${new Date().toLocaleTimeString()}] ${msg}`;
-
-  box.appendChild(div);
-
-  box.scrollTop = box.scrollHeight;
-
-  updateDiagnostics();
+function log(msg) {
+  console.log(`[MCN ADMIN] ${msg}`);
 }
 
-/* =========================================
-   AUTH
-========================================= */
+/* ================= AUTH ================= */
 
-onAuthStateChanged(auth, async(user)=>{
+onAuthStateChanged(auth, async (user) => {
 
-  if(!user){
-
+  if (!user) {
     location.href = "../index.html";
     return;
-
   }
 
-  try{
+  const snap = await getDoc(doc(db, "users", user.uid));
 
-    const snap =
-      await getDoc(
-        doc(db,"users",user.uid)
-      );
-
-    if(!snap.exists()){
-
-      location.href="../index.html";
-      return;
-
-    }
-
-    const data = snap.data();
-
-    if(data.role !== "admin"){
-
-      location.href="../dashboard.html";
-      return;
-
-    }
-
-    aiLog("🧠 Admin Core Activated");
-
-    loadPosts();
-    loadUsers();
-    loadAds();
-
-    initDiagnostics();
-    initEmergencyControl();
-
-  }catch(err){
-
-    console.error(err);
-
-    aiLog(
-      "Auth Failure",
-      "error"
-    );
+  if (!snap.exists() || snap.data().role !== "admin") {
+    location.href = "../index.html";
+    return;
   }
+
+  log("Admin Auth OK");
+
+  loadPosts();
 
 });
 
-/* =========================================
-   🚨 EMERGENCY CONTROL
-========================================= */
+/* ================= POSTS ================= */
 
-function initEmergencyControl(){
+function loadPosts(search = "") {
 
-  if(document.getElementById("emergencyFab"))
-    return;
+  const q = query(
+    collection(db, "posts"),
+    orderBy("createdAt", "desc")
+  );
 
-  const wrapper =
-    document.createElement("div");
+  onSnapshot(q, (snapshot) => {
 
-  wrapper.id = "emergencyFab";
+    const container = document.getElementById("postsList");
+    if (!container) return;
 
-  wrapper.style.cssText = `
-    position:fixed;
-    bottom:20px;
-    left:15px;
-    z-index:999999;
-  `;
+    container.innerHTML = "";
 
-  wrapper.innerHTML = `
+    snapshot.forEach(docSnap => {
 
-    <button id="emergencyToggle"
-      style="
-        width:60px;
-        height:60px;
-        border:none;
-        border-radius:50%;
-        background:#ff3b30;
-        color:white;
-        font-size:24px;
-        box-shadow:0 0 20px rgba(0,0,0,.4);
-      ">
-      🚨
-    </button>
+      const post = docSnap.data();
 
-    <div id="emergencyPanel"
-      style="
-        display:none;
-        margin-top:12px;
-        width:230px;
-        background:#1c2541;
-        border-radius:18px;
-        padding:15px;
-        color:white;
-        box-shadow:0 0 20px rgba(0,0,0,.4);
-      ">
+      if (
+        search &&
+        !post.title.toLowerCase().includes(search.toLowerCase())
+      ) return;
 
-      <h3 style="margin-top:0;">
-        Emergency Control
-      </h3>
+      container.innerHTML += `
+        <div class="card">
+          <b>${post.title}</b>
+          <p>${(post.content || "").slice(0, 80)}</p>
 
-      <button id="activateEmergency"
-        style="
-          width:100%;
-          padding:14px;
-          border:none;
-          border-radius:12px;
-          background:#5bc0be;
-          color:black;
-          font-weight:bold;
-          margin-bottom:10px;
-        ">
-        ACTIVATE
-      </button>
+          <button onclick="editPost('${docSnap.id}')">Edit</button>
+          <button onclick="deletePost('${docSnap.id}')">Delete</button>
+        </div>
+      `;
+    });
 
-      <button id="disableEmergencyBtn"
-        style="
-          width:100%;
-          padding:14px;
-          border:none;
-          border-radius:12px;
-          background:red;
-          color:white;
-          font-weight:bold;
-        ">
-        DISABLE
-      </button>
+  });
+}
 
-      <div id="emergencyStatus"
-        style="
-          margin-top:10px;
-          font-size:13px;
-          opacity:.8;
-        ">
-        Status: NORMAL
-      </div>
+/* ================= DELETE ================= */
 
-    </div>
-  `;
+window.deletePost = async function(id) {
+  await deleteDoc(doc(db, "posts", id));
+  log("Post deleted: " + id);
+};
 
-  document.body.appendChild(wrapper);
+/* ================= EDIT ================= */
 
-  const toggle =
-    document.getElementById(
-      "emergencyToggle"
-    );
+window.editPost = function(id) {
+  document.getElementById("editPostId").value = id;
+};
 
-  const panel =
-    document.getElementById(
-      "
+/* ================= UPDATE ================= */
+
+window.updatePost = async function () {
+
+  const id = document.getElementById("editPostId").value;
+  const title = document.getElementById("editTitle").value;
+  const content = document.getElementById("editContent").value;
+
+  await updateDoc(doc(db, "posts", id), {
+    title,
+    content
+  });
+
+  log("Post updated");
+};
+
+/* ================= SEARCH ================= */
+
+window.searchPosts = function () {
+  const val = document.getElementById("searchPosts").value;
+  loadPosts(val);
+};
