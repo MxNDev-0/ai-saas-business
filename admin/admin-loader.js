@@ -1,55 +1,153 @@
 /* =========================================
-   MCN ADMIN LOADER V3
+   MCN ADMIN LOADER STABLE V5
 ========================================= */
 
 (async function () {
 
-  try {
+  console.log("🧠 Booting MCN Admin...");
 
-    console.log("🧠 Booting MCN Admin V3...");
+  const errors = [];
 
-    await import("./admin-auth.js");
+  async function safeImport(path) {
 
-    if (!window.__MCN_ADMIN_AUTH) {
-      throw new Error("Admin authentication failed");
+    try {
+
+      await import(path);
+
+      console.log("✅ Loaded:", path);
+
+      return true;
+
+    } catch (err) {
+
+      console.error(
+        "❌ Failed loading:",
+        path,
+        err
+      );
+
+      errors.push({
+        path,
+        error: err.message
+      });
+
+      return false;
     }
+  }
 
-    await import("./admin.js");
-    await import("./emergency-control.js");
+  /* =========================
+     AUTH
+  ========================= */
 
-    console.log("✅ MCN Admin Fully Loaded");
+  const authLoaded =
+    await safeImport(
+      "./admin-auth.js"
+    );
 
-  } catch (err) {
+  if (!authLoaded) {
 
-    console.error("ADMIN BOOT ERROR:", err);
+    renderFatal(
+      "admin-auth.js failed to load"
+    );
+
+    return;
+  }
+
+  /* =========================
+     WAIT FOR AUTH
+  ========================= */
+
+  let tries = 0;
+
+  while (
+    !window.__MCN_ADMIN_AUTH &&
+    tries < 50
+  ) {
+
+    await new Promise(r =>
+      setTimeout(r, 200)
+    );
+
+    tries++;
+  }
+
+  if (!window.__MCN_ADMIN_AUTH) {
+
+    renderFatal(
+      "Admin authentication failed"
+    );
+
+    return;
+  }
+
+  /* =========================
+     LOAD MAIN SYSTEMS
+  ========================= */
+
+  await safeImport("./admin.js");
+
+  await safeImport(
+    "./emergency-control.js"
+  );
+
+  console.log(
+    "✅ MCN Admin Fully Loaded"
+  );
+
+  /* =========================
+     FATAL SCREEN
+  ========================= */
+
+  function renderFatal(msg) {
 
     document.body.innerHTML = `
       <div style="
         background:#0b132b;
         color:white;
-        height:100vh;
+        min-height:100vh;
         display:flex;
         justify-content:center;
         align-items:center;
         font-family:Arial;
-        text-align:center;
         padding:20px;
       ">
-        <div>
-          <h1>⚠ Admin Boot Failed</h1>
 
-          <p style="margin-top:10px;">
-            ${err.message}
-          </p>
+        <div style="
+          max-width:500px;
+          width:100%;
+          background:#1c2541;
+          padding:25px;
+          border-radius:16px;
+        ">
 
-          <p style="
-            margin-top:15px;
-            color:#5bc0be;
-            font-size:13px;
+          <h1 style="
+            color:#ff6b6b;
+            margin-top:0;
           ">
-            Check console for full details
-          </p>
+            ⚠ Admin Boot Failed
+          </h1>
+
+          <p>${msg}</p>
+
+          <div style="
+            margin-top:20px;
+            font-size:13px;
+            color:#aaa;
+          ">
+
+            ${
+              errors.map(e => `
+                <div style="margin-bottom:8px;">
+                  <b>${e.path}</b><br>
+                  ${e.error}
+                </div>
+              `).join("")
+            }
+
+          </div>
+
         </div>
+
       </div>
     `;
   }
