@@ -272,62 +272,140 @@
 
 <script type="module">
 
-/* ================= SPLASH FIX (ROBUST + GUARANTEED REMOVE) ================= */
+/* ================= SPLASH FIX ================= */
 (function () {
+
   function removeSplash() {
-    const splash = document.getElementById("splashScreen");
+
+    const splash =
+      document.getElementById("splashScreen");
+
     if (!splash) return;
 
-    splash.style.transition = "opacity 0.4s ease";
+    splash.style.transition =
+      "opacity 0.4s ease";
+
     splash.style.opacity = "0";
 
     setTimeout(() => {
+
       if (splash && splash.parentNode) {
         splash.parentNode.removeChild(splash);
       }
+
     }, 450);
   }
 
-  // Run immediately if already loaded
   if (document.readyState === "complete") {
+
     setTimeout(removeSplash, 800);
+
   } else {
+
     window.addEventListener("load", () => {
       setTimeout(removeSplash, 800);
     });
   }
 
-  // SAFETY NET (forces removal even if load fails)
   setTimeout(removeSplash, 4000);
+
 })();
 
-/* ================= EXISTING CODE (DO NOT CHANGE) ================= */
+/* ================= COOKIE FIX ================= */
 
-window.toggleMenu = function () {
-  const menu = document.getElementById("menu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
+function checkCookies() {
+
+  const banner =
+    document.getElementById("cookieBanner");
+
+  if (!localStorage.getItem("cookieAccepted")) {
+
+    if (banner) {
+      banner.style.display = "flex";
+    }
+  }
+}
+
+window.acceptCookies = function () {
+
+  localStorage.setItem(
+    "cookieAccepted",
+    "true"
+  );
+
+  const banner =
+    document.getElementById("cookieBanner");
+
+  if (banner) {
+    banner.style.display = "none";
+  }
 };
 
+checkCookies();
+
+/* ================= MENU TOGGLE ================= */
+
+window.toggleMenu = function () {
+
+  const menu =
+    document.getElementById("menu");
+
+  menu.style.display =
+    menu.style.display === "block"
+      ? "none"
+      : "block";
+};
+
+/* ================= LOGIN MODAL FIX ================= */
+
 window.openLogin = function () {
-  document.getElementById("loginModal").style.display = "flex";
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (modal) {
+    modal.style.display = "flex";
+  }
 };
 
 window.closeLogin = function () {
-  document.getElementById("loginModal").style.display = "none";
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (modal) {
+    modal.style.display = "none";
+  }
 };
+
+/* ================= POST OPEN ================= */
 
 window.openPost = function (id) {
-  window.location.href = "./blog/post.html?id=" + id;
+
+  if (!id) return;
+
+  window.location.href =
+    "./blog/post.html?id=" + id;
 };
 
+/* ================= FEED ================= */
+
 async function loadFeed() {
-  const feed = document.getElementById("feed");
-  const featuredBox = document.getElementById("featuredPost");
+
+  const feed =
+    document.getElementById("feed");
+
+  const featuredBox =
+    document.getElementById("featuredPost");
 
   try {
-    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
 
-    if (!res.ok) throw new Error("network");
+    const res = await fetch(
+      "https://mxm-backend.onrender.com/blog/list"
+    );
+
+    if (!res.ok)
+      throw new Error("network");
 
     const posts = await res.json();
 
@@ -342,10 +420,15 @@ async function loadFeed() {
     const featured = sorted[0];
 
     if (featured) {
+
       featuredBox.innerHTML = `
-        <div class="post" onclick="openPost('${featured.id}')">
+        <div class="post"
+          onclick="openPost('${featured.id}')">
+
           <h3>🔥 Featured</h3>
+
           <h4>${featured.title}</h4>
+
         </div>
       `;
     }
@@ -353,19 +436,51 @@ async function loadFeed() {
     feed.innerHTML = "";
 
     sorted.forEach(p => {
+
       feed.innerHTML += `
-        <div class="post" onclick="openPost('${p.id}')">
+        <div class="post"
+          onclick="openPost('${p.id}')">
+
           <h4>${p.title}</h4>
+
         </div>
       `;
     });
 
   } catch (e) {
-    feed.innerHTML = "<p>Failed to load content</p>";
+
+    feed.innerHTML =
+      "<p>Failed to load content</p>";
   }
 }
 
 loadFeed();
+
+/* ================= NAVIGATION FIXES ================= */
+
+window.goHome = function () {
+  location.href = "index.html";
+};
+
+window.goTrending = function () {
+  location.href = "trending.html";
+};
+
+window.goDashboard = function () {
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (modal) {
+    modal.style.display = "flex";
+  }
+};
+
+window.contact = function () {
+  location.href = "contact.html";
+};
+
+</script>
 
 window.goHome = () => location.href = "index.html";
 window.goTrending = () =>
