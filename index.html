@@ -240,47 +240,54 @@
       margin-right: 6px;
     }
 
-/* ================= CONNECT FLOAT BUTTON ================= */
+/* ================= DRAGGABLE CONNECT BUTTON ================= */
 
-    .connect-btn {
-      position: fixed;
-      right: 15px;
-      bottom: 80px;
-      background: #5bc0be;
-      color: #000;
-      padding: 12px 14px;
-      border-radius: 50px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 100000;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-    }
+.connect-btn {
+  position: fixed;
+  right: 15px;
+  bottom: 80px;
+  background: #5bc0be;
+  color: #000;
+  padding: 12px 16px;
+  border-radius: 50px;
+  font-weight: bold;
+  cursor: grab;
+  z-index: 100000;
+  user-select: none;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+}
 
-    /* ================= CONNECT PANEL ================= */
+.connect-btn:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
 
-    .connect-panel {
-      position: fixed;
-      right: 15px;
-      bottom: 140px;
-      width: 220px;
-      background: #1c2541;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 10px;
-      display: none;
-      z-index: 100000;
-    }
+/* ================= CONNECT PANEL ================= */
 
-    .connect-panel a {
-      display: block;
-      padding: 8px;
-      margin: 5px 0;
-      background: #0b132b;
-      color: #5bc0be;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 13px;
-    }
+.connect-panel {
+  position: fixed;
+  right: 15px;
+  bottom: 140px;
+  width: 220px;
+  background: #1c2541;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 10px;
+  display: none;
+  z-index: 100000;
+}
+
+.connect-panel a {
+  display: block;
+  padding: 8px;
+  margin: 5px 0;
+  background: #0b132b;
+  color: #5bc0be;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 13px;
+}
 
   </style>
 </head>
@@ -413,12 +420,18 @@
 
 </div>
 
-<!-- ================= CONNECT BUTTON ================= -->
-<div class="connect-btn" onclick="toggleConnect()">
+<!-- ================= DRAGGABLE CONNECT BUTTON ================= -->
+
+<div class="connect-btn"
+     id="connectBtn"
+     onclick="toggleConnect()">
+
   Connect
+
 </div>
 
-<div class="connect-panel" id="connectPanel">
+<div class="connect-panel"
+     id="connectPanel">
 
   <a href="#">🐦 Twitter</a>
   <a href="#">📘 Facebook</a>
@@ -666,11 +679,116 @@ window.contact = function () {
   location.href = "contact.html";
 };
 
-/* CONNECT PANEL */
+/* ================= CONNECT PANEL ================= */
+
 window.toggleConnect = function () {
-  const panel = document.getElementById("connectPanel");
-  panel.style.display = panel.style.display === "block" ? "none" : "block";
+
+  const panel =
+    document.getElementById("connectPanel");
+
+  panel.style.display =
+    panel.style.display === "block"
+      ? "none"
+      : "block";
 };
+
+/* ================= DRAGGABLE BUTTON ================= */
+
+const connectBtn =
+  document.getElementById("connectBtn");
+
+let isDragging = false;
+
+let offsetX = 0;
+let offsetY = 0;
+
+connectBtn.addEventListener(
+  "touchstart",
+  startDrag
+);
+
+connectBtn.addEventListener(
+  "mousedown",
+  startDrag
+);
+
+function startDrag(e) {
+
+  isDragging = true;
+
+  const rect =
+    connectBtn.getBoundingClientRect();
+
+  const clientX =
+    e.touches
+      ? e.touches[0].clientX
+      : e.clientX;
+
+  const clientY =
+    e.touches
+      ? e.touches[0].clientY
+      : e.clientY;
+
+  offsetX =
+    clientX - rect.left;
+
+  offsetY =
+    clientY - rect.top;
+}
+
+document.addEventListener(
+  "touchmove",
+  dragButton,
+  { passive:false }
+);
+
+document.addEventListener(
+  "mousemove",
+  dragButton
+);
+
+function dragButton(e) {
+
+  if (!isDragging) return;
+
+  e.preventDefault();
+
+  const clientX =
+    e.touches
+      ? e.touches[0].clientX
+      : e.clientX;
+
+  const clientY =
+    e.touches
+      ? e.touches[0].clientY
+      : e.clientY;
+
+  connectBtn.style.left =
+    (clientX - offsetX) + "px";
+
+  connectBtn.style.top =
+    (clientY - offsetY) + "px";
+
+  connectBtn.style.right =
+    "auto";
+
+  connectBtn.style.bottom =
+    "auto";
+}
+
+document.addEventListener(
+  "touchend",
+  stopDrag
+);
+
+document.addEventListener(
+  "mouseup",
+  stopDrag
+);
+
+function stopDrag() {
+  isDragging = false;
+}
 
 </script>
 
