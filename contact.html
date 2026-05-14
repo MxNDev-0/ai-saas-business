@@ -4,7 +4,6 @@
   <title>Contact — MCN Engine</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <meta name="theme-color" content="#5bc0be">
 
   <style>
@@ -63,52 +62,60 @@
       color:#ccc;
       line-height:1.6;
     }
+
+    .social a{
+      display:block;
+      margin:6px 0;
+      padding:10px;
+      background:#0b132b;
+      border-radius:10px;
+    }
   </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <button class="back-btn" onclick="goBack()">
-    ← Back
-  </button>
-
-  <h1>Contact</h1>
+  <button class="back-btn" onclick="goBack()">← Back</button>
+  <h1>Support Center</h1>
 </div>
 
+<!-- EMAIL -->
 <div class="card">
+  <span class="label">📧 Email Support</span>
+  <a href="mailto:mcnengine@gmail.com">mcnengine@gmail.com</a>
+  <p>We reply within 24–48 hours depending on request load.</p>
+</div>
 
-  <span class="label">📧 Email</span>
-
-  <a href="mailto:mcnengine@gmail.com">
-    mcnengine@gmail.com
+<!-- WHATSAPP -->
+<div class="card">
+  <span class="label">💬 WhatsApp Support</span>
+  <a href="https://wa.me/2340000000000" target="_blank">
+    Chat on WhatsApp
   </a>
-
+  <p>Fast response for urgent issues.</p>
 </div>
 
+<!-- SOCIAL MEDIA -->
 <div class="card">
+  <span class="label">🌐 Connect With Us</span>
 
-  <span class="label">🌐 Website</span>
-
-  <p>
-    MCN Engine — Discover, Learn, Explore.
-  </p>
-
+  <div class="social">
+    <a href="#">🐦 Twitter / X</a>
+    <a href="#">📘 Facebook</a>
+    <a href="#">📸 Instagram</a>
+    <a href="#">📺 YouTube</a>
+    <a href="#">📰 Medium</a>
+  </div>
 </div>
 
+<!-- WEBSITE INFO -->
 <div class="card">
-
-  <span class="label">🚀 Future Upgrade</span>
-
+  <span class="label">🌍 About MCN Engine</span>
   <p>
-    When your domain is ready,
-    you can upgrade this email to:
+    MCN Engine helps users discover digital opportunities,
+    content, tools, and monetization systems across the web.
   </p>
-
-  <p>
-    contact@yourdomain.com
-  </p>
-
 </div>
 
 <script>
