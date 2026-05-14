@@ -4,7 +4,6 @@
   <title>MCN Engine V15 — Monetization Control Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 🚫 BUILD MODE: NO INDEXING -->
   <meta name="robots" content="noindex, nofollow, noarchive">
 
   <style>
@@ -34,10 +33,9 @@
       cursor: pointer;
     }
 
-    .logo {
-      font-size: 18px;
-      font-weight: bold;
-      color: #5bc0be;
+    .logo img {
+      height: 28px;
+      display: block;
     }
 
     .profile-btn {
@@ -80,7 +78,6 @@
       border-radius: 12px;
       cursor: pointer;
       transition: 0.25s;
-      border: 1px solid transparent;
     }
 
     .post:hover {
@@ -88,19 +85,14 @@
       border: 1px solid #5bc0be;
     }
 
-    .post h4 { margin: 8px 0; font-size: 15px; }
-    .post p { font-size: 13px; color: #ccc; }
-
     .login-modal {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       background: rgba(0,0,0,0.7);
       justify-content: center;
       align-items: center;
+      z-index: 9999;
     }
 
     .center-box {
@@ -109,21 +101,6 @@
       border-radius: 12px;
       width: 90%;
       max-width: 350px;
-    }
-
-    /* ✅ LOGIN HEADER LOGO RESTORED */
-    .login-header {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .login-header h2 {
-      margin: 0;
-      color: #5bc0be;
-    }
-
-    .login-header small {
-      color: #aaa;
     }
 
     input {
@@ -153,6 +130,24 @@
       color: #5bc0be;
     }
 
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #1c2541;
+      padding: 15px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .cookie-banner button {
+      width: auto;
+      padding: 8px 12px;
+    }
+
     .footer {
       text-align: center;
       padding: 25px;
@@ -161,12 +156,16 @@
       margin-top: 40px;
     }
 
-    /* ✅ FOOTER LOGO STYLE RESTORED */
     .footer-logo {
-      font-size: 16px;
-      font-weight: bold;
-      color: #5bc0be;
-      margin-bottom: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .footer-logo img {
+      height: 30px;
+      margin-bottom: 5px;
     }
 
     .footer-tagline {
@@ -179,26 +178,6 @@
       color: #5bc0be;
       text-decoration: none;
     }
-
-    .cookie-banner {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #1c2541;
-      padding: 15px;
-      display: none;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 9999;
-      border-top: 1px solid #333;
-    }
-
-    .cookie-banner button {
-      width: auto;
-      padding: 8px 12px;
-      margin-left: 10px;
-    }
   </style>
 </head>
 
@@ -206,11 +185,13 @@
 
 <div class="header">
   <div class="left">
+    <div class="logo">
+      <img src="logo.png" alt="MCN Logo">
+    </div>
     <div class="menu-btn" onclick="toggleMenu()">☰</div>
-    <div class="logo">MCN Engine</div>
   </div>
 
-  <div class="profile-btn" onclick="openLogin()">👤</div>
+  <div class="profile-btn" onclick="toggleLogin()">👤</div>
 </div>
 
 <div id="menu">
@@ -229,28 +210,28 @@
   <button onclick="acceptCookies()">Accept</button>
 </div>
 
-<!-- LOGIN (LOGO RESTORED INSIDE MODAL) -->
+<!-- LOGIN -->
 <div class="login-modal" id="loginModal">
   <div class="center-box">
-
-    <div class="login-header">
-      <h2>MCN Engine</h2>
-      <small>Login / Register</small>
-    </div>
+    <h3>Login / Register</h3>
 
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
 
     <button onclick="signup()">Create Account</button>
     <button class="secondary-btn" onclick="login()">Login</button>
-    <button onclick="closeLogin()">Close</button>
+    <button onclick="toggleLogin()">Close</button>
   </div>
 </div>
 
-<!-- FOOTER (RESTORED ORIGINAL STYLE) -->
+<!-- FOOTER RESTORED WITH LOGO PNG -->
 <div class="footer">
 
-  <div class="footer-logo">MCN Engine</div>
+  <div class="footer-logo">
+    <img src="logo.png" alt="MCN Logo">
+    <div>MCN Engine</div>
+  </div>
+
   <div class="footer-tagline">Discover. Learn. Explore.</div>
 
   <a href="about.html">About</a> |
@@ -258,8 +239,6 @@
   <a href="privacy.html">Privacy</a> |
   <a href="terms.html">Terms</a> |
   <a href="copyright.html">Copyright</a> |
-  <a href="anti-spam.html">Anti-Spam</a> |
-  <a href="ads-policy.html">Ads Policy</a> |
   <a href="dmca.html">DMCA</a>
 
   <br><br>
@@ -267,6 +246,7 @@
 </div>
 
 <script>
+/* COOKIE */
 function checkCookies() {
   if (!localStorage.getItem("cookieAccepted")) {
     document.getElementById("cookieBanner").style.display = "flex";
@@ -280,101 +260,74 @@ window.acceptCookies = function () {
 
 checkCookies();
 
+/* MENU */
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
 };
 
-window.openLogin = function () {
-  document.getElementById("loginModal").style.display = "flex";
-};
-
-window.closeLogin = function () {
-  document.getElementById("loginModal").style.display = "none";
-};
-
-window.goDashboard = function () {
-  document.getElementById("loginModal").style.display = "flex";
-};
-
-window.openPost = function (id) {
-  if (!id) {
-    alert("Post not available");
-    return;
+/* ✅ FIXED LOGIN TOGGLE (REAL WORKING STATE CONTROL) */
+window.toggleLogin = function () {
+  const modal = document.getElementById("loginModal");
+  if (modal.style.display === "flex") {
+    modal.style.display = "none";
+  } else {
+    modal.style.display = "flex";
   }
-  window.location.href = "./blog/post.html?id=" + id;
 };
 
-function getCategoryColor(cat) {
-  switch (cat) {
-    case "Crypto": return "#5bc0be";
-    case "News": return "#ffcc00";
-    case "Guide": return "#00ff88";
-    case "Update": return "#ff6b6b";
-    default: return "#aaa";
-  }
-}
-
+/* FEED SAFE */
 async function loadFeed() {
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
 
-  const PRIMARY = "https://mxm-backend.onrender.com/blog/list";
-  const FALLBACK = "./feed-snapshot.json";
-
-  let posts = null;
-
   try {
-    const res = await fetch(PRIMARY);
-    if (res.ok) posts = await res.json();
-  } catch (e) {}
+    const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+    const posts = await res.json();
 
-  if (!Array.isArray(posts) || posts.length === 0) {
-    try {
-      const res2 = await fetch(FALLBACK);
-      posts = await res2.json();
-    } catch (e2) {}
-  }
+    if (!Array.isArray(posts)) {
+      feed.innerHTML = "<p>Feed error</p>";
+      return;
+    }
 
-  if (!Array.isArray(posts) || posts.length === 0) {
-    feed.innerHTML = "<p>No content available</p>";
-    return;
-  }
+    const sorted = posts.sort((a, b) =>
+      new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
 
-  const sorted = posts.sort((a, b) =>
-    new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-  );
+    const featured = sorted[0];
 
-  const featured = sorted.find(p => p.featured) || sorted[0];
-
-  featuredBox.innerHTML = `
-    <div class="post" onclick="openPost('${featured?.id || ''}')" style="border:2px solid #5bc0be">
-      <h3>🔥 Featured</h3>
-      <h4>${featured?.title || ""}</h4>
-      <p>${(featured?.content || "").slice(0,120)}...</p>
-    </div>
-  `;
-
-  feed.innerHTML = "";
-
-  sorted.forEach(p => {
-    feed.innerHTML += `
-      <div class="post" onclick="openPost('${p.id}')">
-        <small style="color:${getCategoryColor(p.category)}">
-          ${p.category || "General"}
-        </small>
-        <h4>${p.title || ""}</h4>
-        <p>${(p.content || "").slice(0,90)}...</p>
+    featuredBox.innerHTML = `
+      <div class="post" onclick="openPost('${featured?.id || ''}')">
+        <h3>🔥 Featured</h3>
+        <h4>${featured?.title || ""}</h4>
       </div>
     `;
-  });
+
+    feed.innerHTML = "";
+
+    sorted.forEach(p => {
+      feed.innerHTML += `
+        <div class="post" onclick="openPost('${p.id}')">
+          <h4>${p.title}</h4>
+        </div>
+      `;
+    });
+
+  } catch (e) {
+    feed.innerHTML = "<p>Failed to load content</p>";
+  }
 }
 
 loadFeed();
 
+window.openPost = function (id) {
+  if (!id) return alert("Post not available");
+  window.location.href = "./blog/post.html?id=" + id;
+};
+
 window.goHome = () => location.href = "index.html";
 window.goTrending = () => document.getElementById("featuredPost")?.scrollIntoView({ behavior: "smooth" });
-window.contact = () => window.location.href = "mailto:contact@mcnengine.com";
+window.contact = () => location.href = "mailto:contact@mcnengine.com";
 </script>
 
 </body>
