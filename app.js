@@ -6,7 +6,27 @@ import {
   signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-/* ================= UI MESSAGE ================= */
+/* 🔔 PUSH IMPORTS */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getMessaging,
+  getToken,
+  onMessage
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
+/* ================= PUSH CONFIG ================= */
+const firebaseConfigPush = {
+  apiKey: "AIzaSyAu8BaL9NV6NU_oKSy-pxh89TuVrovZzaE",
+  authDomain: "ai-saas-business-ecfab.firebaseapp.com",
+  projectId: "ai-saas-business-ecfab",
+  messagingSenderId: "568523173235",
+  appId: "1:568523173235:web:b714d052976268f1e72906"
+};
+
+const pushApp = initializeApp(firebaseConfigPush, "pushApp");
+const messaging = getMessaging(pushApp);
+
+/* ================= MESSAGE UI ================= */
 function showMessage(text, color = "#5bc0be") {
   let msg = document.getElementById("authMessage");
 
@@ -38,62 +58,104 @@ function setLoading(btn, state, text) {
   }
 }
 
-/* ================= SIGNUP ================= */
-window.signup = async function (e) {
-  const btn = e?.target || window.event?.target;
+/* ================= PUSH INIT ================= */
+async function initPush() {
+  try {
+    const permission = await Notification.requestPermission();
+
+    if (permission === "granted") {
+
+      const token = await getToken(messaging, {
+        vapidKey: "BMtRVhjhwqYJ9Gn5Imp5ZuqdeY_N4lX9mUiGg9uJoHl3-kH2b5vXTG6cp1zAtAxZe3eOLviglmOklScCIBWFIm4"
+      });
+
+      fetch("https://mxm-backend.onrender.com/save-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+    }
+
+  } catch (err) {
+    console.log("Push error:", err);
+  }
+}
+
+/* ================= FOREGROUND NOTIFICATION ================= */
+onMessage(messaging, (payload) => {
+  alert(payload.notification?.title + " - " + payload.notification?.body);
+});
+
+/* ================= SIGNUP (FIXED) ================= */
+window.signup = async function () {
 
   const email = document.getElementById("email")?.value.trim();
   const password = document.getElementById("password")?.value.trim();
+  const btn = document.querySelector("button.secondary-btn");
 
   if (!email || !password) {
-    return showMessage("Please fill all fields", "#ff6b6b");
+    alert("Please fill all fields");
+    return;
   }
 
-  setLoading(btn, true, "Creating account...");
-
   try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Creating...";
+    }
+
     await createUserWithEmailAndPassword(auth, email, password);
 
-    showMessage("Account created successfully!", "#00ff88");
+    alert("Account created successfully!");
 
-    setTimeout(() => {
-      document.getElementById("loginModal").style.display = "none";
-      window.location.href = "dashboard.html";
-    }, 900);
+    initPush();
+
+    document.getElementById("loginModal").style.display = "none";
+    window.location.href = "dashboard.html";
 
   } catch (err) {
-    showMessage(err.message, "#ff6b6b");
+    alert(err.message);
   }
 
-  setLoading(btn, false);
+  if (btn) {
+    btn.disabled = false;
+    btn.innerText = "Create Account";
+  }
 };
 
-/* ================= LOGIN ================= */
-window.login = async function (e) {
-  const btn = e?.target || window.event?.target;
+/* ================= LOGIN (FIXED) ================= */
+window.login = async function () {
 
   const email = document.getElementById("email")?.value.trim();
   const password = document.getElementById("password")?.value.trim();
+  const btn = document.querySelectorAll("button")[1];
 
   if (!email || !password) {
-    return showMessage("Please fill all fields", "#ff6b6b");
+    alert("Please fill all fields");
+    return;
   }
-
-  setLoading(btn, true, "Logging in...");
 
   try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "Logging in...";
+    }
+
     await signInWithEmailAndPassword(auth, email, password);
 
-    showMessage("Login successful!", "#00ff88");
+    alert("Login successful!");
 
-    setTimeout(() => {
-      document.getElementById("loginModal").style.display = "none";
-      window.location.href = "dashboard.html";
-    }, 800);
+    initPush();
+
+    document.getElementById("loginModal").style.display = "none";
+    window.location.href = "dashboard.html";
 
   } catch (err) {
-    showMessage(err.message, "#ff6b6b");
+    alert(err.message);
   }
 
-  setLoading(btn, false);
+  if (btn) {
+    btn.disabled = false;
+    btn.innerText = "Login";
+  }
 };
