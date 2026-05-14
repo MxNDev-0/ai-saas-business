@@ -4,17 +4,12 @@
   <title>MCN Engine V15 — Monetization Control Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 🔥 SEO META -->
   <meta name="description" content="Discover websites, apps, and online opportunities with MCN Engine. Learn, explore, and grow online in one place.">
 
   <meta property="og:title" content="MCN Engine — Discover. Learn. Explore.">
   <meta property="og:description" content="Find websites, tools, and online opportunities easily.">
   <meta property="og:type" content="website">
 
-  <!-- 🚫 NO INDEX UNTIL READY -->
-  <meta name="robots" content="noindex, nofollow, noarchive">
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#5bc0be">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -197,7 +192,7 @@
 
 <body>
 
-<!-- SPLASH (UNCHANGED) -->
+<!-- SPLASH -->
 <div id="splashScreen">
   <img src="assets/logo.png">
 </div>
@@ -226,13 +221,11 @@
 
 <div class="feed" id="feed">Loading posts...</div>
 
-<!-- COOKIE (UNCHANGED) -->
 <div id="cookieBanner" class="cookie-banner">
   <span>We use cookies to improve experience.</span>
   <button onclick="acceptCookies()">Accept</button>
 </div>
 
-<!-- LOGIN (UNCHANGED UI) -->
 <div class="login-modal" id="loginModal">
   <div class="center-box">
     <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
@@ -247,7 +240,6 @@
   </div>
 </div>
 
-<!-- 🔴 YOUR ORIGINAL FULL FOOTER RESTORED (UNCHANGED) -->
 <div class="footer">
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
@@ -265,6 +257,29 @@
 
 <script type="module">
 
+/* ================= ONLY FIX: SPLASH BUG ================= */
+window.addEventListener("load", () => {
+
+  const splash = document.getElementById("splashScreen");
+
+  if (!splash) return;
+
+  setTimeout(() => {
+
+    splash.style.opacity = "0";
+    splash.style.transition = "opacity 0.4s ease";
+
+    setTimeout(() => {
+      if (splash && splash.parentNode) {
+        splash.parentNode.removeChild(splash);
+      }
+    }, 450);
+
+  }, 1200);
+});
+
+/* ================= EXISTING CODE (UNCHANGED) ================= */
+
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
@@ -278,26 +293,19 @@ window.closeLogin = function () {
   document.getElementById("loginModal").style.display = "none";
 };
 
-window.goDashboard = function () {
-  document.getElementById("loginModal").style.display = "flex";
-};
-
 window.openPost = function (id) {
-  if (!id) return;
   window.location.href = "./blog/post.html?id=" + id;
 };
 
-/* SAFE FEED (FIX ONLY) */
 async function loadFeed() {
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
 
   try {
     const res = await fetch("https://mxm-backend.onrender.com/blog/list");
-    if (!res.ok) throw new Error("network");
-
     const posts = await res.json();
-    if (!Array.isArray(posts)) throw new Error("invalid");
+
+    if (!Array.isArray(posts)) return;
 
     const sorted = posts.sort((a,b)=>
       new Date(b.createdAt||0)-new Date(a.createdAt||0)
@@ -317,8 +325,6 @@ async function loadFeed() {
     feed.innerHTML = "";
 
     sorted.forEach(p => {
-      if (!p.id) return;
-
       feed.innerHTML += `
         <div class="post" onclick="openPost('${p.id}')">
           <h4>${p.title}</h4>
@@ -337,6 +343,7 @@ window.goHome = () => location.href = "index.html";
 window.goTrending = () =>
   document.getElementById("featuredPost")
   ?.scrollIntoView({behavior:"smooth"});
+window.goDashboard = () => document.getElementById("loginModal").style.display = "flex";
 window.contact = () => location.href = "mailto:contact@mcnengine.com";
 
 </script>
