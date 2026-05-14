@@ -272,6 +272,37 @@
 
 <script type="module">
 
+/* ================= SPLASH FIX (ROBUST + GUARANTEED REMOVE) ================= */
+(function () {
+  function removeSplash() {
+    const splash = document.getElementById("splashScreen");
+    if (!splash) return;
+
+    splash.style.transition = "opacity 0.4s ease";
+    splash.style.opacity = "0";
+
+    setTimeout(() => {
+      if (splash && splash.parentNode) {
+        splash.parentNode.removeChild(splash);
+      }
+    }, 450);
+  }
+
+  // Run immediately if already loaded
+  if (document.readyState === "complete") {
+    setTimeout(removeSplash, 800);
+  } else {
+    window.addEventListener("load", () => {
+      setTimeout(removeSplash, 800);
+    });
+  }
+
+  // SAFETY NET (forces removal even if load fails)
+  setTimeout(removeSplash, 4000);
+})();
+
+/* ================= EXISTING CODE (DO NOT CHANGE) ================= */
+
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
@@ -295,12 +326,17 @@ async function loadFeed() {
 
   try {
     const res = await fetch("https://mxm-backend.onrender.com/blog/list");
+
+    if (!res.ok) throw new Error("network");
+
     const posts = await res.json();
 
     if (!Array.isArray(posts)) return;
 
-    const sorted = posts.sort((a,b)=>
-      new Date(b.createdAt||0)-new Date(a.createdAt||0)
+    const sorted = posts.sort(
+      (a, b) =>
+        new Date(b.createdAt || 0) -
+        new Date(a.createdAt || 0)
     );
 
     const featured = sorted[0];
@@ -334,9 +370,13 @@ loadFeed();
 window.goHome = () => location.href = "index.html";
 window.goTrending = () =>
   document.getElementById("featuredPost")
-  ?.scrollIntoView({behavior:"smooth"});
-window.goDashboard = () => document.getElementById("loginModal").style.display = "flex";
-window.contact = () => location.href = "mailto:contact@mcnengine.com";
+  ?.scrollIntoView({ behavior: "smooth" });
+
+window.goDashboard = () =>
+  document.getElementById("loginModal").style.display = "flex";
+
+window.contact = () =>
+  location.href = "mailto:contact@mcnengine.com";
 
 </script>
 
