@@ -18,6 +18,7 @@
         content="website">
 
   <link rel="manifest" href="manifest.json">
+
   <meta name="theme-color" content="#5bc0be">
 
   <style>
@@ -239,199 +240,375 @@
       margin-right: 6px;
     }
 
-    /* ================= CONNECT FLOAT BUTTON ================= */
-
-    .connect-btn {
-      position: fixed;
-      right: 15px;
-      bottom: 80px;
-      background: #5bc0be;
-      color: #000;
-      padding: 12px 14px;
-      border-radius: 50px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 100000;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-    }
-
-    /* ================= CONNECT PANEL ================= */
-
-    .connect-panel {
-      position: fixed;
-      right: 15px;
-      bottom: 140px;
-      width: 220px;
-      background: #1c2541;
-      border: 1px solid #333;
-      border-radius: 12px;
-      padding: 10px;
-      display: none;
-      z-index: 100000;
-    }
-
-    .connect-panel a {
-      display: block;
-      padding: 8px;
-      margin: 5px 0;
-      background: #0b132b;
-      color: #5bc0be;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-
   </style>
 </head>
 
 <body>
 
 <!-- ================= SPLASH ================= -->
+
 <div id="splashScreen">
   <img src="assets/logo.png">
 </div>
 
 <!-- ================= HEADER ================= -->
+
 <div class="header">
 
   <div class="left">
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+    <div class="menu-btn"
+         onclick="toggleMenu()">
+      ☰
+    </div>
 
     <div class="logo">
       <img src="assets/logo.png">
       <span>MCN Engine</span>
     </div>
+
   </div>
 
-  <div class="profile-btn" onclick="openLogin()">👤</div>
+  <div class="profile-btn"
+       onclick="openLogin()">
+    👤
+  </div>
+
 </div>
 
 <!-- ================= MENU ================= -->
+
 <div id="menu">
-  <div onclick="goHome()">Home</div>
-  <div onclick="goTrending()">Trending</div>
-  <div onclick="goDashboard()">Dashboard</div>
-  <div onclick="contact()">Contact</div>
+
+  <div onclick="goHome()">
+    Home
+  </div>
+
+  <div onclick="goTrending()">
+    Trending
+  </div>
+
+  <div onclick="goDashboard()">
+    Dashboard
+  </div>
+
+  <div onclick="contact()">
+    Contact
+  </div>
+
 </div>
 
 <!-- ================= FEATURED ================= -->
-<div class="featured" id="featuredPost"></div>
+
+<div class="featured"
+     id="featuredPost">
+</div>
 
 <!-- ================= FEED ================= -->
-<div class="feed" id="feed">Loading posts...</div>
+
+<div class="feed"
+     id="feed">
+
+  Loading posts...
+
+</div>
 
 <!-- ================= COOKIES ================= -->
-<div id="cookieBanner" class="cookie-banner">
+
+<div id="cookieBanner"
+     class="cookie-banner">
 
   <span>
     We use cookies to improve your experience.
     By using this site, you agree to our
-    <a href="privacy.html" target="_blank"
-       style="color:#5bc0be;">
+    <a href="privacy.html"
+       style="color:#5bc0be;text-decoration:none;">
       Privacy Policy
     </a>.
   </span>
 
-  <button onclick="acceptCookies()">Accept</button>
+  <button onclick="acceptCookies()">
+    Accept
+  </button>
+
 </div>
 
 <!-- ================= LOGIN MODAL ================= -->
-<div class="login-modal" id="loginModal">
+
+<div class="login-modal"
+     id="loginModal">
 
   <div class="center-box">
 
-    <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
+    <img src="assets/logo.png"
+         style="height:45px;display:block;margin:auto;">
 
-    <h3 style="text-align:center;">MCN Engine</h3>
+    <h3 style="text-align:center;">
+      MCN Engine
+    </h3>
 
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
+    <input id="email"
+           placeholder="Email">
 
-    <button onclick="signup()">Create Account</button>
-    <button class="secondary-btn" onclick="login()">Login</button>
-    <button onclick="closeLogin()">Close</button>
+    <input id="password"
+           type="password"
+           placeholder="Password">
+
+    <button onclick="signup()">
+      Create Account
+    </button>
+
+    <button class="secondary-btn"
+            onclick="login()">
+      Login
+    </button>
+
+    <button onclick="closeLogin()">
+      Close
+    </button>
 
   </div>
-</div>
-
-<!-- ================= CONNECT BUTTON ================= -->
-<div class="connect-btn" onclick="toggleConnect()">
-  Connect
-</div>
-
-<div class="connect-panel" id="connectPanel">
-
-  <a href="#">🐦 Twitter</a>
-  <a href="#">📘 Facebook</a>
-  <a href="#">📸 Instagram</a>
-  <a href="#">📺 YouTube</a>
-  <a href="#">💬 WhatsApp</a>
-  <a href="#">📰 Medium</a>
 
 </div>
 
 <!-- ================= FOOTER ================= -->
+
 <div class="footer">
 
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
   <a href="privacy.html">Privacy</a> |
-  <a href="terms.html">Terms</a>
+  <a href="terms.html">Terms</a> |
+  <a href="copyright.html">Copyright</a> |
+  <a href="anti-spam.html">Anti-Spam</a> |
+  <a href="ads-policy.html">Ads Policy</a> |
+  <a href="dmca.html">DMCA</a>
 
   <br><br>
 
-  <img src="assets/logo.png" class="footer-logo">
+  <img src="assets/logo.png"
+       class="footer-logo">
+
   © MCN Engine • All rights reserved
+
 </div>
 
 <!-- ================= SCRIPT ================= -->
+
 <script type="module">
 
-/* SPLASH FIX */
+/* ================= SPLASH FIX ================= */
+
 (function () {
+
   function removeSplash() {
-    const splash = document.getElementById("splashScreen");
+
+    const splash =
+      document.getElementById("splashScreen");
+
     if (!splash) return;
+
+    splash.style.transition =
+      "opacity 0.4s ease";
+
     splash.style.opacity = "0";
-    setTimeout(() => splash.remove(), 400);
+
+    setTimeout(() => {
+
+      if (splash.parentNode) {
+        splash.parentNode.removeChild(splash);
+      }
+
+    }, 450);
   }
-  window.addEventListener("load", () => setTimeout(removeSplash, 800));
+
+  if (document.readyState === "complete") {
+
+    setTimeout(removeSplash, 800);
+
+  } else {
+
+    window.addEventListener("load", () => {
+      setTimeout(removeSplash, 800);
+    });
+  }
+
+  setTimeout(removeSplash, 4000);
+
 })();
 
-/* COOKIES */
+/* ================= COOKIES ================= */
+
 function checkCookies() {
-  const banner = document.getElementById("cookieBanner");
+
+  const banner =
+    document.getElementById("cookieBanner");
+
   if (!localStorage.getItem("cookieAccepted")) {
-    banner.style.display = "flex";
+
+    if (banner) {
+      banner.style.display = "flex";
+    }
   }
 }
 
 window.acceptCookies = function () {
-  localStorage.setItem("cookieAccepted", "true");
-  document.getElementById("cookieBanner").style.display = "none";
+
+  localStorage.setItem(
+    "cookieAccepted",
+    "true"
+  );
+
+  const banner =
+    document.getElementById("cookieBanner");
+
+  if (banner) {
+    banner.style.display = "none";
+  }
 };
 
 checkCookies();
 
-/* MENU */
+/* ================= MENU ================= */
+
 window.toggleMenu = function () {
-  const menu = document.getElementById("menu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
+
+  const menu =
+    document.getElementById("menu");
+
+  menu.style.display =
+    menu.style.display === "block"
+      ? "none"
+      : "block";
 };
 
-/* LOGIN */
-window.openLogin = () => document.getElementById("loginModal").style.display = "flex";
-window.closeLogin = () => document.getElementById("loginModal").style.display = "none";
+/* ================= LOGIN ================= */
 
-/* CONNECT PANEL */
-window.toggleConnect = function () {
-  const panel = document.getElementById("connectPanel");
-  panel.style.display = panel.style.display === "block" ? "none" : "block";
+window.openLogin = function () {
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (!modal) return;
+
+  modal.style.display = "flex";
+};
+
+window.closeLogin = function () {
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (!modal) return;
+
+  modal.style.display = "none";
+};
+
+/* ================= POSTS ================= */
+
+window.openPost = function (id) {
+
+  if (!id) return;
+
+  window.location.href =
+    "./blog/post.html?id=" + id;
+};
+
+/* ================= FEED ================= */
+
+async function loadFeed() {
+
+  const feed =
+    document.getElementById("feed");
+
+  const featuredBox =
+    document.getElementById("featuredPost");
+
+  try {
+
+    const res = await fetch(
+      "https://mxm-backend.onrender.com/blog/list"
+    );
+
+    if (!res.ok)
+      throw new Error("network");
+
+    const posts = await res.json();
+
+    if (!Array.isArray(posts)) {
+      throw new Error("invalid");
+    }
+
+    const sorted = posts.sort(
+      (a, b) =>
+        new Date(b.createdAt || 0) -
+        new Date(a.createdAt || 0)
+    );
+
+    const featured = sorted[0];
+
+    if (featured) {
+
+      featuredBox.innerHTML = `
+        <div class="post"
+          onclick="openPost('${featured.id}')">
+
+          <h3>🔥 Featured</h3>
+
+          <h4>${featured.title}</h4>
+
+        </div>
+      `;
+    }
+
+    feed.innerHTML = "";
+
+    sorted.forEach(p => {
+
+      feed.innerHTML += `
+        <div class="post"
+          onclick="openPost('${p.id}')">
+
+          <h4>${p.title}</h4>
+
+        </div>
+      `;
+    });
+
+  } catch (e) {
+
+    feed.innerHTML =
+      "<p>Failed to load content</p>";
+  }
+}
+
+loadFeed();
+
+/* ================= NAVIGATION ================= */
+
+window.goHome = function () {
+  location.href = "index.html";
+};
+
+window.goTrending = function () {
+  location.href = "trending.html";
+};
+
+window.goDashboard = function () {
+
+  const modal =
+    document.getElementById("loginModal");
+
+  if (modal) {
+    modal.style.display = "flex";
+  }
+};
+
+window.contact = function () {
+  location.href = "contact.html";
 };
 
 </script>
-
-<script type="module" src="app.js"></script>
 
 </body>
 </html>
