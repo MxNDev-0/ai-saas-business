@@ -2,24 +2,35 @@
 <html>
 <head>
   <title>MCN Engine V15 — Monetization Control Network</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="description" content="Discover websites, apps, and online opportunities with MCN Engine. Learn, explore, and grow online in one place.">
+  <meta name="description"
+        content="Discover websites, apps, and online opportunities with MCN Engine.">
 
-  <meta property="og:title" content="MCN Engine — Discover. Learn. Explore.">
-  <meta property="og:description" content="Find websites, tools, and online opportunities easily.">
-  <meta property="og:type" content="website">
+  <meta property="og:title"
+        content="MCN Engine — Discover. Learn. Explore.">
+
+  <meta property="og:description"
+        content="Find websites, tools, and online opportunities easily.">
+
+  <meta property="og:type"
+        content="website">
 
   <link rel="manifest" href="manifest.json">
+
   <meta name="theme-color" content="#5bc0be">
 
   <style>
+
     body {
       background: #0b132b;
       color: #fff;
       font-family: Arial;
       margin: 0;
     }
+
+    /* ================= SPLASH ================= */
 
     #splashScreen {
       position: fixed;
@@ -37,6 +48,8 @@
     #splashScreen img {
       width: 90px;
     }
+
+    /* ================= HEADER ================= */
 
     .header {
       display: flex;
@@ -83,6 +96,8 @@
       font-weight: bold;
     }
 
+    /* ================= MENU ================= */
+
     #menu {
       display: none;
       background: #1c2541;
@@ -95,7 +110,11 @@
       cursor: pointer;
     }
 
-    .featured { padding: 15px; }
+    /* ================= FEED ================= */
+
+    .featured {
+      padding: 15px;
+    }
 
     .feed {
       padding: 15px;
@@ -117,19 +136,7 @@
       border: 1px solid #5bc0be;
     }
 
-    /* ✅ FIX 1: LOGIN INPUT ALIGNMENT FIX */
-    input {
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      padding: 10px;
-      margin: 6px 0;
-      border-radius: 8px;
-      border: none;
-      background: #0b132b;
-      color: white;
-      display: block;
-    }
+    /* ================= LOGIN ================= */
 
     .login-modal {
       display: none;
@@ -150,6 +157,17 @@
       box-sizing: border-box;
     }
 
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: none;
+      background: #0b132b;
+      color: white;
+    }
+
     button {
       width: 100%;
       padding: 10px;
@@ -159,6 +177,7 @@
       color: #000;
       border: none;
       font-weight: bold;
+      cursor: pointer;
     }
 
     .secondary-btn {
@@ -167,18 +186,41 @@
       color: #5bc0be;
     }
 
+    /* ================= COOKIES ================= */
+
     .cookie-banner {
       position: fixed;
       bottom: 0;
+      left: 0;
       width: 100%;
       background: #1c2541;
-      padding: 14px;
+      padding: 12px;
       display: none;
+      align-items: center;
       justify-content: space-between;
+      gap: 10px;
       z-index: 9999;
+      border-top: 1px solid #333;
+      box-sizing: border-box;
     }
 
-    /* ✅ FIX 2: FOOTER RESTORED WITH LOGO */
+    .cookie-banner span {
+      font-size: 13px;
+      color: #ddd;
+      line-height: 1.4;
+    }
+
+    .cookie-banner button {
+      width: auto !important;
+      padding: 8px 14px !important;
+      margin: 0 !important;
+      border-radius: 8px;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* ================= FOOTER ================= */
+
     .footer {
       text-align: center;
       padding: 20px;
@@ -197,63 +239,142 @@
       vertical-align: middle;
       margin-right: 6px;
     }
+
   </style>
 </head>
 
 <body>
 
-<!-- SPLASH -->
+<!-- ================= SPLASH ================= -->
+
 <div id="splashScreen">
   <img src="assets/logo.png">
 </div>
 
+<!-- ================= HEADER ================= -->
+
 <div class="header">
+
   <div class="left">
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+    <div class="menu-btn"
+         onclick="toggleMenu()">
+      ☰
+    </div>
 
     <div class="logo">
       <img src="assets/logo.png">
       <span>MCN Engine</span>
     </div>
+
   </div>
 
-  <div class="profile-btn" onclick="openLogin()">👤</div>
+  <div class="profile-btn"
+       onclick="openLogin()">
+    👤
+  </div>
+
 </div>
+
+<!-- ================= MENU ================= -->
 
 <div id="menu">
-  <div onclick="goHome()">Home</div>
-  <div onclick="goTrending()">Trending</div>
-  <div onclick="goDashboard()">Dashboard</div>
-  <div onclick="contact()">Contact</div>
+
+  <div onclick="goHome()">
+    Home
+  </div>
+
+  <div onclick="goTrending()">
+    Trending
+  </div>
+
+  <div onclick="goDashboard()">
+    Dashboard
+  </div>
+
+  <div onclick="contact()">
+    Contact
+  </div>
+
 </div>
 
-<div class="featured" id="featuredPost"></div>
-<div class="feed" id="feed">Loading posts...</div>
+<!-- ================= FEATURED ================= -->
 
-<div id="cookieBanner" class="cookie-banner">
-  <span>We use cookies to improve experience.</span>
-  <button onclick="acceptCookies()">Accept</button>
+<div class="featured"
+     id="featuredPost">
 </div>
 
-<div class="login-modal" id="loginModal">
+<!-- ================= FEED ================= -->
+
+<div class="feed"
+     id="feed">
+
+  Loading posts...
+
+</div>
+
+<!-- ================= COOKIES ================= -->
+
+<div id="cookieBanner"
+     class="cookie-banner">
+
+  <span>
+    We use cookies to improve your experience.
+    By using this site, you agree to our
+    <a href="privacy.html"
+       style="color:#5bc0be;text-decoration:none;">
+      Privacy Policy
+    </a>.
+  </span>
+
+  <button onclick="acceptCookies()">
+    Accept
+  </button>
+
+</div>
+
+<!-- ================= LOGIN MODAL ================= -->
+
+<div class="login-modal"
+     id="loginModal">
+
   <div class="center-box">
 
-    <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
+    <img src="assets/logo.png"
+         style="height:45px;display:block;margin:auto;">
 
-    <h3 style="text-align:center;">MCN Engine</h3>
+    <h3 style="text-align:center;">
+      MCN Engine
+    </h3>
 
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
+    <input id="email"
+           placeholder="Email">
 
-    <button onclick="signup()">Create Account</button>
-    <button class="secondary-btn" onclick="login()">Login</button>
-    <button onclick="closeLogin()">Close</button>
+    <input id="password"
+           type="password"
+           placeholder="Password">
+
+    <button onclick="signup()">
+      Create Account
+    </button>
+
+    <button class="secondary-btn"
+            onclick="login()">
+      Login
+    </button>
+
+    <button onclick="closeLogin()">
+      Close
+    </button>
 
   </div>
+
 </div>
 
-<!-- ✅ FIX 3: FOOTER WITH LOGO + CORRECT TEXT -->
+<!-- ================= FOOTER ================= -->
+
 <div class="footer">
+
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
   <a href="privacy.html">Privacy</a> |
@@ -265,14 +386,19 @@
 
   <br><br>
 
-  <img src="assets/logo.png" class="footer-logo">
+  <img src="assets/logo.png"
+       class="footer-logo">
 
   © MCN Engine • All rights reserved
+
 </div>
+
+<!-- ================= SCRIPT ================= -->
 
 <script type="module">
 
 /* ================= SPLASH FIX ================= */
+
 (function () {
 
   function removeSplash() {
@@ -289,7 +415,7 @@
 
     setTimeout(() => {
 
-      if (splash && splash.parentNode) {
+      if (splash.parentNode) {
         splash.parentNode.removeChild(splash);
       }
 
@@ -311,7 +437,7 @@
 
 })();
 
-/* ================= COOKIE FIX ================= */
+/* ================= COOKIES ================= */
 
 function checkCookies() {
 
@@ -343,7 +469,7 @@ window.acceptCookies = function () {
 
 checkCookies();
 
-/* ================= MENU TOGGLE ================= */
+/* ================= MENU ================= */
 
 window.toggleMenu = function () {
 
@@ -356,16 +482,16 @@ window.toggleMenu = function () {
       : "block";
 };
 
-/* ================= LOGIN MODAL FIX ================= */
+/* ================= LOGIN ================= */
 
 window.openLogin = function () {
 
   const modal =
     document.getElementById("loginModal");
 
-  if (modal) {
-    modal.style.display = "flex";
-  }
+  if (!modal) return;
+
+  modal.style.display = "flex";
 };
 
 window.closeLogin = function () {
@@ -373,12 +499,12 @@ window.closeLogin = function () {
   const modal =
     document.getElementById("loginModal");
 
-  if (modal) {
-    modal.style.display = "none";
-  }
+  if (!modal) return;
+
+  modal.style.display = "none";
 };
 
-/* ================= POST OPEN ================= */
+/* ================= POSTS ================= */
 
 window.openPost = function (id) {
 
@@ -409,7 +535,9 @@ async function loadFeed() {
 
     const posts = await res.json();
 
-    if (!Array.isArray(posts)) return;
+    if (!Array.isArray(posts)) {
+      throw new Error("invalid");
+    }
 
     const sorted = posts.sort(
       (a, b) =>
@@ -456,7 +584,7 @@ async function loadFeed() {
 
 loadFeed();
 
-/* ================= NAVIGATION FIXES ================= */
+/* ================= NAVIGATION ================= */
 
 window.goHome = function () {
   location.href = "index.html";
@@ -479,19 +607,6 @@ window.goDashboard = function () {
 window.contact = function () {
   location.href = "contact.html";
 };
-
-</script>
-
-window.goHome = () => location.href = "index.html";
-window.goTrending = () =>
-  document.getElementById("featuredPost")
-  ?.scrollIntoView({ behavior: "smooth" });
-
-window.goDashboard = () =>
-  document.getElementById("loginModal").style.display = "flex";
-
-window.contact = () =>
-  location.href = "mailto:contact@mcnengine.com";
 
 </script>
 
