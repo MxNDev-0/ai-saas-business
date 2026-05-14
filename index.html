@@ -30,19 +30,18 @@
       margin: 0;
     }
 
-    /* ================= SPLASH ================= */
+    /* ================= SPLASH FIXED ================= */
 
     #splashScreen {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
+      z-index: 99999;
       background: #0b132b;
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 99999;
+      opacity: 1;
+      transition: opacity 0.5s ease;
     }
 
     #splashScreen img {
@@ -96,6 +95,8 @@
       font-weight: bold;
     }
 
+    /* ================= MENU ================= */
+
     #menu {
       display: none;
       background: #1c2541;
@@ -108,7 +109,11 @@
       cursor: pointer;
     }
 
-    .featured { padding: 15px; }
+    /* ================= FEED ================= */
+
+    .featured {
+      padding: 15px;
+    }
 
     .feed {
       padding: 15px;
@@ -234,111 +239,78 @@
       margin-right: 6px;
     }
 
-    /* ================= CONNECT SYSTEM (NEW INJECTED) ================= */
-
-    #connectBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #5bc0be;
-      color: #000;
-      padding: 12px 16px;
-      border-radius: 50px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 99999;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
-
-    #connectPanel {
-      position: fixed;
-      bottom: -400px;
-      left: 0;
-      width: 100%;
-      background: #1c2541;
-      border-top: 2px solid #5bc0be;
-      transition: 0.3s ease;
-      z-index: 99998;
-      padding: 15px;
-      box-sizing: border-box;
-    }
-
-    #connectPanel.active {
-      bottom: 0;
-    }
-
-    .connect-header {
-      display: flex;
-      justify-content: space-between;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #fff;
-    }
-
-    .connect-header span {
-      cursor: pointer;
-      color: #5bc0be;
-    }
-
-    .connect-links {
-      display: grid;
-      gap: 10px;
-    }
-
-    .connect-links a {
-      color: #5bc0be;
-      text-decoration: none;
-      padding: 10px;
-      background: #0b132b;
-      border-radius: 8px;
-    }
-
   </style>
 </head>
 
 <body>
 
-<!-- SPLASH -->
+<!-- ================= SPLASH ================= -->
+
 <div id="splashScreen">
   <img src="assets/logo.png">
 </div>
 
+<!-- ================= HEADER ================= -->
+
 <div class="header">
+
   <div class="left">
+
     <div class="menu-btn" onclick="toggleMenu()">☰</div>
 
     <div class="logo">
       <img src="assets/logo.png">
       <span>MCN Engine</span>
     </div>
+
   </div>
 
   <div class="profile-btn" onclick="openLogin()">👤</div>
+
 </div>
 
+<!-- ================= MENU ================= -->
+
 <div id="menu">
+
   <div onclick="goHome()">Home</div>
   <div onclick="goTrending()">Trending</div>
   <div onclick="goDashboard()">Dashboard</div>
   <div onclick="contact()">Contact</div>
+
 </div>
+
+<!-- ================= FEATURED ================= -->
 
 <div class="featured" id="featuredPost"></div>
 
-<div class="feed" id="feed">Loading posts...</div>
+<!-- ================= FEED ================= -->
+
+<div class="feed" id="feed">
+  Loading posts...
+</div>
+
+<!-- ================= COOKIES ================= -->
 
 <div id="cookieBanner" class="cookie-banner">
+
   <span>
     We use cookies to improve your experience.
     <a href="privacy.html" style="color:#5bc0be;">Privacy Policy</a>
   </span>
+
   <button onclick="acceptCookies()">Accept</button>
+
 </div>
 
+<!-- ================= LOGIN ================= -->
+
 <div class="login-modal" id="loginModal">
+
   <div class="center-box">
 
     <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
+
     <h3 style="text-align:center;">MCN Engine</h3>
 
     <input id="email" placeholder="Email">
@@ -349,9 +321,11 @@
     <button onclick="closeLogin()">Close</button>
 
   </div>
+
 </div>
 
-<!-- FOOTER -->
+<!-- ================= FOOTER ================= -->
+
 <div class="footer">
 
   <a href="about.html">About</a> |
@@ -359,6 +333,8 @@
   <a href="privacy.html">Privacy</a> |
   <a href="terms.html">Terms</a> |
   <a href="copyright.html">Copyright</a> |
+  <a href="anti-spam.html">Anti-Spam</a> |
+  <a href="ads-policy.html">Ads Policy</a> |
   <a href="dmca.html">DMCA</a>
 
   <br><br>
@@ -369,38 +345,30 @@
 
 </div>
 
-<!-- 🔥 CONNECT BUTTON -->
-<div id="connectBtn" onclick="toggleConnectPanel()">
-  Connect
-</div>
+<!-- ================= SCRIPT ================= -->
 
-<!-- 🔥 CONNECT PANEL -->
-<div id="connectPanel">
+<script>
+(function () {
 
-  <div class="connect-header">
-    Connect with us
-    <span onclick="toggleConnectPanel()">✕</span>
-  </div>
+  const splash = document.getElementById("splashScreen");
 
-  <div class="connect-links">
-    <a href="#">🐦 Twitter</a>
-    <a href="#">📘 Facebook</a>
-    <a href="#">📸 Instagram</a>
-    <a href="#">▶️ YouTube</a>
-    <a href="#">💬 WhatsApp</a>
-  </div>
+  function hideSplash() {
+    if (!splash) return;
 
-</div>
+    splash.style.opacity = "0";
 
-<script type="module">
+    setTimeout(() => {
+      splash.remove();
+    }, 600);
+  }
 
-window.toggleConnectPanel = function () {
-  const panel = document.getElementById("connectPanel");
-  panel.classList.toggle("active");
-};
+  window.addEventListener("load", () => {
+    setTimeout(hideSplash, 700);
+  });
 
-/* existing JS stays untouched */
+  setTimeout(hideSplash, 3500);
 
+})();
 </script>
 
 <script type="module" src="app.js"></script>
