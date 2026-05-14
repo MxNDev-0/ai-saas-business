@@ -2,162 +2,599 @@
 <html>
 <head>
   <title>MCN Engine V15 — Monetization Control Network</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="description" content="Discover websites, apps, and online opportunities with MCN Engine. Learn, explore, and grow online in one place.">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
 
-  <meta property="og:title" content="MCN Engine — Discover. Learn. Explore.">
-  <meta property="og:description" content="Find websites, tools, and online opportunities easily.">
-  <meta property="og:type" content="website">
+  <!-- SEO -->
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#5bc0be">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description"
+    content="Discover websites, apps, tools, guides, trends, and online opportunities with MCN Engine.">
+
+  <meta property="og:title"
+    content="MCN Engine — Discover. Learn. Explore.">
+
+  <meta property="og:description"
+    content="Find websites, tools, apps, and online opportunities easily.">
+
+  <meta property="og:type"
+    content="website">
+
+  <!-- PWA -->
+
+  <link rel="manifest"
+    href="manifest.json">
+
+  <meta name="theme-color"
+    content="#5bc0be">
+
+  <link rel="apple-touch-icon"
+    href="icons/icon-192.png">
+
+  <meta name="apple-mobile-web-app-capable"
+    content="yes">
 
   <style>
-    /* (UNCHANGED STYLES — same as yours) */
-    body {
-      background: #0b132b;
-      color: #fff;
-      font-family: Arial;
-      margin: 0;
-      overflow-x: hidden;
+
+    body{
+      background:#0b132b;
+      color:white;
+      font-family:Arial;
+      margin:0;
+      overflow-x:hidden;
     }
+
+    /* SPLASH */
+
+    #splashScreen{
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:#0b132b;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:99999;
+    }
+
+    #splashScreen img{
+      width:90px;
+    }
+
+    /* HEADER */
+
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:15px;
+      background:#1c2541;
+      position:sticky;
+      top:0;
+      z-index:1000;
+    }
+
+    .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .menu-btn{
+      font-size:24px;
+      cursor:pointer;
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#5bc0be;
+      font-weight:bold;
+      font-size:18px;
+    }
+
+    .logo img{
+      width:30px;
+      height:30px;
+      border-radius:8px;
+    }
+
+    .profile-btn{
+      width:38px;
+      height:38px;
+      border-radius:50%;
+      background:#5bc0be;
+      color:black;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    /* MENU */
+
+    #menu{
+      display:none;
+      background:#1c2541;
+      padding:10px;
+    }
+
+    #menu div{
+      padding:12px;
+      border-bottom:1px solid #333;
+      cursor:pointer;
+      border-radius:8px;
+    }
+
+    #menu div:hover{
+      background:rgba(255,255,255,0.05);
+    }
+
+    /* FEATURED */
+
+    .featured{
+      padding:15px;
+    }
+
+    /* FEED */
+
+    .feed{
+      padding:15px;
+      display:grid;
+      grid-template-columns:
+        repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      padding-bottom:120px;
+    }
+
+    .post{
+      background:#1c2541;
+      padding:15px;
+      border-radius:18px;
+      cursor:pointer;
+      transition:0.2s ease;
+      border:1px solid transparent;
+    }
+
+    .post:hover{
+      border:1px solid #5bc0be;
+      transform:translateY(-3px);
+    }
+
+    .post h4{
+      margin:10px 0;
+    }
+
+    .post p{
+      color:#ccc;
+      font-size:14px;
+      line-height:1.5;
+    }
+
+    /* LOGIN */
+
+    .login-modal{
+      display:none;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,0.7);
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+    }
+
+    .center-box{
+      width:90%;
+      max-width:350px;
+      background:#1c2541;
+      padding:20px;
+      border-radius:18px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      margin:8px 0;
+      border:none;
+      border-radius:10px;
+      background:#0b132b;
+      color:white;
+      box-sizing:border-box;
+    }
+
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      background:#5bc0be;
+      color:black;
+      font-weight:bold;
+      margin-top:8px;
+      cursor:pointer;
+    }
+
+    /* MOBILE */
+
+    @media(max-width:600px){
+
+      .feed{
+        grid-template-columns:1fr;
+      }
+    }
+
   </style>
 </head>
 
 <body>
 
+<!-- SPLASH -->
+
 <div id="splashScreen">
+
   <img src="assets/logo.png">
+
 </div>
+
+<!-- HEADER -->
 
 <div class="header">
+
   <div class="left">
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
-    <div class="logo">
-      <img src="assets/logo.png">
-      <span>MCN Engine</span>
+
+    <div class="menu-btn"
+      onclick="toggleMenu()">
+
+      ☰
+
     </div>
+
+    <div class="logo">
+
+      <img src="assets/logo.png">
+
+      <span>MCN Engine</span>
+
+    </div>
+
   </div>
 
-  <div class="profile-btn" onclick="openLogin()">👤</div>
+  <div class="profile-btn"
+    onclick="openLogin()">
+
+    👤
+
+  </div>
+
 </div>
+
+<!-- MENU -->
 
 <div id="menu">
-  <div onclick="goHome()">Home</div>
-  <div onclick="goTrending()">Trending</div>
-  <div onclick="goDashboard()">Dashboard</div>
-  <div onclick="contact()">Contact</div>
-</div>
 
-<div class="featured" id="featuredPost"></div>
-
-<div class="feed" id="feed">Loading posts...</div>
-
-<div class="login-modal" id="loginModal">
-  <div class="center-box">
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-
-    <button onclick="signup()">Create Account</button>
-    <button onclick="login()">Login</button>
-    <button onclick="closeLogin()">Close</button>
+  <div onclick="goHome()">
+    Home
   </div>
+
+  <div onclick="goTrending()">
+    Trending
+  </div>
+
+  <div onclick="goDashboard()">
+    Dashboard
+  </div>
+
+  <div onclick="contact()">
+    Contact
+  </div>
+
 </div>
+
+<!-- FEATURED -->
+
+<div class="featured"
+  id="featuredPost">
+
+</div>
+
+<!-- FEED -->
+
+<div class="feed"
+  id="feed">
+
+  Loading posts...
+
+</div>
+
+<!-- LOGIN -->
+
+<div class="login-modal"
+  id="loginModal">
+
+  <div class="center-box">
+
+    <input id="email"
+      placeholder="Email">
+
+    <input id="password"
+      type="password"
+      placeholder="Password">
+
+    <button onclick="signup()">
+      Create Account
+    </button>
+
+    <button onclick="login()">
+      Login
+    </button>
+
+    <button onclick="closeLogin()">
+      Close
+    </button>
+
+  </div>
+
+</div>
+
+<!-- MAIN -->
 
 <script type="module">
 
-window.toggleMenu = () => {
-  const menu = document.getElementById("menu");
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
+/* =========================
+   MENU
+========================= */
+
+window.toggleMenu = function(){
+
+  const menu =
+    document.getElementById("menu");
+
+  menu.style.display =
+    menu.style.display === "block"
+      ? "none"
+      : "block";
 };
 
-window.openLogin = () => {
-  document.getElementById("loginModal").style.display = "flex";
+/* =========================
+   LOGIN MODAL
+========================= */
+
+window.openLogin = function(){
+
+  document.getElementById(
+    "loginModal"
+  ).style.display = "flex";
 };
 
-window.closeLogin = () => {
-  document.getElementById("loginModal").style.display = "none";
+window.closeLogin = function(){
+
+  document.getElementById(
+    "loginModal"
+  ).style.display = "none";
 };
 
-window.openPost = (id) => {
-  window.location.href = "./blog/post.html?id=" + id;
+/* =========================
+   NAVIGATION
+========================= */
+
+window.goHome = function(){
+
+  location.href = "./index.html";
 };
 
-window.goHome = () => location.href = "./index.html";
-window.goTrending = () => location.href = "./trending.html";
-window.goDashboard = () => location.href = "./dashboard.html";
-window.contact = () => location.href = "./contact.html";
+window.goTrending = function(){
 
-/* ================= FEED ================= */
+  location.href = "./trending.html";
+};
 
-async function loadFeed() {
+window.goDashboard = function(){
 
-  const feed = document.getElementById("feed");
-  const featuredBox = document.getElementById("featuredPost");
+  location.href = "./dashboard.html";
+};
 
-  try {
+window.contact = function(){
+
+  location.href = "./contact.html";
+};
+
+window.openPost = function(id){
+
+  location.href =
+    "./blog/post.html?id=" + id;
+};
+
+/* =========================
+   FEED LOADER
+========================= */
+
+async function loadFeed(){
+
+  const feed =
+    document.getElementById("feed");
+
+  const featuredBox =
+    document.getElementById(
+      "featuredPost"
+    );
+
+  feed.innerHTML = `
+    <div class="post">
+      <h4>Loading posts...</h4>
+    </div>
+  `;
+
+  try{
 
     const res = await fetch(
       "https://mxm-backend.onrender.com/blog/latest?limit=6"
     );
 
-    if (!res.ok) throw new Error("Server error " + res.status);
+    if(!res.ok){
 
-    const posts = await res.json();
+      throw new Error(
+        "Server returned " + res.status
+      );
+    }
 
-    if (!Array.isArray(posts) || posts.length === 0) {
-      feed.innerHTML = "<p>No posts available yet</p>";
+    const posts =
+      await res.json();
+
+    if(
+      !Array.isArray(posts) ||
+      posts.length === 0
+    ){
+
+      feed.innerHTML = `
+        <div class="post">
+          <h4>No posts available yet</h4>
+        </div>
+      `;
+
       return;
     }
 
     feed.innerHTML = "";
 
-    const sorted = posts.sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-    );
+    const sorted =
+      posts.sort((a,b)=>
 
-    const featured = sorted[0];
+        new Date(
+          b.createdAt || 0
+        )
 
-    if (featuredBox && featured) {
+        -
+
+        new Date(
+          a.createdAt || 0
+        )
+      );
+
+    const featured =
+      sorted[0];
+
+    /* FEATURED */
+
+    if(featuredBox && featured){
+
       featuredBox.innerHTML = `
-        <div class="post" onclick="openPost('${featured.id}')"
-          style="border:2px solid #5bc0be;">
+
+        <div class="post"
+          onclick="openPost('${featured.id}')"
+          style="
+            border:2px solid #5bc0be;
+          ">
+
           <h3>🔥 Featured</h3>
-          <h4>${featured.title}</h4>
-          <p>${(featured.content || "").slice(0,120)}...</p>
+
+          <h4>
+            ${featured.title || "Untitled"}
+          </h4>
+
+          <p>
+            ${String(
+              featured.content || ""
+            ).slice(0,120)}...
+          </p>
+
         </div>
+
       `;
     }
 
-    sorted.forEach(p => {
+    /* POSTS */
+
+    sorted.forEach((p)=>{
+
       feed.innerHTML += `
-        <div class="post" onclick="openPost('${p.id}')">
-          <h4>${p.title}</h4>
-          <p>${(p.content || "").slice(0,90)}...</p>
+
+        <div class="post"
+          onclick="openPost('${p.id}')">
+
+          <h4>
+            ${p.title || "Untitled"}
+          </h4>
+
+          <p>
+            ${String(
+              p.content || ""
+            ).slice(0,90)}...
+          </p>
+
         </div>
+
       `;
     });
 
-  } catch (err) {
+  }catch(err){
 
-    console.error("Feed error:", err);
+    console.error(
+      "Feed Error:",
+      err
+    );
 
     feed.innerHTML = `
+
       <div class="post">
-        <h4>⚠ Feed temporarily unavailable</h4>
-        <p>Backend not responding.</p>
-        <button onclick="loadFeed()">Retry</button>
+
+        <h4>
+          ⚠ Feed temporarily unavailable
+        </h4>
+
+        <p>
+          Backend not responding.
+        </p>
+
+        <button onclick="location.reload()">
+
+          Retry
+
+        </button>
+
       </div>
+
     `;
   }
 }
 
 loadFeed();
 
+/* =========================
+   SPLASH
+========================= */
+
+window.addEventListener(
+  "load",
+  ()=>{
+
+    setTimeout(()=>{
+
+      const splash =
+        document.getElementById(
+          "splashScreen"
+        );
+
+      splash.style.transition =
+        "opacity 0.5s ease";
+
+      splash.style.opacity = "0";
+
+      setTimeout(()=>{
+        splash.remove();
+      },500);
+
+    },1200);
+});
+
 </script>
+
+<!-- APP LOADER -->
 
 <script src="./mcn-loader.js"></script>
 
