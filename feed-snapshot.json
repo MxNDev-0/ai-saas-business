@@ -1,0 +1,10 @@
+[
+  {
+    "id": "sample1",
+    "title": "Welcome to MCN Engine",
+    "content": "This is the fallback feed used when backend is unavailable.",
+    "category": "Update",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "featured": true
+  }
+]
