@@ -12,8 +12,6 @@
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#5bc0be">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
     body {
@@ -119,6 +117,20 @@
       border: 1px solid #5bc0be;
     }
 
+    /* ✅ FIX 1: LOGIN INPUT ALIGNMENT FIX */
+    input {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: none;
+      background: #0b132b;
+      color: white;
+      display: block;
+    }
+
     .login-modal {
       display: none;
       position: fixed;
@@ -135,16 +147,7 @@
       border-radius: 12px;
       width: 90%;
       max-width: 350px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      border-radius: 8px;
-      border: none;
-      background: #0b132b;
-      color: white;
+      box-sizing: border-box;
     }
 
     button {
@@ -175,6 +178,7 @@
       z-index: 9999;
     }
 
+    /* ✅ FIX 2: FOOTER RESTORED WITH LOGO */
     .footer {
       text-align: center;
       padding: 20px;
@@ -186,6 +190,12 @@
     .footer a {
       color: #5bc0be;
       text-decoration: none;
+    }
+
+    .footer-logo {
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 6px;
     }
   </style>
 </head>
@@ -218,7 +228,6 @@
 </div>
 
 <div class="featured" id="featuredPost"></div>
-
 <div class="feed" id="feed">Loading posts...</div>
 
 <div id="cookieBanner" class="cookie-banner">
@@ -228,7 +237,9 @@
 
 <div class="login-modal" id="loginModal">
   <div class="center-box">
+
     <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
+
     <h3 style="text-align:center;">MCN Engine</h3>
 
     <input id="email" placeholder="Email">
@@ -237,9 +248,11 @@
     <button onclick="signup()">Create Account</button>
     <button class="secondary-btn" onclick="login()">Login</button>
     <button onclick="closeLogin()">Close</button>
+
   </div>
 </div>
 
+<!-- ✅ FIX 3: FOOTER WITH LOGO + CORRECT TEXT -->
 <div class="footer">
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
@@ -252,33 +265,12 @@
 
   <br><br>
 
-  © MCN Engine • Discover. Learn. Explore.
+  <img src="assets/logo.png" class="footer-logo">
+
+  © MCN Engine • All rights reserved
 </div>
 
 <script type="module">
-
-/* ================= ONLY FIX: SPLASH BUG ================= */
-window.addEventListener("load", () => {
-
-  const splash = document.getElementById("splashScreen");
-
-  if (!splash) return;
-
-  setTimeout(() => {
-
-    splash.style.opacity = "0";
-    splash.style.transition = "opacity 0.4s ease";
-
-    setTimeout(() => {
-      if (splash && splash.parentNode) {
-        splash.parentNode.removeChild(splash);
-      }
-    }, 450);
-
-  }, 1200);
-});
-
-/* ================= EXISTING CODE (UNCHANGED) ================= */
 
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
