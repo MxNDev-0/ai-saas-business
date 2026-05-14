@@ -410,50 +410,50 @@ window.openPost = function(id){
     "./blog/post.html?id=" + id;
 };
 
-/* =========================
-   FEED LOADER
-========================= */
+/* ===============================
+   SAFE FEED LOADER
+================================= */
 
-async function loadFeed(){
+async function loadFeed() {
 
   const feed =
     document.getElementById("feed");
 
   const featuredBox =
-    document.getElementById(
-      "featuredPost"
-    );
+    document.getElementById("featuredPost");
 
   feed.innerHTML = `
     <div class="post">
-      <h4>Loading posts...</h4>
+      <h4>Loading latest posts...</h4>
     </div>
   `;
 
-  try{
+  try {
 
     const res = await fetch(
-      "https://mxm-backend.onrender.com/blog/latest?limit=6"
+      "https://mxm-backend.onrender.com/blog/latest?limit=6",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
     );
 
-    if(!res.ok){
-
+    if (!res.ok) {
       throw new Error(
         "Server returned " + res.status
       );
     }
 
-    const posts =
-      await res.json();
+    const posts = await res.json();
 
-    if(
-      !Array.isArray(posts) ||
-      posts.length === 0
-    ){
+    if (!Array.isArray(posts) || posts.length === 0) {
 
       feed.innerHTML = `
         <div class="post">
           <h4>No posts available yet</h4>
+          <p>Please check back later.</p>
         </div>
       `;
 
@@ -462,103 +462,84 @@ async function loadFeed(){
 
     feed.innerHTML = "";
 
-    const sorted =
-      posts.sort((a,b)=>
-
-        new Date(
-          b.createdAt || 0
-        )
-
-        -
-
-        new Date(
-          a.createdAt || 0
-        )
-      );
+    const sorted = posts.sort((a, b) =>
+      new Date(b.createdAt || 0)
+      - new Date(a.createdAt || 0)
+    );
 
     const featured =
-      sorted[0];
+      sorted.find(p => p.featured) || sorted[0];
 
-    /* FEATURED */
+    featuredBox.innerHTML = `
+      <div class="post"
+        onclick="openPost('${featured.id}')"
+        style="
+          border:2px solid #5bc0be;
+        ">
 
-    if(featuredBox && featured){
+        <h3>🔥 Featured</h3>
 
-      featuredBox.innerHTML = `
+        <h4>${featured.title || "Untitled"}</h4>
 
-        <div class="post"
-          onclick="openPost('${featured.id}')"
-          style="
-            border:2px solid #5bc0be;
-          ">
+        <p>
+          ${String(featured.content || "")
+            .slice(0,120)}...
+        </p>
 
-          <h3>🔥 Featured</h3>
+      </div>
+    `;
 
-          <h4>
-            ${featured.title || "Untitled"}
-          </h4>
-
-          <p>
-            ${String(
-              featured.content || ""
-            ).slice(0,120)}...
-          </p>
-
-        </div>
-
-      `;
-    }
-
-    /* POSTS */
-
-    sorted.forEach((p)=>{
+    sorted.forEach(p => {
 
       feed.innerHTML += `
-
         <div class="post"
           onclick="openPost('${p.id}')">
 
-          <h4>
-            ${p.title || "Untitled"}
-          </h4>
+          <small
+            style="
+              color:${getCategoryColor(p.category)}
+            ">
+
+            ${p.category || "General"}
+
+          </small>
+
+          <h4>${p.title || "Untitled"}</h4>
 
           <p>
-            ${String(
-              p.content || ""
-            ).slice(0,90)}...
+            ${String(p.content || "")
+              .slice(0,90)}...
           </p>
 
         </div>
-
       `;
     });
 
-  }catch(err){
+  } catch (err) {
 
-    console.error(
-      "Feed Error:",
-      err
-    );
+    console.error("Feed Error:", err);
+
+    featuredBox.innerHTML = "";
 
     feed.innerHTML = `
+      <div class="post"
+        style="
+          border:1px solid #ff6b6b;
+        ">
 
-      <div class="post">
-
-        <h4>
-          ⚠ Feed temporarily unavailable
+        <h4 style="color:#ff6b6b;">
+          Feed Error
         </h4>
 
         <p>
-          Backend not responding.
+          Failed to load content.
         </p>
 
-        <button onclick="location.reload()">
-
+        <button onclick="loadFeed()">
           Retry
-
         </button>
 
       </div>
-
     `;
   }
 }
