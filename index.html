@@ -91,15 +91,6 @@
     .post h4 { margin: 8px 0; font-size: 15px; }
     .post p { font-size: 13px; color: #ccc; }
 
-    /* 🧱 PLACEHOLDER SECTIONS */
-    .section-box {
-      margin: 15px;
-      padding: 15px;
-      border: 1px dashed #5bc0be;
-      border-radius: 10px;
-      color: #aaa;
-    }
-
     .login-modal {
       display: none;
       position: fixed;
@@ -118,6 +109,21 @@
       border-radius: 12px;
       width: 90%;
       max-width: 350px;
+    }
+
+    /* ✅ LOGIN HEADER LOGO RESTORED */
+    .login-header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .login-header h2 {
+      margin: 0;
+      color: #5bc0be;
+    }
+
+    .login-header small {
+      color: #aaa;
     }
 
     input {
@@ -149,10 +155,24 @@
 
     .footer {
       text-align: center;
-      padding: 20px;
+      padding: 25px;
       font-size: 13px;
       color: #aaa;
       margin-top: 40px;
+    }
+
+    /* ✅ FOOTER LOGO STYLE RESTORED */
+    .footer-logo {
+      font-size: 16px;
+      font-weight: bold;
+      color: #5bc0be;
+      margin-bottom: 6px;
+    }
+
+    .footer-tagline {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 10px;
     }
 
     .footer a {
@@ -203,26 +223,20 @@
 <div class="featured" id="featuredPost"></div>
 <div class="feed" id="feed">Loading posts...</div>
 
-<!-- 🧱 BLOG PLACEHOLDER (FUTURE SYSTEM) -->
-<div class="section-box">
-  📚 Blog System (Placeholder) — will be connected to real CMS later
-</div>
-
-<!-- 🧱 NEWS PLACEHOLDER (SEPARATE SYSTEM LATER) -->
-<div class="section-box">
-  📰 News System (Placeholder) — separated feed engine will be added later
-</div>
-
 <!-- COOKIE -->
 <div id="cookieBanner" class="cookie-banner">
   <span>We use cookies to improve your experience.</span>
   <button onclick="acceptCookies()">Accept</button>
 </div>
 
-<!-- LOGIN -->
+<!-- LOGIN (LOGO RESTORED INSIDE MODAL) -->
 <div class="login-modal" id="loginModal">
   <div class="center-box">
-    <h3>Login / Register</h3>
+
+    <div class="login-header">
+      <h2>MCN Engine</h2>
+      <small>Login / Register</small>
+    </div>
 
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
@@ -233,8 +247,12 @@
   </div>
 </div>
 
-<!-- FOOTER (UNCHANGED / RESTORED) -->
+<!-- FOOTER (RESTORED ORIGINAL STYLE) -->
 <div class="footer">
+
+  <div class="footer-logo">MCN Engine</div>
+  <div class="footer-tagline">Discover. Learn. Explore.</div>
+
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
   <a href="privacy.html">Privacy</a> |
@@ -243,12 +261,12 @@
   <a href="anti-spam.html">Anti-Spam</a> |
   <a href="ads-policy.html">Ads Policy</a> |
   <a href="dmca.html">DMCA</a>
+
   <br><br>
-  © MCN Engine • Discover. Learn. Explore.
+  © 2026 MCN Engine — All Rights Reserved
 </div>
 
 <script>
-/* COOKIE */
 function checkCookies() {
   if (!localStorage.getItem("cookieAccepted")) {
     document.getElementById("cookieBanner").style.display = "flex";
@@ -262,15 +280,9 @@ window.acceptCookies = function () {
 
 checkCookies();
 
-/* UI */
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
-};
-
-/* 🔥 FIXED: DASHBOARD NOW OPENS LOGIN MODAL */
-window.goDashboard = function () {
-  document.getElementById("loginModal").style.display = "flex";
 };
 
 window.openLogin = function () {
@@ -281,7 +293,15 @@ window.closeLogin = function () {
   document.getElementById("loginModal").style.display = "none";
 };
 
+window.goDashboard = function () {
+  document.getElementById("loginModal").style.display = "flex";
+};
+
 window.openPost = function (id) {
+  if (!id) {
+    alert("Post not available");
+    return;
+  }
   window.location.href = "./blog/post.html?id=" + id;
 };
 
@@ -295,7 +315,6 @@ function getCategoryColor(cat) {
   }
 }
 
-/* CRAWL-SAFE FEED */
 async function loadFeed() {
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
@@ -318,11 +337,6 @@ async function loadFeed() {
   }
 
   if (!Array.isArray(posts) || posts.length === 0) {
-    const cache = localStorage.getItem("mcn_feed_cache");
-    if (cache) posts = JSON.parse(cache);
-  }
-
-  if (!Array.isArray(posts) || posts.length === 0) {
     feed.innerHTML = "<p>No content available</p>";
     return;
   }
@@ -334,10 +348,10 @@ async function loadFeed() {
   const featured = sorted.find(p => p.featured) || sorted[0];
 
   featuredBox.innerHTML = `
-    <div class="post" onclick="openPost('${featured.id}')" style="border:2px solid #5bc0be">
+    <div class="post" onclick="openPost('${featured?.id || ''}')" style="border:2px solid #5bc0be">
       <h3>🔥 Featured</h3>
-      <h4>${featured.title || ""}</h4>
-      <p>${(featured.content || "").slice(0,120)}...</p>
+      <h4>${featured?.title || ""}</h4>
+      <p>${(featured?.content || "").slice(0,120)}...</p>
     </div>
   `;
 
@@ -354,13 +368,10 @@ async function loadFeed() {
       </div>
     `;
   });
-
-  localStorage.setItem("mcn_feed_cache", JSON.stringify(posts));
 }
 
 loadFeed();
 
-/* NAV */
 window.goHome = () => location.href = "index.html";
 window.goTrending = () => document.getElementById("featuredPost")?.scrollIntoView({ behavior: "smooth" });
 window.contact = () => window.location.href = "mailto:contact@mcnengine.com";
