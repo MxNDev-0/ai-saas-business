@@ -1,5 +1,5 @@
 /* =========================================
-   MCN ADMIN AUTH SAFE VERSION
+   MCN ADMIN AUTH V3
 ========================================= */
 
 import { auth, db } from "../firebase.js";
@@ -13,7 +13,15 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-console.log("🧠 Admin auth booting...");
+/* =========================================
+   GLOBAL ADMIN FLAG
+========================================= */
+
+window.__MCN_ADMIN_AUTH = false;
+
+/* =========================================
+   AUTH CHECK
+========================================= */
 
 onAuthStateChanged(auth, async (user) => {
 
@@ -28,9 +36,13 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    console.log("✅ User detected:", user.uid);
+    console.log("✅ User detected:", user.email);
 
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(
+      db,
+      "users",
+      user.uid
+    );
 
     const snap = await getDoc(userRef);
 
@@ -38,51 +50,38 @@ onAuthStateChanged(auth, async (user) => {
 
       console.log("❌ User document missing");
 
-      location.href = "../dashboard.html";
+      location.href = "../index.html";
 
       return;
     }
 
     const data = snap.data();
 
-    console.log("🧠 Role:", data.role);
+    console.log("🧠 User role:", data.role);
 
     if (data.role !== "admin") {
 
-      console.log("❌ Not admin");
+      console.log("❌ Not an admin");
 
       location.href = "../dashboard.html";
 
       return;
     }
 
+    /* ✅ AUTH SUCCESS */
+
+    window.__MCN_ADMIN_AUTH = true;
+
     console.log("✅ Admin authenticated");
 
   } catch (err) {
 
     console.error(
-      "❌ Admin authentication failed:",
+      "ADMIN AUTH ERROR:",
       err
     );
 
-    document.body.innerHTML = `
-      <div style="
-        background:#0b132b;
-        color:white;
-        height:100vh;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        font-family:Arial;
-        text-align:center;
-        padding:20px;
-      ">
-        <div>
-          <h1>⚠ Admin Authentication Failed</h1>
-          <p>${err.message}</p>
-        </div>
-      </div>
-    `;
+    location.href = "../index.html";
   }
 
 });
