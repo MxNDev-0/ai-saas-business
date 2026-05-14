@@ -1,532 +1,437 @@
-<!DOCTYPE html>  <html>  
-<head>  
-  <title>MCN Engine V15 — Monetization Control Network</title>    <meta name="viewport" content="width=device-width, initial-scale=1.0">  <meta name="description"  
-content="Discover websites, apps, and online opportunities with MCN Engine.">
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MCN Engine V15 — Monetization Control Network</title>
 
-<meta property="og:title"  
-content="MCN Engine — Discover. Learn. Explore.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta property="og:description"  
-content="Find websites, tools, and online opportunities easily.">
+  <meta name="description"
+        content="Discover websites, apps, and online opportunities with MCN Engine.">
 
-<meta property="og:type"  
-content="website">
+  <meta property="og:title"
+        content="MCN Engine — Discover. Learn. Explore.">
 
-  <link rel="manifest" href="manifest.json">    <meta name="theme-color" content="#5bc0be">    <style>  
-  
-    body {  
-      background: #0b132b;  
-      color: #fff;  
-      font-family: Arial;  
-      margin: 0;  
-    }  
-  
-    /* ================= SPLASH ================= */  
-  
-    #splashScreen {  
-      position: fixed;  
-      top: 0;  
-      left: 0;  
-      width: 100%;  
-      height: 100%;  
-      background: #0b132b;  
-      display: flex;  
-      justify-content: center;  
-      align-items: center;  
-      z-index: 99999;  
-    }  
-  
-    #splashScreen img {  
-      width: 90px;  
-    }  
-  
-    /* ================= HEADER ================= */  
-  
-    .header {  
-      display: flex;  
-      justify-content: space-between;  
-      align-items: center;  
-      padding: 15px;  
-      background: #1c2541;  
-    }  
-  
-    .left {  
-      display: flex;  
-      align-items: center;  
-      gap: 10px;  
-    }  
-  
-    .menu-btn {  
-      font-size: 22px;  
-      cursor: pointer;  
-    }  
-  
-    .logo {  
-      display: flex;  
-      align-items: center;  
-      gap: 8px;  
-      font-size: 18px;  
-      font-weight: bold;  
-      color: #5bc0be;  
-    }  
-  
-    .logo img {  
-      height: 28px;  
-    }  
-  
-    .profile-btn {  
-      width: 35px;  
-      height: 35px;  
-      border-radius: 50%;  
-      background: #5bc0be;  
-      display: flex;  
-      align-items: center;  
-      justify-content: center;  
-      cursor: pointer;  
-      color: #000;  
-      font-weight: bold;  
-    }  
-  
-    /* ================= MENU ================= */  
-  
-    #menu {  
-      display: none;  
-      background: #1c2541;  
-      padding: 10px;  
-    }  
-  
-    #menu div {  
-      padding: 10px;  
-      border-bottom: 1px solid #333;  
-      cursor: pointer;  
-    }  
-  
-    /* ================= FEED ================= */  
-  
-    .featured {  
-      padding: 15px;  
-    }  
-  
-    .feed {  
-      padding: 15px;  
-      display: grid;  
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));  
-      gap: 12px;  
-    }  
-  
-    .post {  
-      background: linear-gradient(145deg, #1c2541, #141b2e);  
-      padding: 14px;  
-      border-radius: 12px;  
-      cursor: pointer;  
-      transition: 0.25s;  
-    }  
-  
-    .post:hover {  
-      transform: translateY(-4px);  
-      border: 1px solid #5bc0be;  
-    }  
-  
-    /* ================= LOGIN ================= */  
-  
-    .login-modal {  
-      display: none;  
-      position: fixed;  
-      inset: 0;  
-      background: rgba(0,0,0,0.7);  
-      justify-content: center;  
-      align-items: center;  
-      z-index: 9999;  
-    }  
-  
-    .center-box {  
-      background: #1c2541;  
-      padding: 20px;  
-      border-radius: 12px;  
-      width: 90%;  
-      max-width: 350px;  
-      box-sizing: border-box;  
-    }  
-  
-    input {  
-      width: 100%;  
-      box-sizing: border-box;  
-      padding: 10px;  
-      margin: 6px 0;  
-      border-radius: 8px;  
-      border: none;  
-      background: #0b132b;  
-      color: white;  
-    }  
-  
-    button {  
-      width: 100%;  
-      padding: 10px;  
-      margin-top: 8px;  
-      border-radius: 8px;  
-      background: #5bc0be;  
-      color: #000;  
-      border: none;  
-      font-weight: bold;  
-      cursor: pointer;  
-    }  
-  
-    .secondary-btn {  
-      background: transparent;  
-      border: 1px solid #5bc0be;  
-      color: #5bc0be;  
-    }  
-  
-    /* ================= COOKIES ================= */  
-  
-    .cookie-banner {  
-      position: fixed;  
-      bottom: 0;  
-      left: 0;  
-      width: 100%;  
-      background: #1c2541;  
-      padding: 12px;  
-      display: none;  
-      align-items: center;  
-      justify-content: space-between;  
-      gap: 10px;  
-      z-index: 9999;  
-      border-top: 1px solid #333;  
-      box-sizing: border-box;  
-    }  
-  
-    .cookie-banner span {  
-      font-size: 13px;  
-      color: #ddd;  
-      line-height: 1.4;  
-    }  
-  
-    .cookie-banner button {  
-      width: auto !important;  
-      padding: 8px 14px !important;  
-      margin: 0 !important;  
-      border-radius: 8px;  
-      font-size: 13px;  
-      flex-shrink: 0;  
-    }  
-  
-    /* ================= FOOTER ================= */  
-  
-    .footer {  
-      text-align: center;  
-      padding: 20px;  
-      font-size: 13px;  
-      color: #aaa;  
-      margin-top: 40px;  
-    }  
-  
-    .footer a {  
-      color: #5bc0be;  
-      text-decoration: none;  
-    }  
-  
-    .footer-logo {  
-      height: 16px;  
-      vertical-align: middle;  
-      margin-right: 6px;  
-    }  
-  
-  </style>  </head>  <body>  <!-- ================= SPLASH ================= -->  <div id="splashScreen">  
-  <img src="assets/logo.png">  
-</div>  <!-- ================= HEADER ================= -->  <div class="header">    <div class="left">  <div class="menu-btn"  
-     onclick="toggleMenu()">  
-  ☰  
-</div>  
+  <meta property="og:description"
+        content="Find websites, tools, and online opportunities easily.">
 
-<div class="logo">  
-  <img src="assets/logo.png">  
-  <span>MCN Engine</span>  
+  <meta property="og:type"
+        content="website">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#5bc0be">
+
+  <style>
+
+    body {
+      background: #0b132b;
+      color: #fff;
+      font-family: Arial;
+      margin: 0;
+    }
+
+    /* ================= SPLASH ================= */
+
+    #splashScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0b132b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    #splashScreen img {
+      width: 90px;
+    }
+
+    /* ================= HEADER ================= */
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #1c2541;
+    }
+
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .menu-btn {
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #5bc0be;
+    }
+
+    .logo img {
+      height: 28px;
+    }
+
+    .profile-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: #5bc0be;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+    }
+
+    /* ================= MENU ================= */
+
+    #menu {
+      display: none;
+      background: #1c2541;
+      padding: 10px;
+    }
+
+    #menu div {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+    }
+
+    /* ================= FEED ================= */
+
+    .featured {
+      padding: 15px;
+    }
+
+    .feed {
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .post {
+      background: linear-gradient(145deg, #1c2541, #141b2e);
+      padding: 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+
+    .post:hover {
+      transform: translateY(-4px);
+      border: 1px solid #5bc0be;
+    }
+
+    /* ================= LOGIN ================= */
+
+    .login-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .center-box {
+      background: #1c2541;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 350px;
+      box-sizing: border-box;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: none;
+      background: #0b132b;
+      color: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 8px;
+      background: #5bc0be;
+      color: #000;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .secondary-btn {
+      background: transparent;
+      border: 1px solid #5bc0be;
+      color: #5bc0be;
+    }
+
+    /* ================= COOKIES ================= */
+
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #1c2541;
+      padding: 12px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 9999;
+      border-top: 1px solid #333;
+      box-sizing: border-box;
+    }
+
+    .cookie-banner span {
+      font-size: 13px;
+      color: #ddd;
+      line-height: 1.4;
+    }
+
+    .cookie-banner button {
+      width: auto !important;
+      padding: 8px 14px !important;
+      margin: 0 !important;
+      border-radius: 8px;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* ================= FOOTER ================= */
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: #aaa;
+      margin-top: 40px;
+    }
+
+    .footer a {
+      color: #5bc0be;
+      text-decoration: none;
+    }
+
+    .footer-logo {
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    /* ================= CONNECT FLOAT BUTTON ================= */
+
+    .connect-btn {
+      position: fixed;
+      right: 15px;
+      bottom: 80px;
+      background: #5bc0be;
+      color: #000;
+      padding: 12px 14px;
+      border-radius: 50px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 100000;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+
+    /* ================= CONNECT PANEL ================= */
+
+    .connect-panel {
+      position: fixed;
+      right: 15px;
+      bottom: 140px;
+      width: 220px;
+      background: #1c2541;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 10px;
+      display: none;
+      z-index: 100000;
+    }
+
+    .connect-panel a {
+      display: block;
+      padding: 8px;
+      margin: 5px 0;
+      background: #0b132b;
+      color: #5bc0be;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- ================= SPLASH ================= -->
+<div id="splashScreen">
+  <img src="assets/logo.png">
 </div>
 
-  </div>    <div class="profile-btn"  
-       onclick="openLogin()">  
-    👤  
-  </div>  </div>  <!-- ================= MENU ================= -->  <div id="menu">    <div onclick="goHome()">  
-    Home  
-  </div>    <div onclick="goTrending()">  
-    Trending  
-  </div>    <div onclick="goDashboard()">  
-    Dashboard  
-  </div>    <div onclick="contact()">  
-    Contact  
-  </div>  </div>  <!-- ================= FEATURED ================= -->  <div class="featured"  
-     id="featuredPost">  
-</div>  <!-- ================= FEED ================= -->  <div class="feed"  
-     id="feed">  Loading posts...
+<!-- ================= HEADER ================= -->
+<div class="header">
 
-</div>  <!-- ================= COOKIES ================= -->  <div id="cookieBanner"  
-     class="cookie-banner">    <span>  
-    We use cookies to improve your experience.  
-    By using this site, you agree to our  
-    <a href="privacy.html"  
-       style="color:#5bc0be;text-decoration:none;">  
-      Privacy Policy  
-    </a>.  
-  </span>    <button onclick="acceptCookies()">  
-    Accept  
-  </button>  </div>  <!-- ================= LOGIN MODAL ================= -->  <div class="login-modal"  
-     id="loginModal">    <div class="center-box">  <img src="assets/logo.png"  
-     style="height:45px;display:block;margin:auto;">  
+  <div class="left">
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
 
-<h3 style="text-align:center;">  
-  MCN Engine  
-</h3>  
+    <div class="logo">
+      <img src="assets/logo.png">
+      <span>MCN Engine</span>
+    </div>
+  </div>
 
-<input id="email"  
-       placeholder="Email">  
+  <div class="profile-btn" onclick="openLogin()">👤</div>
+</div>
 
-<input id="password"  
-       type="password"  
-       placeholder="Password">  
+<!-- ================= MENU ================= -->
+<div id="menu">
+  <div onclick="goHome()">Home</div>
+  <div onclick="goTrending()">Trending</div>
+  <div onclick="goDashboard()">Dashboard</div>
+  <div onclick="contact()">Contact</div>
+</div>
 
-<button onclick="signup()">  
-  Create Account  
-</button>  
+<!-- ================= FEATURED ================= -->
+<div class="featured" id="featuredPost"></div>
 
-<button class="secondary-btn"  
-        onclick="login()">  
-  Login  
-</button>  
+<!-- ================= FEED ================= -->
+<div class="feed" id="feed">Loading posts...</div>
 
-<button onclick="closeLogin()">  
-  Close  
-</button>
+<!-- ================= COOKIES ================= -->
+<div id="cookieBanner" class="cookie-banner">
 
-  </div>  </div>  <!-- ================= FOOTER ================= -->  <div class="footer">  <a href="about.html">About</a> |
-<a href="faq.html">FAQ</a> |
-<a href="privacy.html">Privacy</a> |
-<a href="terms.html">Terms</a> |
-<a href="copyright.html">Copyright</a> |
-<a href="anti-spam.html">Anti-Spam</a> |
-<a href="ads-policy.html">Ads Policy</a> |
-<a href="dmca.html">DMCA</a>
+  <span>
+    We use cookies to improve your experience.
+    By using this site, you agree to our
+    <a href="privacy.html" target="_blank"
+       style="color:#5bc0be;">
+      Privacy Policy
+    </a>.
+  </span>
 
-<br><br>
+  <button onclick="acceptCookies()">Accept</button>
+</div>
 
-<img src="assets/logo.png"  
-class="footer-logo">
+<!-- ================= LOGIN MODAL ================= -->
+<div class="login-modal" id="loginModal">
 
-© MCN Engine • All rights reserved
+  <div class="center-box">
 
-</div>  <!-- ================= SCRIPT ================= -->  <script type="module">  
-  
-/* ================= SPLASH FIX ================= */  
-  
-(function () {  
-  
-  function removeSplash() {  
-  
-    const splash =  
-      document.getElementById("splashScreen");  
-  
-    if (!splash) return;  
-  
-    splash.style.transition =  
-      "opacity 0.4s ease";  
-  
-    splash.style.opacity = "0";  
-  
-    setTimeout(() => {  
-  
-      if (splash.parentNode) {  
-        splash.parentNode.removeChild(splash);  
-      }  
-  
-    }, 450);  
-  }  
-  
-  if (document.readyState === "complete") {  
-  
-    setTimeout(removeSplash, 800);  
-  
-  } else {  
-  
-    window.addEventListener("load", () => {  
-      setTimeout(removeSplash, 800);  
-    });  
-  }  
-  
-  setTimeout(removeSplash, 4000);  
-  
-})();  
-  
-/* ================= COOKIES ================= */  
-  
-function checkCookies() {  
-  
-  const banner =  
-    document.getElementById("cookieBanner");  
-  
-  if (!localStorage.getItem("cookieAccepted")) {  
-  
-    if (banner) {  
-      banner.style.display = "flex";  
-    }  
-  }  
-}  
-  
-window.acceptCookies = function () {  
-  
-  localStorage.setItem(  
-    "cookieAccepted",  
-    "true"  
-  );  
-  
-  const banner =  
-    document.getElementById("cookieBanner");  
-  
-  if (banner) {  
-    banner.style.display = "none";  
-  }  
-};  
-  
-checkCookies();  
-  
-/* ================= MENU ================= */  
-  
-window.toggleMenu = function () {  
-  
-  const menu =  
-    document.getElementById("menu");  
-  
-  menu.style.display =  
-    menu.style.display === "block"  
-      ? "none"  
-      : "block";  
-};  
-  
-/* ================= LOGIN ================= */  
-  
-window.openLogin = function () {  
-  
-  const modal =  
-    document.getElementById("loginModal");  
-  
-  if (!modal) return;  
-  
-  modal.style.display = "flex";  
-};  
-  
-window.closeLogin = function () {  
-  
-  const modal =  
-    document.getElementById("loginModal");  
-  
-  if (!modal) return;  
-  
-  modal.style.display = "none";  
-};  
-  
-/* ================= POSTS ================= */  
-  
-window.openPost = function (id) {  
-  
-  if (!id) return;  
-  
-  window.location.href =  
-    "./blog/post.html?id=" + id;  
-};  
-  
-/* ================= FEED ================= */  
-  
-async function loadFeed() {  
-  
-  const feed =  
-    document.getElementById("feed");  
-  
-  const featuredBox =  
-    document.getElementById("featuredPost");  
-  
-  try {  
-  
-    const res = await fetch(  
-      "https://mxm-backend.onrender.com/blog/list"  
-    );  
-  
-    if (!res.ok)  
-      throw new Error("network");  
-  
-    const posts = await res.json();  
-  
-    if (!Array.isArray(posts)) {  
-      throw new Error("invalid");  
-    }  
-  
-    const sorted = posts.sort(  
-      (a, b) =>  
-        new Date(b.createdAt || 0) -  
-        new Date(a.createdAt || 0)  
-    );  
-  
-    const featured = sorted[0];  
-  
-    if (featured) {  
-  
-      featuredBox.innerHTML = `  
-        <div class="post"  
-          onclick="openPost('${featured.id}')">  
-  
-          <h3>🔥 Featured</h3>  
-  
-          <h4>${featured.title}</h4>  
-  
-        </div>  
-      `;  
-    }  
-  
-    feed.innerHTML = "";  
-  
-    sorted.forEach(p => {  
-  
-      feed.innerHTML += `  
-        <div class="post"  
-          onclick="openPost('${p.id}')">  
-  
-          <h4>${p.title}</h4>  
-  
-        </div>  
-      `;  
-    });  
-  
-  } catch (e) {  
-  
-    feed.innerHTML =  
-      "<p>Failed to load content</p>";  
-  }  
-}  
-  
-loadFeed();  
-  
-/* ================= NAVIGATION ================= */  
-  
-window.goHome = function () {  
-  location.href = "index.html";  
-};  
-  
-window.goTrending = function () {  
-  location.href = "trending.html";  
-};  
-  
-window.goDashboard = function () {  
-  
-  const modal =  
-    document.getElementById("loginModal");  
-  
-  if (modal) {  
-    modal.style.display = "flex";  
-  }  
-};  
-  
-window.contact = function () {  
-  location.href = "contact.html";  
-};  
-  
-</script>  <script type="module" src="app.js"></script>  
+    <img src="assets/logo.png" style="height:45px;display:block;margin:auto;">
 
-</body>  
-</html>  
+    <h3 style="text-align:center;">MCN Engine</h3>
+
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <button onclick="signup()">Create Account</button>
+    <button class="secondary-btn" onclick="login()">Login</button>
+    <button onclick="closeLogin()">Close</button>
+
+  </div>
+</div>
+
+<!-- ================= CONNECT BUTTON ================= -->
+<div class="connect-btn" onclick="toggleConnect()">
+  Connect
+</div>
+
+<div class="connect-panel" id="connectPanel">
+
+  <a href="#">🐦 Twitter</a>
+  <a href="#">📘 Facebook</a>
+  <a href="#">📸 Instagram</a>
+  <a href="#">📺 YouTube</a>
+  <a href="#">💬 WhatsApp</a>
+  <a href="#">📰 Medium</a>
+
+</div>
+
+<!-- ================= FOOTER ================= -->
+<div class="footer">
+
+  <a href="about.html">About</a> |
+  <a href="faq.html">FAQ</a> |
+  <a href="privacy.html">Privacy</a> |
+  <a href="terms.html">Terms</a>
+
+  <br><br>
+
+  <img src="assets/logo.png" class="footer-logo">
+  © MCN Engine • All rights reserved
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script type="module">
+
+/* SPLASH FIX */
+(function () {
+  function removeSplash() {
+    const splash = document.getElementById("splashScreen");
+    if (!splash) return;
+    splash.style.opacity = "0";
+    setTimeout(() => splash.remove(), 400);
+  }
+  window.addEventListener("load", () => setTimeout(removeSplash, 800));
+})();
+
+/* COOKIES */
+function checkCookies() {
+  const banner = document.getElementById("cookieBanner");
+  if (!localStorage.getItem("cookieAccepted")) {
+    banner.style.display = "flex";
+  }
+}
+
+window.acceptCookies = function () {
+  localStorage.setItem("cookieAccepted", "true");
+  document.getElementById("cookieBanner").style.display = "none";
+};
+
+checkCookies();
+
+/* MENU */
+window.toggleMenu = function () {
+  const menu = document.getElementById("menu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+};
+
+/* LOGIN */
+window.openLogin = () => document.getElementById("loginModal").style.display = "flex";
+window.closeLogin = () => document.getElementById("loginModal").style.display = "none";
+
+/* CONNECT PANEL */
+window.toggleConnect = function () {
+  const panel = document.getElementById("connectPanel");
+  panel.style.display = panel.style.display === "block" ? "none" : "block";
+};
+
+</script>
+
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
