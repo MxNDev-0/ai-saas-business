@@ -666,6 +666,12 @@ window.contact = function () {
   location.href = "contact.html";
 };
 
+/* CONNECT PANEL */
+window.toggleConnect = function () {
+  const panel = document.getElementById("connectPanel");
+  panel.style.display = panel.style.display === "block" ? "none" : "block";
+};
+
 </script>
 
 <script type="module" src="app.js"></script>
