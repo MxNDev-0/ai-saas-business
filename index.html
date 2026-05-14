@@ -4,7 +4,7 @@
   <title>MCN Engine V15 — Monetization Control Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 🚫 BLOCK INDEXING (BUILD PHASE ONLY) -->
+  <!-- 🚫 BUILD MODE: NO INDEXING -->
   <meta name="robots" content="noindex, nofollow, noarchive">
 
   <style>
@@ -90,6 +90,15 @@
 
     .post h4 { margin: 8px 0; font-size: 15px; }
     .post p { font-size: 13px; color: #ccc; }
+
+    /* 🧱 PLACEHOLDER SECTIONS */
+    .section-box {
+      margin: 15px;
+      padding: 15px;
+      border: 1px dashed #5bc0be;
+      border-radius: 10px;
+      color: #aaa;
+    }
 
     .login-modal {
       display: none;
@@ -194,11 +203,19 @@
 <div class="featured" id="featuredPost"></div>
 <div class="feed" id="feed">Loading posts...</div>
 
+<!-- 🧱 BLOG PLACEHOLDER (FUTURE SYSTEM) -->
+<div class="section-box">
+  📚 Blog System (Placeholder) — will be connected to real CMS later
+</div>
+
+<!-- 🧱 NEWS PLACEHOLDER (SEPARATE SYSTEM LATER) -->
+<div class="section-box">
+  📰 News System (Placeholder) — separated feed engine will be added later
+</div>
+
 <!-- COOKIE -->
 <div id="cookieBanner" class="cookie-banner">
-  <span>
-    We use cookies to improve your experience.
-  </span>
+  <span>We use cookies to improve your experience.</span>
   <button onclick="acceptCookies()">Accept</button>
 </div>
 
@@ -216,17 +233,22 @@
   </div>
 </div>
 
+<!-- FOOTER (UNCHANGED / RESTORED) -->
 <div class="footer">
   <a href="about.html">About</a> |
   <a href="faq.html">FAQ</a> |
   <a href="privacy.html">Privacy</a> |
-  <a href="terms.html">Terms</a>
+  <a href="terms.html">Terms</a> |
+  <a href="copyright.html">Copyright</a> |
+  <a href="anti-spam.html">Anti-Spam</a> |
+  <a href="ads-policy.html">Ads Policy</a> |
+  <a href="dmca.html">DMCA</a>
   <br><br>
-  © MCN Engine
+  © MCN Engine • Discover. Learn. Explore.
 </div>
 
 <script>
-/* ================= COOKIE ================= */
+/* COOKIE */
 function checkCookies() {
   if (!localStorage.getItem("cookieAccepted")) {
     document.getElementById("cookieBanner").style.display = "flex";
@@ -240,10 +262,15 @@ window.acceptCookies = function () {
 
 checkCookies();
 
-/* ================= UI ================= */
+/* UI */
 window.toggleMenu = function () {
   const menu = document.getElementById("menu");
   menu.style.display = menu.style.display === "block" ? "none" : "block";
+};
+
+/* 🔥 FIXED: DASHBOARD NOW OPENS LOGIN MODAL */
+window.goDashboard = function () {
+  document.getElementById("loginModal").style.display = "flex";
 };
 
 window.openLogin = function () {
@@ -268,8 +295,7 @@ function getCategoryColor(cat) {
   }
 }
 
-/* ================= CRAWL-SAFE FEED ENGINE ================= */
-
+/* CRAWL-SAFE FEED */
 async function loadFeed() {
   const feed = document.getElementById("feed");
   const featuredBox = document.getElementById("featuredPost");
@@ -282,17 +308,13 @@ async function loadFeed() {
   try {
     const res = await fetch(PRIMARY);
     if (res.ok) posts = await res.json();
-  } catch (e) {
-    console.warn("Primary failed");
-  }
+  } catch (e) {}
 
   if (!Array.isArray(posts) || posts.length === 0) {
     try {
       const res2 = await fetch(FALLBACK);
       posts = await res2.json();
-    } catch (e2) {
-      console.warn("Fallback failed");
-    }
+    } catch (e2) {}
   }
 
   if (!Array.isArray(posts) || posts.length === 0) {
@@ -341,7 +363,6 @@ loadFeed();
 /* NAV */
 window.goHome = () => location.href = "index.html";
 window.goTrending = () => document.getElementById("featuredPost")?.scrollIntoView({ behavior: "smooth" });
-window.goDashboard = () => location.href = "dashboard.html";
 window.contact = () => window.location.href = "mailto:contact@mcnengine.com";
 </script>
 
