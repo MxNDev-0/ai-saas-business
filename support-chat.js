@@ -1,4 +1,5 @@
 import { auth, db } from "./firebase.js";
+
 import {
   collection,
   addDoc,
@@ -15,17 +16,16 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 const floatBtn = document.createElement("div");
 floatBtn.id = "mcnChatBtn";
 floatBtn.innerHTML = "💬";
-
 document.body.appendChild(floatBtn);
 
-/* ================= CHAT WINDOW ================= */
+/* ================= CHAT BOX ================= */
 
 const chatBox = document.createElement("div");
 chatBox.id = "mcnChatBox";
 
 chatBox.innerHTML = `
   <div id="mcnChatHeader">
-    💬 MCN Support
+    💬 MCN Live Support
     <span id="mcnClose">✖</span>
   </div>
 
@@ -33,7 +33,7 @@ chatBox.innerHTML = `
 
   <div id="mcnInputBox">
     <input id="mcnInput" placeholder="Type message..." />
-    <button id="mcnSend">Send</button>
+    <button id="mcnSend">➤</button>
   </div>
 `;
 
@@ -48,101 +48,136 @@ style.innerHTML = `
   position:fixed;
   bottom:20px;
   right:20px;
-  width:55px;
-  height:55px;
-  background:#5bc0be;
+  width:58px;
+  height:58px;
+  background:linear-gradient(145deg,#5bc0be,#3aa7a5);
   border-radius:50%;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:22px;
+  font-size:24px;
   cursor:pointer;
-  z-index:99999;
-  box-shadow:0 5px 15px rgba(0,0,0,0.3);
+  z-index:999999;
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+  transition:0.2s ease;
+}
+
+#mcnChatBtn:active{
+  transform:scale(0.92);
 }
 
 #mcnChatBox{
   position:fixed;
-  bottom:90px;
+  bottom:95px;
   right:20px;
-  width:320px;
-  height:420px;
+  width:340px;
+  height:460px;
   background:#1c2541;
-  border-radius:12px;
+  border-radius:16px;
   overflow:hidden;
   display:none;
   flex-direction:column;
-  z-index:99999;
+  z-index:999999;
   font-family:Arial;
+  box-shadow:0 15px 40px rgba(0,0,0,0.5);
 }
 
+/* HEADER */
 #mcnChatHeader{
-  background:#5bc0be;
+  background:linear-gradient(90deg,#5bc0be,#3aa7a5);
   color:#000;
-  padding:10px;
+  padding:12px;
   font-weight:bold;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  font-size:14px;
 }
 
 #mcnClose{
   cursor:pointer;
+  font-size:16px;
 }
 
+/* MESSAGES */
 #mcnMessages{
   flex:1;
-  padding:10px;
+  padding:12px;
   overflow-y:auto;
   font-size:13px;
   color:white;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:#0b132b;
 }
 
+/* MESSAGE BUBBLES */
 .msg{
-  margin-bottom:8px;
-  padding:8px;
-  border-radius:8px;
-  max-width:80%;
+  padding:10px 12px;
+  border-radius:14px;
+  max-width:75%;
+  word-break:break-word;
+  font-size:13px;
+  line-height:1.4;
+  animation:pop 0.15s ease;
+}
+
+@keyframes pop{
+  from{transform:scale(0.95);opacity:0.5}
+  to{transform:scale(1);opacity:1}
 }
 
 .me{
   background:#5bc0be;
   color:#000;
-  margin-left:auto;
+  align-self:flex-end;
+  border-bottom-right-radius:4px;
 }
 
 .bot{
-  background:#0b132b;
-  border:1px solid #333;
+  background:#1a2238;
+  border:1px solid #2a3550;
+  align-self:flex-start;
+  border-bottom-left-radius:4px;
 }
 
+/* INPUT */
 #mcnInputBox{
   display:flex;
-  padding:8px;
-  gap:5px;
+  padding:10px;
+  gap:8px;
   background:#141b2e;
+  align-items:center;
+  border-top:1px solid rgba(255,255,255,0.05);
 }
 
 #mcnInput{
   flex:1;
-  padding:8px;
+  padding:11px;
   border:none;
-  border-radius:6px;
+  border-radius:10px;
   outline:none;
+  background:#0b132b;
+  color:white;
+  font-size:13px;
 }
 
 #mcnSend{
-  padding:8px 10px;
-  background:#5bc0be;
+  width:70px;
+  height:40px;
   border:none;
-  border-radius:6px;
+  border-radius:10px;
+  background:linear-gradient(145deg,#5bc0be,#3aa7a5);
+  font-weight:bold;
   cursor:pointer;
+  color:#000;
 }
 `;
 
 document.head.appendChild(style);
 
-/* ================= UI TOGGLE ================= */
+/* ================= TOGGLE ================= */
 
 floatBtn.onclick = () => {
   chatBox.style.display =
@@ -154,8 +189,6 @@ document.getElementById("mcnClose").onclick = () => {
 };
 
 /* ================= FIREBASE CHAT ================= */
-
-let userRef = null;
 
 function getChatRef(uid) {
   return collection(db, "supportChats", uid, "messages");
@@ -192,7 +225,7 @@ function loadMessages(uid) {
   });
 }
 
-/* ================= AUTH INIT ================= */
+/* ================= AUTH ================= */
 
 onAuthStateChanged(auth, (user) => {
   if (!user) return;
@@ -202,11 +235,8 @@ onAuthStateChanged(auth, (user) => {
 
   loadMessages(user.uid);
 
-  sendBtn.onclick = () => {
+  sendBtn.onclick = async () => {
     const text = input.value.trim();
     if (!text) return;
 
-    sendMessage(user.uid, text);
-    input.value = "";
-  };
-});
+    await
