@@ -1,6 +1,6 @@
 /* =========================================
    MCN ADMIN LOADER STABLE V6
-   FULL COPY PASTE
+   FULL COPY PASTE (FIXED + INJECTED)
 ========================================= */
 
 (async function () {
@@ -16,15 +16,11 @@
   async function safeImport(path) {
 
     try {
-
       await import(path);
-
       console.log("✅ Loaded:", path);
-
       return true;
 
     } catch (err) {
-
       console.error("❌ Failed loading:", path, err);
 
       errors.push({
@@ -44,11 +40,7 @@
     await safeImport("./admin-auth.js");
 
   if (!authLoaded) {
-
-    renderFatal(
-      "admin-auth.js failed to load"
-    );
-
+    renderFatal("admin-auth.js failed to load");
     return;
   }
 
@@ -62,20 +54,12 @@
     !window.__MCN_ADMIN_AUTH &&
     tries < 50
   ) {
-
-    await new Promise(r =>
-      setTimeout(r, 200)
-    );
-
+    await new Promise(r => setTimeout(r, 200));
     tries++;
   }
 
   if (!window.__MCN_ADMIN_AUTH) {
-
-    renderFatal(
-      "Admin authentication failed"
-    );
-
+    renderFatal("Admin authentication failed");
     return;
   }
 
@@ -84,100 +68,77 @@
   ========================================= */
 
   const monitorLoaded =
-    await safeImport(
-      "./admin-monitor.js"
-    );
+    await safeImport("./admin-monitor.js");
 
   const adminLoaded =
-    await safeImport(
-      "./admin.js"
-    );
+    await safeImport("./admin.js");
 
   const emergencyLoaded =
-    await safeImport(
-      "./emergency-control.js"
-    );
+    await safeImport("./emergency-control.js");
 
   /* =========================================
      OPTIONAL CHAT SYSTEM
   ========================================= */
 
   try {
-
-    await safeImport(
-      "./admin-chat.js"
-    );
-
-    console.log(
-      "💬 Chat system attached"
-    );
-
+    await safeImport("./admin-chat.js");
+    console.log("💬 Chat system attached");
   } catch (e) {
-
-    console.warn(
-      "⚠ Chat system optional module failed"
-    );
+    console.warn("⚠ Chat system optional module failed");
   }
 
   /* =========================================
      LOADER RESULTS
   ========================================= */
 
-  if (
-    monitorLoaded &&
-    adminLoaded &&
-    emergencyLoaded
-  ) {
-
-    console.log(
-      "✅ MCN Admin Fully Loaded"
-    );
-
+  if (monitorLoaded && adminLoaded && emergencyLoaded) {
+    console.log("✅ MCN Admin Fully Loaded");
   } else {
-
-    console.warn(
-      "⚠ Some systems failed to load"
-    );
+    console.warn("⚠ Some systems failed to load");
   }
 
   /* =========================================
      GLOBAL CRASH DETECTION
   ========================================= */
 
-  window.addEventListener(
-    "error",
-    (e) => {
+  window.addEventListener("error", (e) => {
 
-      console.error(
-        "💥 Global Crash:",
-        e.error
-      );
+    console.error("💥 Global Crash:", e.error);
 
-      const box =
-        document.getElementById(
-          "monitor"
-        );
+    const box = document.getElementById("monitor");
 
-      if (box) {
+    if (box) {
 
-        const div =
-          document.createElement("div");
+      const div = document.createElement("div");
+      div.style.color = "red";
+      div.style.marginBottom = "5px";
+      div.textContent = `💥 ${e.message}`;
 
-        div.style.color = "red";
-
-        div.style.marginBottom =
-          "5px";
-
-        div.textContent =
-          `💥 ${e.message}`;
-
-        box.appendChild(div);
-
-        box.scrollTop =
-          box.scrollHeight;
-      }
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
     }
-  );
+  });
+
+  /* =========================================
+     FUNCTION CHECK (INJECTED FIX)
+  ========================================= */
+
+  window.addEventListener("load", () => {
+
+    setTimeout(() => {
+
+      console.log("🔎 Checking Admin Functions...");
+
+      if (!window.createBlog) console.warn("⚠ createBlog missing");
+      if (!window.loadNews) console.warn("⚠ loadNews missing");
+      if (!window.generateAI) console.warn("⚠ generateAI missing");
+      if (!window.clearRejected) console.warn("⚠ clearRejected missing");
+
+      console.log("✅ Function check complete");
+
+    }, 1000);
+
+  });
 
   /* =========================================
      FATAL SCREEN
@@ -206,17 +167,11 @@
           box-shadow:0 0 25px rgba(0,0,0,0.4);
         ">
 
-          <h1 style="
-            color:#ff6b6b;
-            margin-top:0;
-          ">
+          <h1 style="color:#ff6b6b;margin-top:0;">
             ⚠ Admin Boot Failed
           </h1>
 
-          <p style="
-            line-height:1.6;
-            color:#ddd;
-          ">
+          <p style="line-height:1.6;color:#ddd;">
             ${msg}
           </p>
 
@@ -237,19 +192,11 @@
                   background:#111827;
                   border-radius:10px;
                 ">
-
-                  <b style="
-                    color:#5bc0be;
-                  ">
+                  <b style="color:#5bc0be;">
                     ${e.path}
                   </b>
-
                   <br><br>
-
-                  <span>
-                    ${e.error}
-                  </span>
-
+                  <span>${e.error}</span>
                 </div>
               `).join("")
             }
