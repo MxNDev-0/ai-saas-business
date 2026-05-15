@@ -108,179 +108,111 @@
 
 <body>
 
-<h2>
-  👑 MCN Engine Admin V18
-</h2>
+<h2>👑 MCN Engine Admin V18</h2>
 
 <div class="grid">
 
   <!-- MONITOR -->
   <div class="card">
-
     <h3>🖥 System Monitor</h3>
 
-    <div id="monitor"
-      class="monitor"></div>
+    <div id="monitor" class="monitor"></div>
 
+    <div style="margin-top:10px; display:flex; gap:10px;">
+
+      <button onclick="clearMonitor()"
+        style="flex:1;background:#0b132b;border:1px solid #5bc0be;color:#5bc0be;border-radius:8px;padding:8px;">
+        Clear Log
+      </button>
+
+      <button onclick="fakePing()"
+        style="flex:1;background:#5bc0be;border:none;color:black;border-radius:8px;padding:8px;">
+        Test Activity
+      </button>
+
+    </div>
   </div>
 
   <!-- AI WRITER -->
   <div class="card">
-
     <h3>🤖 AI Blog Writer</h3>
-
-    <input
-      id="aiTopic"
-      placeholder="Enter topic">
-
-    <button onclick="generateAI()">
-      Generate Article
-    </button>
-
+    <input id="aiTopic" placeholder="Enter topic">
+    <button onclick="generateAI()">Generate Article</button>
   </div>
 
   <!-- BLOG -->
   <div class="card">
-
     <h3>📝 Create Blog</h3>
-
-    <input
-      id="blogTitle"
-      placeholder="Blog title">
-
-    <textarea
-      id="blogContent"
-      placeholder="Blog content"></textarea>
-
-    <input
-      id="blogImage"
-      placeholder="Image URL">
-
-    <button onclick="createBlog()">
-      Publish Blog
-    </button>
-
+    <input id="blogTitle" placeholder="Blog title">
+    <textarea id="blogContent" placeholder="Blog content"></textarea>
+    <input id="blogImage" placeholder="Image URL">
+    <button onclick="createBlog()">Publish Blog</button>
   </div>
 
   <!-- GOOGLE NEWS -->
   <div class="card">
-
     <h3>📰 Google News</h3>
-
-    <input
-      id="newsKeyword"
-      placeholder="Search topic">
-
-    <button onclick="loadNews()">
-      Load News
-    </button>
-
-    <div
-      id="newsList"
-      class="list-box">
-    </div>
-
+    <input id="newsKeyword" placeholder="Search topic">
+    <button onclick="loadNews()">Load News</button>
+    <div id="newsList" class="list-box"></div>
   </div>
 
   <!-- POSTS -->
   <div class="card">
-
     <h3>💬 Post Manager</h3>
-
-    <input
-      id="searchPosts"
-      placeholder="Search posts..."
-      onkeyup="searchPosts()">
-
-    <div
-      id="postsList"
-      class="list-box">
-    </div>
-
+    <input id="searchPosts" placeholder="Search posts..." onkeyup="searchPosts()">
+    <div id="postsList" class="list-box"></div>
   </div>
 
   <!-- EDIT -->
   <div class="card">
-
     <h3>✏️ Edit Post</h3>
-
     <input id="editPostId" readonly>
-
     <input id="editPostTitle">
-
-    <textarea
-      id="editPostContent"></textarea>
-
-    <button onclick="updatePost()">
-      Update Post
-    </button>
-
+    <textarea id="editPostContent"></textarea>
+    <button onclick="updatePost()">Update Post</button>
   </div>
 
   <!-- ADS -->
   <div class="card">
-
     <h3>📢 Ad Requests</h3>
-
-    <div
-      id="upgradeList"
-      class="list-box">
-    </div>
-
+    <div id="upgradeList" class="list-box"></div>
   </div>
 
   <!-- REJECTED -->
   <div class="card">
-
     <h3>❌ Rejected Ads</h3>
-
-    <div
-      id="rejectedList"
-      class="list-box">
-    </div>
-
-    <button
-      class="danger"
-      onclick="clearRejected()">
-
-      Clear Rejected
-
-    </button>
-
+    <div id="rejectedList" class="list-box"></div>
+    <button class="danger" onclick="clearRejected()">Clear Rejected</button>
   </div>
 
   <!-- DIAGNOSTICS -->
   <div class="card">
-
     <h3>🧠 Diagnostics</h3>
 
     <div class="list-box">
-
-      <div class="item">
-        Firebase: ✅ Connected
-      </div>
-
-      <div class="item">
-        Admin Loader: ✅ Active
-      </div>
-
-      <div class="item">
-        AI Monitor: ✅ Running
-      </div>
-
-      <div class="item">
-        MCN Engine Core: ✅ Stable
-      </div>
-
+      <div class="item">Firebase: ✅ Connected</div>
+      <div class="item">Admin Loader: ✅ Active</div>
+      <div class="item">AI Monitor: ✅ Running</div>
+      <div class="item">MCN Engine Core: ✅ Stable</div>
     </div>
-
   </div>
 
 </div>
 
-<script type="module"
-  src="./admin-loader.js">
+<script>
+window.clearMonitor = function () {
+  document.getElementById("monitor").innerHTML = "";
+};
+
+window.fakePing = function () {
+  window.dispatchEvent(new CustomEvent("mcn-log", {
+    detail: "🧪 Test system event triggered"
+  }));
+};
 </script>
+
+<script type="module" src="./admin-loader.js"></script>
 
 </body>
 </html>
