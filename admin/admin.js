@@ -625,3 +625,226 @@ window.loadNews = async()=>{
 window.MCN_ADMIN_CHAT_READY = true;
 
 console.log("💬 Admin Chat Hook Active");
+
+/* =========================================
+   LIVE SUPPORT ADMIN SYSTEM
+========================================= */
+
+let currentSupportUser = null;
+
+/* LOAD USERS */
+
+function loadSupportUsers() {
+
+  const usersBox =
+    document.getElementById(
+      "supportUsers"
+    );
+
+  if (!usersBox) return;
+
+  onSnapshot(
+    collection(db, "supportChats"),
+    async (snap) => {
+
+      usersBox.innerHTML = "";
+
+      for (const d of snap.docs) {
+
+        const uid = d.id;
+
+        const countSnap =
+          await getCountFromServer(
+            collection(
+              db,
+              "supportChats",
+              uid,
+              "messages"
+            )
+          );
+
+        const count =
+          countSnap.data().count;
+
+        const div =
+          document.createElement("div");
+
+        div.className = "item";
+
+        div.style.cursor = "pointer";
+
+        div.innerHTML = `
+          👤 ${uid.substring(0,8)}...
+          <br>
+          💬 ${count} messages
+        `;
+
+        div.onclick = () => {
+
+          currentSupportUser = uid;
+
+          loadSupportMessages(uid);
+
+          log(
+            "💬 Opened support chat"
+          );
+        };
+
+        usersBox.appendChild(div);
+      }
+
+    }
+  );
+}
+
+/* LOAD MESSAGES */
+
+function loadSupportMessages(uid) {
+
+  const box =
+    document.getElementById(
+      "supportMessages"
+    );
+
+  if (!box) return;
+
+  const q =
+    query(
+      collection(
+        db,
+        "supportChats",
+        uid,
+        "messages"
+      ),
+      orderBy("createdAt")
+    );
+
+  onSnapshot(q, (snap) => {
+
+    box.innerHTML = "";
+
+    snap.forEach((docSnap) => {
+
+      const m =
+        docSnap.data();
+
+      const div =
+        document.createElement("div");
+
+      div.className = "item";
+
+      div.style.marginBottom = "8px";
+
+      div.style.background =
+        m.sender === "admin"
+        ? "#5bc0be"
+        : "#16213e";
+
+      div.style.color =
+        m.sender === "admin"
+        ? "#000"
+        : "#fff";
+
+      div.innerHTML = `
+        <b>
+          ${
+            m.sender === "admin"
+            ? "ADMIN"
+            : "USER"
+          }
+        </b>
+
+        <br><br>
+
+        ${m.text || ""}
+      `;
+
+      box.appendChild(div);
+
+    });
+
+    box.scrollTop =
+      box.scrollHeight;
+
+  });
+}
+
+/* SEND REPLY */
+
+const sendReplyBtn =
+  document.getElementById(
+    "sendSupportReply"
+  );
+
+if (sendReplyBtn) {
+
+  sendReplyBtn.onclick =
+  async () => {
+
+    if (!currentSupportUser) {
+
+      alert(
+        "Open a user chat first"
+      );
+
+      return;
+    }
+
+    const input =
+      document.getElementById(
+        "supportReply"
+      );
+
+    const text =
+      input.value.trim();
+
+    if (!text) return;
+
+    try {
+
+      await addDoc(
+        collection(
+          db,
+          "supportChats",
+          currentSupportUser,
+          "messages"
+        ),
+        {
+          text,
+          sender: "admin",
+          createdAt:
+          serverTimestamp()
+        }
+      );
+
+      input.value = "";
+
+      log(
+        "📤 Support reply sent"
+      );
+
+    } catch (err) {
+
+      console.error(err);
+
+      log(
+        "Reply failed",
+        "error"
+      );
+    }
+
+  };
+
+}
+
+/* START SUPPORT SYSTEM */
+
+setTimeout(() => {
+
+  loadSupportUsers();
+
+  log(
+    "💬 Support inbox online"
+  );
+
+}, 1500);
