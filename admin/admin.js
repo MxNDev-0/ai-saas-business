@@ -54,14 +54,27 @@ function log(msg, type = "ok") {
 }
 
 /* =========================================
-   CONTROL ROOM BOOT SEQUENCE (NEW)
+   SAFE CONTROL WRAPPER
+========================================= */
+
+function safeControl(...args) {
+  try {
+    return setControl(...args);
+  } catch (err) {
+    console.error(err);
+    log("Control failed", "error");
+  }
+}
+
+/* =========================================
+   CONTROL ROOM BOOT SEQUENCE
 ========================================= */
 
 log("⚡ Control Room initializing...");
 
 setTimeout(() => log("🧠 Loading real-time engine..."), 500);
 setTimeout(() => log("📡 Syncing system controls..."), 1000);
-setTimeout(() => log("✅ Control Room V3 active"), 1500);
+setTimeout(() => log("✅ Control Room V5 active"), 1500);
 
 /* =========================================
    CONTROL ROOM LIVE SYSTEM
@@ -77,10 +90,12 @@ watchControls((data) => {
   window.sponsoredPostId = data.sponsoredPostId || null;
   window.adsEnabled = data.adsEnabled ?? true;
   window.discoverEnabled = data.discoverEnabled ?? true;
+
+  updateControlStatus();
 });
 
 /* =========================================
-   🔐 ADMIN AUTH (ANTI SPOOF CORE)
+   ADMIN AUTH (ANTI SPOOF CORE)
 ========================================= */
 
 initAdminGuard((user) => {
@@ -95,6 +110,35 @@ initAdminGuard((user) => {
   loadRejectedAds();
 
 });
+
+/* =========================================
+   CONTROL ROOM UI ENGINE
+========================================= */
+
+function updateControlStatus() {
+
+  const box = document.getElementById("controlStatus");
+  if (!box) return;
+
+  const c = window.MCN_CONTROLS || {};
+
+  box.innerHTML = `
+    <div class="item">🧠 SYSTEM ONLINE</div>
+    <div class="item">⭐ FEATURED: ${c.featuredPostId || "None"}</div>
+    <div class="item">💰 SPONSORED: ${c.sponsoredPostId?.id || "None"} (${c.sponsoredPostId?.slot || "-"})</div>
+    <div class="item">📢 ADS: ${c.adsEnabled ? "ON" : "OFF"}</div>
+    <div class="item">🔍 DISCOVER: ${c.discoverEnabled ? "ON" : "OFF"}</div>
+  `;
+}
+
+/* LIVE REFRESH */
+setInterval(updateControlStatus, 2000);
+
+/* MANUAL REFRESH */
+window.refreshSystem = () => {
+  updateControlStatus();
+  log("🔄 System refreshed");
+};
 
 /* =========================================
    AI WRITER
@@ -186,7 +230,7 @@ function renderPosts(posts) {
 expose("loadPosts", loadPosts);
 
 /* =========================================
-   SEARCH
+   SEARCH POSTS
 ========================================= */
 
 window.searchPosts = () => {
@@ -274,7 +318,7 @@ window.setFeatured = async () => {
 
   const id = document.getElementById("featurePostId").value;
 
-  await setControl("featuredPostId", id);
+  await safeControl("featuredPostId", id);
 
   log("⭐ Featured set");
 };
@@ -284,7 +328,7 @@ window.setSponsored = async () => {
   const id = document.getElementById("sponsorPostId").value;
   const slot = document.getElementById("sponsorSlot").value;
 
-  await setControl("sponsoredPostId", { id, slot });
+  await safeControl("sponsoredPostId", { id, slot });
 
   log("💰 Sponsored set");
 };
@@ -293,7 +337,20 @@ window.toggleAds = async () => {
 
   const current = window.MCN_CONTROLS?.adsEnabled ?? true;
 
-  await setControl("adsEnabled", !current);
+  await safeControl("adsEnabled", !current);
 
   log("📢 Ads toggled");
+};
+
+/* =========================================
+   FIX: DISCOVER TOGGLE (CRITICAL FIX)
+========================================= */
+
+window.toggleDiscover = async () => {
+
+  const current = window.MCN_CONTROLS?.discoverEnabled ?? true;
+
+  await safeControl("discoverEnabled", !current);
+
+  log("🔍 Discover toggled");
 };
