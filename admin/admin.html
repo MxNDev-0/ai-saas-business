@@ -165,13 +165,27 @@
   </div>
 
   <!-- EDIT -->
-  <div class="card">
-    <h3>✏️ Edit Post</h3>
-    <input id="editPostId" readonly>
-    <input id="editPostTitle">
-    <textarea id="editPostContent"></textarea>
-    <button onclick="updatePost()">Update Post</button>
+<div class="card">
+  <h3>✏️ Edit Post</h3>
+
+  <input id="editPostId" readonly placeholder="Post ID">
+
+  <input id="editPostTitle" placeholder="Post title">
+
+  <textarea id="editPostContent" placeholder="Post content"></textarea>
+
+  <div style="display:flex;gap:8px;">
+
+    <button onclick="updatePost()" style="flex:1;">
+      Update Post
+    </button>
+
+    <button onclick="deletePostFromEditor()" class="danger" style="flex:1;">
+      Delete
+    </button>
+
   </div>
+</div>
 
   <!-- ADS -->
   <div class="card">
