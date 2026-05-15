@@ -392,3 +392,22 @@ const loadNews = async () => {
 };
 
 expose("loadNews", loadNews);
+
+/* =========================================
+   GLOBAL EXPORT BRIDGE (CRITICAL FIX)
+========================================= */
+
+function exposeAdminFunctions() {
+
+  window.createBlog = createBlog;
+  window.generateAI = generateAI;
+  window.loadNews = loadNews;
+  window.clearRejected = clearRejected;
+  window.updatePost = updatePost;
+  window.deletePost = deletePost;
+  window.fillEdit = fillEdit;
+  window.searchPosts = searchPosts;
+
+}
+
+setTimeout(exposeAdminFunctions, 500);
