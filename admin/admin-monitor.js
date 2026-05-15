@@ -1,199 +1,103 @@
 import { db } from "./firebase.js";
-
 import {
   collection,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* =========================================
-   MCN CONTROL CENTER MONITOR V3
+   MCN CONTROL CENTER MONITOR v3 (BOOT EDITION)
 ========================================= */
 
-const box =
-  document.getElementById("monitor");
+export function startMonitor() {
 
-/* =========================================
-   SAFETY CHECK
-========================================= */
+  const box = document.getElementById("monitor");
 
-if (!box) {
-
-  console.error(
-    "❌ Monitor element missing"
-  );
-
-} else {
-
-  console.log(
-    "✅ Monitor UI Connected"
-  );
-
-  /* =========================================
-     PREVENT DOUBLE BOOT
-  ========================================= */
-
-  if (!window.__MCN_MONITOR_ACTIVE) {
-
-    window.__MCN_MONITOR_ACTIVE = true;
-
-    startMonitor();
+  if (!box) {
+    console.error("❌ Monitor UI missing");
+    return;
   }
-}
 
-/* =========================================
-   PUSH LOG
-========================================= */
+  if (window.__MCN_MONITOR_ACTIVE) return;
+  window.__MCN_MONITOR_ACTIVE = true;
 
-function push(
-  msg,
-  type = "ok"
-) {
+  const push = (msg, type = "ok") => {
 
-  if (!box) return;
+    const div = document.createElement("div");
+    const time = new Date().toLocaleTimeString();
 
-  const div =
-    document.createElement("div");
-
-  const time =
-    new Date().toLocaleTimeString();
-
-  div.style.marginBottom =
-    "6px";
-
-  div.style.fontSize =
-    "13px";
-
-  if (type === "error") {
-
-    div.style.color = "red";
-
-  } else if (
-    type === "warn"
-  ) {
+    div.style.marginBottom = "4px";
+    div.style.fontSize = "13px";
 
     div.style.color =
-      "orange";
-
-  } else if (
-    type === "system"
-  ) {
-
-    div.style.color =
-      "#5bc0be";
-
-  } else {
-
-    div.style.color =
+      type === "error" ? "red" :
+      type === "warn" ? "orange" :
+      type === "system" ? "#5bc0be" :
       "#00ff88";
-  }
 
-  div.textContent =
-    `[${time}] ${msg}`;
+    div.textContent = `[${time}] ${msg}`;
 
-  box.appendChild(div);
-
-  box.scrollTop =
-    box.scrollHeight;
-}
-
-/* =========================================
-   START MONITOR
-========================================= */
-
-function startMonitor() {
-
-  push(
-    "🧠 Control Center Online",
-    "system"
-  );
-
-  push(
-    "🔥 Firebase Connected",
-    "system"
-  );
-
-  push(
-    "📡 Realtime Watchers Active",
-    "system"
-  );
-
-  push(
-    "💬 Support Inbox Ready",
-    "system"
-  );
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  };
 
   /* =========================================
-     POSTS WATCHER
+     🧠 BOOT SEQUENCE (THIS IS YOUR “SCREEN LIVES” PART)
   ========================================= */
 
-  onSnapshot(
-    collection(db, "posts"),
-    () => {
+  const bootSteps = [
+    "Powering MCN Engine Core...",
+    "Checking Firebase connection...",
+    "Scanning database structure...",
+    "Loading authentication module...",
+    "Verifying admin permissions...",
+    "Starting post system...",
+    "Starting ad engine...",
+    "Starting support inbox...",
+    "Activating real-time listeners...",
+    "System ready ✔"
+  ];
 
-      push(
-        "📌 Posts updated",
-        "system"
-      );
+  let i = 0;
+
+  const bootInterval = setInterval(() => {
+
+    if (i < bootSteps.length) {
+      push("🧠 " + bootSteps[i], "system");
+      i++;
+    } else {
+      clearInterval(bootInterval);
+      push("🚀 Control Center FULLY ONLINE", "system");
     }
-  );
+
+  }, 600);
 
   /* =========================================
-     ADS WATCHER
+     LIVE FIRESTORE WATCHERS
   ========================================= */
 
-  onSnapshot(
-    collection(db, "adRequests"),
-    () => {
+  onSnapshot(collection(db, "system"), () => {
+    push("⚙ System event detected", "system");
+  });
 
-      push(
-        "📢 Ad activity detected",
-        "system"
-      );
-    }
-  );
+  onSnapshot(collection(db, "posts"), () => {
+    push("📌 Posts updated", "system");
+  });
 
-  /* =========================================
-     SUPPORT WATCHER
-  ========================================= */
-
-  onSnapshot(
-    collection(db, "supportChats"),
-    () => {
-
-      push(
-        "💬 New support activity",
-        "system"
-      );
-    }
-  );
+  onSnapshot(collection(db, "adRequests"), () => {
+    push("📢 Ad activity detected", "system");
+  });
 
   /* =========================================
-     HEARTBEAT
+     HEARTBEAT (keeps screen alive)
   ========================================= */
 
   setInterval(() => {
-
-    push(
-      "💓 System heartbeat OK"
-    );
-
-  }, 30000);
+    push("💓 System heartbeat OK", "ok");
+  }, 20000);
 
   /* =========================================
-     CUSTOM EVENT LOGGER
+     FINAL READY STATE
   ========================================= */
 
-  window.addEventListener(
-    "mcn-log",
-    (e) => {
-
-      push(
-        e.detail || "Custom event"
-      );
-    }
-  );
-
-  console.log(
-    "✅ MCN Monitor Running"
-  );
+  push("🧠 MCN Monitor Engine Initialized", "system");
 }
