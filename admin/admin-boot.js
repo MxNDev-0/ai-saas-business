@@ -1,28 +1,21 @@
 /* =========================================
-   MCN ADMIN BOOT UI v2
-   SYSTEM STARTUP CONTROLLER
+   MCN BOOT SYSTEM V2
 ========================================= */
 
-(() => {
+export function bootMCN() {
 
-  const state = {
-    stage: "booting",
-    modules: {
-      auth: false,
-      monitor: false,
-      admin: false,
-      ready: false
-    }
-  };
+  if (window.__MCN_BOOTED) return;
+  window.__MCN_BOOTED = true;
 
-  const bootBox = document.createElement("div");
+  const overlay = document.createElement("div");
 
-  bootBox.id = "mcnBoot";
-  bootBox.style = `
+  overlay.id = "mcnBoot";
+
+  overlay.style = `
     position:fixed;
     inset:0;
     background:#0b132b;
-    color:white;
+    color:#5bc0be;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -31,73 +24,39 @@
     z-index:999999;
   `;
 
-  bootBox.innerHTML = `
-    <div style="text-align:center;max-width:400px;padding:20px;">
-      <h2 style="color:#5bc0be;">MCN Engine Boot v2</h2>
-      <div id="bootStatus">Initializing system...</div>
-
-      <div style="margin-top:20px;height:6px;background:#1c2541;border-radius:10px;overflow:hidden;">
-        <div id="bootBar" style="width:0%;height:100%;background:#5bc0be;transition:0.3s;"></div>
-      </div>
-
-      <div id="bootLogs" style="margin-top:15px;font-size:12px;color:#aaa;text-align:left;"></div>
-    </div>
+  overlay.innerHTML = `
+    <h2>MCN Engine V19</h2>
+    <p id="bootStatus">Starting system...</p>
   `;
 
-  document.body.appendChild(bootBox);
+  document.body.appendChild(overlay);
 
-  const status = bootBox.querySelector("#bootStatus");
-  const bar = bootBox.querySelector("#bootBar");
-  const logs = bootBox.querySelector("#bootLogs");
+  const steps = [
+    "Checking Firebase connection...",
+    "Loading Admin modules...",
+    "Verifying authentication...",
+    "Starting Monitor engine...",
+    "Loading Dashboard controls...",
+    "Activating CMS layer...",
+    "System Online ✔"
+  ];
 
-  function log(msg, percent) {
-    status.innerText = msg;
-    logs.innerHTML += `<div>• ${msg}</div>`;
-    if (percent != null) bar.style.width = percent + "%";
-  }
+  let i = 0;
+  const el = document.getElementById("bootStatus");
 
-  function finishBoot() {
+  const interval = setInterval(() => {
 
-    log("System Ready", 100);
-
-    setTimeout(() => {
-      bootBox.style.opacity = "0";
-      bootBox.style.transition = "0.5s";
+    if (i < steps.length) {
+      el.innerText = steps[i];
+      i++;
+    } else {
+      clearInterval(interval);
 
       setTimeout(() => {
-        bootBox.remove();
-      }, 500);
+        overlay.remove();
+        window.dispatchEvent(new Event("MCN_READY"));
+      }, 600);
+    }
 
-    }, 800);
-  }
-
-  /* ================= BOOT SEQUENCE ================= */
-
-  log("Checking Firebase...", 10);
-
-  setTimeout(() => {
-    state.modules.auth = true;
-    log("Auth module OK", 30);
-  }, 400);
-
-  setTimeout(() => {
-    state.modules.monitor = true;
-    log("Monitor system active", 60);
-  }, 900);
-
-  setTimeout(() => {
-    state.modules.admin = true;
-    log("Admin modules loaded", 85);
-  }, 1400);
-
-  setTimeout(() => {
-    state.modules.ready = true;
-    log("Finalizing startup...", 95);
-    finishBoot();
-  }, 2000);
-
-  /* ================= GLOBAL STATUS ================= */
-
-  window.__MCN_BOOT = state;
-
-})();
+  }, 600);
+}
