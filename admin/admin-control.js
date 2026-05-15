@@ -1,57 +1,35 @@
 import { db } from "./firebase.js";
-
 import {
   doc,
-  setDoc,
-  serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* =========================================
-   MCN CONTROL CENTER V19
+   MCN CONTROL BUS (REALTIME SYSTEM CORE)
 ========================================= */
 
-/* FEATURED */
-export async function setFeatured(postId) {
+export function watchControls(callback) {
 
-  await setDoc(doc(db, "systemControls", "featured"), {
-    postId,
-    updatedAt: serverTimestamp()
+  const ref = doc(db, "system", "controls");
+
+  return onSnapshot(ref, (snap) => {
+
+    const data = snap.exists() ? snap.data() : {};
+
+    window.MCN_CONTROLS = data;
+
+    callback(data);
+
   });
-
-  console.log("🔥 Featured updated:", postId);
 }
 
-/* SPONSORED */
-export async function setSponsored(postId, slot) {
+export async function setControl(key, value) {
 
-  await setDoc(doc(db, "systemControls", "sponsored"), {
-    postId,
-    slot,
-    active: true,
-    updatedAt: serverTimestamp()
-  });
+  const ref = doc(db, "system", "controls");
 
-  console.log("💰 Sponsored updated:", postId, slot);
-}
-
-/* ADS TOGGLE */
-export async function toggleAd(type, value) {
-
-  await setDoc(doc(db, "systemControls", "ads"), {
-    [type]: value,
-    updatedAt: serverTimestamp()
+  await setDoc(ref, {
+    [key]: value
   }, { merge: true });
 
-  console.log("📢 Ads updated:", type, value);
-}
-
-/* LIVE WATCH */
-export function watchControls(cb) {
-
-  const ref = doc(db, "systemControls", "featured");
-
-  onSnapshot(ref, () => {
-    cb();
-  });
 }
