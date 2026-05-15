@@ -371,7 +371,54 @@
 
 </div>
 
+<!-- ================= APP INSTALLER ================= -->
 
+<div id="installBanner"
+     style="
+     position:fixed;
+     bottom:0;
+     left:0;
+     width:100%;
+     background:#1c2541;
+     padding:12px;
+     display:none;
+     justify-content:space-between;
+     align-items:center;
+     z-index:99999;
+     border-top:1px solid #333;
+     ">
+
+  <span style="font-size:13px;color:#ddd;">
+    📲 Install MCN Engine for faster access
+  </span>
+
+  <div>
+    <button onclick="installApp()"
+            style="
+            background:#5bc0be;
+            border:none;
+            padding:8px 12px;
+            border-radius:8px;
+            cursor:pointer;
+            ">
+      Install
+    </button>
+
+    <button onclick="closeInstallBanner()"
+            style="
+            background:transparent;
+            border:1px solid #5bc0be;
+            color:#5bc0be;
+            padding:8px 12px;
+            border-radius:8px;
+            margin-left:6px;
+            cursor:pointer;
+            ">
+      Later
+    </button>
+  </div>
+
+</div>
 
 <!-- ================= FOOTER ================= -->
 
@@ -432,6 +479,14 @@
 
     window.addEventListener("load", () => {
       setTimeout(removeSplash, 800);
+
+setTimeout(() => {
+  const banner = document.getElementById("installBanner");
+  if (banner && !window.matchMedia("(display-mode: standalone)").matches) {
+    banner.style.display = "flex";
+  }
+}, 1500);
+
     });
   }
 
@@ -609,6 +664,59 @@ window.goDashboard = function () {
 window.contact = function () {
   location.href = "contact.html";
 };
+
+/* =========================================
+   📲 APP INSTALLER SYSTEM (PWA UPGRADE)
+========================================= */
+
+let deferredPrompt = null;
+
+/* DETECT INSTALL PROMPT */
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const banner = document.getElementById("installBanner");
+
+  if (banner) {
+    banner.style.display = "flex";
+  }
+
+  console.log("📲 Install prompt ready");
+});
+
+/* INSTALL APP */
+window.installApp = async function () {
+  if (!deferredPrompt) {
+    alert("Install not available on this device/browser.");
+    return;
+  }
+
+  deferredPrompt.prompt();
+
+  const choice = await deferredPrompt.userChoice;
+
+  if (choice.outcome === "accepted") {
+    console.log("✅ User installed MCN Engine");
+  } else {
+    console.log("❌ User dismissed install");
+  }
+
+  deferredPrompt = null;
+
+  closeInstallBanner();
+};
+
+/* CLOSE BANNER */
+window.closeInstallBanner = function () {
+  const banner = document.getElementById("installBanner");
+  if (banner) banner.style.display = "none";
+};
+
+/* ALREADY INSTALLED CHECK */
+if (window.matchMedia("(display-mode: standalone)").matches) {
+  console.log("📲 App already installed (standalone mode)");
+}
 
 </script>
 
