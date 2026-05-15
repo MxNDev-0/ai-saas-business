@@ -133,6 +133,37 @@
     </div>
   </div>
 
+<!-- 🤖 AI ENGINE CONTROL CENTER -->
+<div class="card">
+  <h3>🤖 AI Engine Control Center</h3>
+
+  <input id="aiTopic" placeholder="Enter blog topic">
+
+  <button onclick="generateAndPreview()">Generate Preview</button>
+  <button onclick="autoPublishBlog()">Auto Publish Blog</button>
+
+  <hr style="border:1px solid #223; margin:10px 0;">
+
+  <h4>🔥 Trending Topics</h4>
+  <div id="trendingBox" class="list-box">
+    <div class="item">Loading trends...</div>
+  </div>
+
+  <button onclick="loadTrending()">Refresh Trends</button>
+
+  <hr style="border:1px solid #223; margin:10px 0;">
+
+  <h4>⚙ AI Settings</h4>
+
+  <select id="aiProvider">
+    <option value="mock">Mock AI</option>
+    <option value="openai">OpenAI</option>
+    <option value="gemini">Gemini</option>
+  </select>
+
+  <button onclick="applyAISettings()">Apply Settings</button>
+</div>
+
   <!-- AI WRITER -->
   <div class="card">
     <h3>🤖 AI Blog Writer</h3>
