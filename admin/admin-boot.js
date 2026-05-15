@@ -1,62 +1,103 @@
-import { db } from "./firebase.js";
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
 /* =========================================
-   MCN CONTROL CENTER BOOT SEQUENCE
+   MCN ADMIN BOOT UI v2
+   SYSTEM STARTUP CONTROLLER
 ========================================= */
 
-export function startBootSequence() {
+(() => {
 
-  const monitor = document.getElementById("monitor");
-
-  if (!monitor) return;
-
-  const log = (msg, type = "ok") => {
-
-    const div = document.createElement("div");
-
-    div.style.marginBottom = "4px";
-
-    div.style.color =
-      type === "error" ? "red" :
-      type === "warn" ? "orange" :
-      type === "system" ? "#5bc0be" :
-      "#00ff88";
-
-    div.textContent =
-      `[BOOT ${new Date().toLocaleTimeString()}] ${msg}`;
-
-    monitor.appendChild(div);
-    monitor.scrollTop = monitor.scrollHeight;
+  const state = {
+    stage: "booting",
+    modules: {
+      auth: false,
+      monitor: false,
+      admin: false,
+      ready: false
+    }
   };
+
+  const bootBox = document.createElement("div");
+
+  bootBox.id = "mcnBoot";
+  bootBox.style = `
+    position:fixed;
+    inset:0;
+    background:#0b132b;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    font-family:Arial;
+    z-index:999999;
+  `;
+
+  bootBox.innerHTML = `
+    <div style="text-align:center;max-width:400px;padding:20px;">
+      <h2 style="color:#5bc0be;">MCN Engine Boot v2</h2>
+      <div id="bootStatus">Initializing system...</div>
+
+      <div style="margin-top:20px;height:6px;background:#1c2541;border-radius:10px;overflow:hidden;">
+        <div id="bootBar" style="width:0%;height:100%;background:#5bc0be;transition:0.3s;"></div>
+      </div>
+
+      <div id="bootLogs" style="margin-top:15px;font-size:12px;color:#aaa;text-align:left;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(bootBox);
+
+  const status = bootBox.querySelector("#bootStatus");
+  const bar = bootBox.querySelector("#bootBar");
+  const logs = bootBox.querySelector("#bootLogs");
+
+  function log(msg, percent) {
+    status.innerText = msg;
+    logs.innerHTML += `<div>• ${msg}</div>`;
+    if (percent != null) bar.style.width = percent + "%";
+  }
+
+  function finishBoot() {
+
+    log("System Ready", 100);
+
+    setTimeout(() => {
+      bootBox.style.opacity = "0";
+      bootBox.style.transition = "0.5s";
+
+      setTimeout(() => {
+        bootBox.remove();
+      }, 500);
+
+    }, 800);
+  }
 
   /* ================= BOOT SEQUENCE ================= */
 
-  log("🔌 Powering MCN Engine...", "system");
+  log("Checking Firebase...", 10);
 
-  setTimeout(() => log("🧠 Loading Admin Core...", "system"), 500);
-  setTimeout(() => log("🔥 Firebase Connected", "system"), 900);
-  setTimeout(() => log("📡 Syncing Database Streams...", "system"), 1300);
-  setTimeout(() => log("💬 Chat System Online", "system"), 1700);
-  setTimeout(() => log("📢 Ads Engine Active", "system"), 2100);
-  setTimeout(() => log("📰 Content Manager Ready", "system"), 2500);
-  setTimeout(() => log("🚀 Control Center Fully Online", "system"), 3000);
+  setTimeout(() => {
+    state.modules.auth = true;
+    log("Auth module OK", 30);
+  }, 400);
 
-  /* ================= LIVE SYSTEM ANALYSIS ================= */
+  setTimeout(() => {
+    state.modules.monitor = true;
+    log("Monitor system active", 60);
+  }, 900);
 
-  onSnapshot(collection(db, "posts"), () => {
-    log("📌 Posts updated live", "system");
-  });
+  setTimeout(() => {
+    state.modules.admin = true;
+    log("Admin modules loaded", 85);
+  }, 1400);
 
-  onSnapshot(collection(db, "adRequests"), () => {
-    log("📢 Ad system activity detected", "system");
-  });
+  setTimeout(() => {
+    state.modules.ready = true;
+    log("Finalizing startup...", 95);
+    finishBoot();
+  }, 2000);
 
-  onSnapshot(collection(db, "featured"), () => {
-    log("⭐ Featured content updated", "system");
-  });
+  /* ================= GLOBAL STATUS ================= */
 
-  onSnapshot(collection(db, "sponsored"), () => {
-    log("💰 Sponsored slots updated", "system");
-  });
-}
+  window.__MCN_BOOT = state;
+
+})();
