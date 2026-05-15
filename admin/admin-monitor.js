@@ -17,14 +17,12 @@ export function startMonitor() {
     return;
   }
 
-  // Prevent double-init
   if (window.__MCN_MONITOR_ACTIVE) return;
   window.__MCN_MONITOR_ACTIVE = true;
 
   const push = (msg, type = "ok") => {
 
     const time = new Date().toLocaleTimeString();
-
     const div = document.createElement("div");
 
     div.style.marginBottom = "4px";
@@ -38,29 +36,20 @@ export function startMonitor() {
     div.textContent = `[${time}] ${msg}`;
 
     box.appendChild(div);
-
     box.scrollTop = box.scrollHeight;
   };
-
-  /* ================= SYSTEM STREAM ================= */
 
   onSnapshot(collection(db, "system"), () => {
     push("⚙ System updated", "system");
   });
 
-  /* ================= POSTS STREAM ================= */
-
   onSnapshot(collection(db, "posts"), () => {
     push("📌 Posts changed", "system");
   });
 
-  /* ================= ADS STREAM ================= */
-
   onSnapshot(collection(db, "adRequests"), () => {
     push("📢 Ad activity detected", "system");
   });
-
-  /* ================= INITIAL BOOT ================= */
 
   push("🧠 Control Center Monitor Online", "system");
   push("🔥 Firebase Connected", "system");
