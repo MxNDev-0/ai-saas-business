@@ -54,6 +54,16 @@ function log(msg, type = "ok") {
 }
 
 /* =========================================
+   CONTROL ROOM BOOT SEQUENCE (NEW)
+========================================= */
+
+log("⚡ Control Room initializing...");
+
+setTimeout(() => log("🧠 Loading real-time engine..."), 500);
+setTimeout(() => log("📡 Syncing system controls..."), 1000);
+setTimeout(() => log("✅ Control Room V3 active"), 1500);
+
+/* =========================================
    CONTROL ROOM LIVE SYSTEM
 ========================================= */
 
@@ -103,7 +113,7 @@ window.generateAI = () => {
 expose("generateAI", window.generateAI);
 
 /* =========================================
-   BLOG
+   BLOG SYSTEM
 ========================================= */
 
 window.createBlog = async () => {
