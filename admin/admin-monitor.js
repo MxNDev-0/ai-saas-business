@@ -4,100 +4,65 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* =========================================
+   MCN CONTROL CENTER MONITOR v2
+========================================= */
+
 export function startMonitor() {
 
-  function init() {
+  const box = document.getElementById("monitor");
 
-    const box = document.getElementById("monitor");
-
-    if (!box) {
-      console.warn("⚠ Monitor UI missing, retrying...");
-      setTimeout(init, 300);
-      return;
-    }
-
-    if (box.dataset.active === "true") return;
-    box.dataset.active = "true";
-
-    // ===== UI HEADER =====
-    box.innerHTML = `
-      <div style="color:#5bc0be;font-weight:bold;margin-bottom:10px;">
-        🧠 MCN CONTROL CENTER
-      </div>
-    `;
-
-    const push = (msg, type = "info") => {
-
-      const time = new Date().toLocaleTimeString();
-
-      const color =
-        type === "error"
-          ? "#ff4d4d"
-          : type === "warn"
-          ? "#ffb84d"
-          : "#00ff88";
-
-      const div = document.createElement("div");
-
-      div.style.color = color;
-      div.style.marginBottom = "4px";
-      div.style.fontSize = "13px";
-
-      div.textContent = `[${time}] ${msg}`;
-
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    };
-
-    // ===== SYSTEM WATCHERS =====
-    onSnapshot(collection(db, "system"), () => {
-      push("⚙ System event detected", "info");
-    });
-
-    onSnapshot(collection(db, "posts"), () => {
-      push("📌 Post created/updated", "info");
-    });
-
-    onSnapshot(collection(db, "adRequests"), (snap) => {
-
-      snap.docChanges().forEach(change => {
-
-        if (change.type === "added") {
-          push("📢 New ad request", "warn");
-        }
-
-        if (change.type === "modified") {
-          push("📢 Ad updated", "info");
-        }
-
-        if (change.type === "removed") {
-          push("🗑 Ad removed", "error");
-        }
-
-      });
-
-    });
-
-    // ===== LIVE CHAT HOOK =====
-    onSnapshot(collection(db, "supportChats"), (snap) => {
-      push(`💬 Active chats: ${snap.size}`, "info");
-    });
-
-    // ===== STARTUP =====
-    push("🟢 Control Center Online", "info");
-    push("🔥 Firebase Connected", "info");
-    push("📡 Real-time monitoring active", "info");
-
-    // heartbeat
-    setInterval(() => {
-      push("💓 System heartbeat OK", "info");
-    }, 30000);
-
+  if (!box) {
+    console.error("❌ Monitor UI missing");
+    return;
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  // Prevent double-init
+  if (window.__MCN_MONITOR_ACTIVE) return;
+  window.__MCN_MONITOR_ACTIVE = true;
+
+  const push = (msg, type = "ok") => {
+
+    const time = new Date().toLocaleTimeString();
+
+    const div = document.createElement("div");
+
+    div.style.marginBottom = "4px";
+    div.style.fontSize = "13px";
+
+    if (type === "error") div.style.color = "red";
+    else if (type === "warn") div.style.color = "orange";
+    else if (type === "system") div.style.color = "#5bc0be";
+    else div.style.color = "#00ff88";
+
+    div.textContent = `[${time}] ${msg}`;
+
+    box.appendChild(div);
+
+    box.scrollTop = box.scrollHeight;
+  };
+
+  /* ================= SYSTEM STREAM ================= */
+
+  onSnapshot(collection(db, "system"), () => {
+    push("⚙ System updated", "system");
+  });
+
+  /* ================= POSTS STREAM ================= */
+
+  onSnapshot(collection(db, "posts"), () => {
+    push("📌 Posts changed", "system");
+  });
+
+  /* ================= ADS STREAM ================= */
+
+  onSnapshot(collection(db, "adRequests"), () => {
+    push("📢 Ad activity detected", "system");
+  });
+
+  /* ================= INITIAL BOOT ================= */
+
+  push("🧠 Control Center Monitor Online", "system");
+  push("🔥 Firebase Connected", "system");
+  push("📡 Realtime Watchers Active", "system");
 }
