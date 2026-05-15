@@ -20,6 +20,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { watchControls, setControl } from "./admin-control.js";
+import { initAdminGuard } from "./admin-auth.js";
 
 /* =========================================
    GLOBAL EXPOSE
@@ -60,42 +61,29 @@ watchControls((data) => {
 
   log("📡 Control system updated");
 
+  window.MCN_CONTROLS = data;
+
   window.featuredPostId = data.featuredPostId || null;
   window.sponsoredPostId = data.sponsoredPostId || null;
   window.adsEnabled = data.adsEnabled ?? true;
   window.discoverEnabled = data.discoverEnabled ?? true;
-
 });
 
 /* =========================================
-   AUTH CHECK (ADMIN ONLY LOCK)
+   🔐 ADMIN AUTH (ANTI SPOOF CORE)
 ========================================= */
 
-onAuthStateChanged(auth, async (user) => {
+initAdminGuard((user) => {
 
-  if (!user) {
-    location.href = "./index.html";
-    return;
-  }
+  log("✅ Secure admin verified");
 
-  const snap = await getDoc(doc(db, "users", user.uid));
-
-  if (!snap.exists()) {
-    location.href = "./index.html";
-    return;
-  }
-
-  if (snap.data().role !== "admin") {
-    location.href = "./dashboard.html";
-    return;
-  }
-
-  log("✅ Admin online");
   window.MCN_READY = true;
+  window.MCN_ADMIN = user;
 
   loadPosts();
   loadAds();
   loadRejectedAds();
+
 });
 
 /* =========================================
@@ -137,7 +125,7 @@ window.createBlog = async () => {
 };
 
 /* =========================================
-   POSTS
+   POSTS SYSTEM
 ========================================= */
 
 let allPosts = [];
@@ -187,6 +175,10 @@ function renderPosts(posts) {
 
 expose("loadPosts", loadPosts);
 
+/* =========================================
+   SEARCH
+========================================= */
+
 window.searchPosts = () => {
 
   const q = document.getElementById("searchPosts").value.toLowerCase();
@@ -199,7 +191,7 @@ window.searchPosts = () => {
 expose("searchPosts", window.searchPosts);
 
 /* =========================================
-   EDIT
+   EDIT SYSTEM
 ========================================= */
 
 window.fillEdit = (id, title, content) => {
@@ -226,7 +218,7 @@ window.deletePost = async (id) => {
 };
 
 /* =========================================
-   ADS
+   ADS SYSTEM
 ========================================= */
 
 function loadAds() {
@@ -256,14 +248,16 @@ expose("loadAds", loadAds);
 
 window.acceptAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "accepted" });
+  log("✅ Ad accepted");
 };
 
 window.rejectAd = async (id) => {
   await updateDoc(doc(db, "adRequests", id), { status: "rejected" });
+  log("❌ Ad rejected");
 };
 
 /* =========================================
-   CONTROL ROOM FUNCTIONS (NEW)
+   CONTROL ROOM FUNCTIONS
 ========================================= */
 
 window.setFeatured = async () => {
