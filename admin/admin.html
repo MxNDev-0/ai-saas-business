@@ -239,26 +239,42 @@
   </div>
 
 <div class="card">
-  <h3>🎛 Control Room V20</h3>
+  <h3>🎛 Control Room V3</h3>
 
-  <input id="featurePostId" placeholder="Featured Post ID">
+  <div id="controlStatus" class="list-box">
+    <div class="item">Booting Control Room...</div>
+  </div>
+
+  <hr style="border:1px solid #223; margin:10px 0;">
+
+  <h4>⭐ Featured Post</h4>
+  <input id="featurePostId" placeholder="Post ID">
   <button onclick="setFeatured()">Set Featured</button>
 
-  <br><br>
+  <h4 style="margin-top:15px;">💰 Sponsored Feed</h4>
 
-  <input id="sponsorPostId" placeholder="Sponsored Post ID">
+  <input id="sponsorPostId" placeholder="Post ID">
 
   <select id="sponsorSlot">
-    <option value="top">Top</option>
-    <option value="mid">Middle</option>
-    <option value="feed">Feed</option>
+    <option value="top">Top Slot</option>
+    <option value="mid">Middle Slot</option>
+    <option value="feed">Feed Slot</option>
   </select>
 
   <button onclick="setSponsored()">Set Sponsored</button>
 
-  <br><br>
+  <hr style="border:1px solid #223; margin:10px 0;">
 
-  <button onclick="toggleAds()">Toggle Ads System</button>
+  <h4>⚙ System Toggles</h4>
+
+  <button onclick="toggleAds()">Toggle Ads</button>
+  <button onclick="toggleDiscover()">Toggle Discover Feed</button>
+
+  <button onclick="refreshSystem()"
+    style="background:#0b132b;border:1px solid #5bc0be;color:#5bc0be;">
+    Refresh System
+  </button>
+
 </div>
 
   <!-- DIAGNOSTICS -->
