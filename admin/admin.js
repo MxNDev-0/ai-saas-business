@@ -88,6 +88,7 @@ onAuthStateChanged(auth, async(user)=>{
     }
 
     log("✅ Admin online");
+
     startMonitor();
 
     loadPosts();
