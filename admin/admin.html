@@ -164,27 +164,19 @@
     <div id="postsList" class="list-box"></div>
   </div>
 
-  <!-- EDIT -->
+  <!-- EDIT POST (FIXED) -->
 <div class="card">
   <h3>✏️ Edit Post</h3>
 
   <input id="editPostId" readonly placeholder="Post ID">
 
   <input id="editPostTitle" placeholder="Post title">
-
   <textarea id="editPostContent" placeholder="Post content"></textarea>
 
-  <div style="display:flex;gap:8px;">
-
-    <button onclick="updatePost()" style="flex:1;">
-      Update Post
-    </button>
-
-    <button onclick="deletePostFromEditor()" class="danger" style="flex:1;">
-      Delete
-    </button>
-
-  </div>
+  <button onclick="updatePost()">Update Post</button>
+  <button onclick="deletePost(document.getElementById('editPostId').value)" class="danger">
+    Delete Post
+  </button>
 </div>
 
   <!-- ADS -->
@@ -252,11 +244,12 @@
 
   </div>
 
+<!-- CONTROL ROOM V3 (FIXED + REAL STATE DISPLAY) -->
 <div class="card">
   <h3>🎛 Control Room V3</h3>
 
   <div id="controlStatus" class="list-box">
-    <div class="item">Booting Control Room...</div>
+    <div class="item">Loading system state...</div>
   </div>
 
   <hr style="border:1px solid #223; margin:10px 0;">
@@ -288,7 +281,6 @@
     style="background:#0b132b;border:1px solid #5bc0be;color:#5bc0be;">
     Refresh System
   </button>
-
 </div>
 
 <div class="card">
