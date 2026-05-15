@@ -602,3 +602,11 @@ window.loadNews = async()=>{
   }
 
 };
+
+/* ================= KEEP ALL YOUR ORIGINAL CODE ABOVE ================= */
+
+/* ================= CHAT HOOK (SAFE ADDITION ONLY) ================= */
+
+window.MCN_ADMIN_CHAT_READY = true;
+
+console.log("💬 Admin Chat Hook Active");
