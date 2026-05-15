@@ -186,6 +186,58 @@
     <button class="danger" onclick="clearRejected()">Clear Rejected</button>
   </div>
 
+<!-- LIVE SUPPORT -->
+  <div class="card">
+
+    <h3>💬 Live Support Inbox</h3>
+
+    <div
+      id="supportUsers"
+      class="list-box"
+      style="
+        max-height:120px;
+        margin-bottom:10px;
+      ">
+    </div>
+
+    <div
+      id="supportMessages"
+      class="list-box"
+      style="
+        height:220px;
+        margin-bottom:10px;
+      ">
+    </div>
+
+    <div
+      style="
+        display:flex;
+        gap:8px;
+      ">
+
+      <input
+        id="supportReply"
+        placeholder="Reply to user..."
+        style="
+          flex:1;
+          margin:0;
+        ">
+
+      <button
+        id="sendSupportReply"
+        style="
+          width:90px;
+          margin:0;
+        ">
+
+        Send
+
+      </button>
+
+    </div>
+
+  </div>
+
   <!-- DIAGNOSTICS -->
   <div class="card">
     <h3>🧠 Diagnostics</h3>
