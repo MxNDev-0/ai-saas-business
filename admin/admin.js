@@ -399,43 +399,40 @@ const loadNews = async () => {
 expose("loadNews", loadNews);
 
 /* =========================================
-   FINAL BRIDGE FIX
+   MCN GLOBAL BRIDGE FIX (SAFE V2)
 ========================================= */
 
-setTimeout(() => {
-
-  window.createBlog = createBlog;
-  window.generateAI = generateAI;
-  window.loadNews = loadNews;
-  window.clearRejected = clearRejected;
-  window.updatePost = updatePost;
-  window.deletePost = deletePost;
-  window.fillEdit = fillEdit;
-  window.searchPosts = searchPosts;
-
-  console.log("🌐 MCN Admin UI Bridge ACTIVE");
-
-}, 500);
-
-/* =========================================
-   GLOBAL FIX BRIDGE (CRITICAL)
-========================================= */
-
-function expose(fn, name) {
-  window[name] = fn;
+function safeExpose(name, fn) {
+  if (typeof fn === "function") {
+    window[name] = fn;
+  } else {
+    console.warn(`⚠ Missing function: ${name}`);
+  }
 }
 
-/* expose ALL functions */
-expose(createBlog, "createBlog");
-expose(loadNews, "loadNews");
-expose(generateAI, "generateAI");
-expose(clearRejected, "clearRejected");
-expose(updatePost, "updatePost");
-expose(deletePost, "deletePost");
-expose(searchPosts, "searchPosts");
-expose(fillEdit, "fillEdit");
+/* UI CORE FUNCTIONS */
+safeExpose("createBlog", createBlog);
+safeExpose("loadNews", loadNews);
+safeExpose("generateAI", generateAI);
+safeExpose("clearRejected", clearRejected);
+safeExpose("updatePost", updatePost);
+safeExpose("deletePost", deletePost);
+safeExpose("searchPosts", searchPosts);
+safeExpose("fillEdit", fillEdit);
 
-/* dashboard controls */
-expose(setFeatured, "setFeatured");
-expose(setSponsored, "setSponsored");
-expose(toggleAd, "toggleAd");
+/* =========================================
+   DASHBOARD CONTROL (ONLY IF EXISTS)
+   (prevents crashes)
+========================================= */
+
+if (typeof setFeatured !== "undefined") {
+  safeExpose("setFeatured", setFeatured);
+}
+
+if (typeof setSponsored !== "undefined") {
+  safeExpose("setSponsored", setSponsored);
+}
+
+if (typeof toggleAd !== "undefined") {
+  safeExpose("toggleAd", toggleAd);
+}
