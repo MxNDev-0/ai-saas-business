@@ -20,16 +20,19 @@ import {
   getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= GLOBAL EXPOSE ================= */
+/* =========================================
+   GLOBAL EXPOSE HELPER
+========================================= */
 
 const expose = (name, fn) => {
   window[name] = fn;
 };
 
-/* ================= LOG ================= */
+/* =========================================
+   LOG SYSTEM
+========================================= */
 
 function log(msg, type = "ok") {
-
   const box = document.getElementById("monitor");
   if (!box) return;
 
@@ -47,12 +50,12 @@ function log(msg, type = "ok") {
   box.scrollTop = box.scrollHeight;
 }
 
-/* ================= AUTH ================= */
+/* =========================================
+   AUTH CHECK
+========================================= */
 
 onAuthStateChanged(auth, async (user) => {
-
   try {
-
     if (!user) {
       location.href = "./index.html";
       return;
@@ -82,13 +85,13 @@ onAuthStateChanged(auth, async (user) => {
     console.error(err);
     log("Auth failed", "error");
   }
-
 });
 
-/* ================= AI ================= */
+/* =========================================
+   AI WRITER
+========================================= */
 
 const generateAI = () => {
-
   const topic = document.getElementById("aiTopic").value;
 
   document.getElementById("blogContent").value =
@@ -96,15 +99,16 @@ const generateAI = () => {
 
 MCN Engine generated article...`;
 
-  log("AI article generated");
+  log("🤖 AI article generated");
 };
 
 expose("generateAI", generateAI);
 
-/* ================= BLOG ================= */
+/* =========================================
+   BLOG CREATION
+========================================= */
 
 const createBlog = async () => {
-
   try {
 
     const title = document.getElementById("blogTitle").value;
@@ -133,7 +137,9 @@ const createBlog = async () => {
 
 expose("createBlog", createBlog);
 
-/* ================= POSTS ================= */
+/* =========================================
+   POSTS SYSTEM
+========================================= */
 
 let allPosts = [];
 
@@ -156,7 +162,6 @@ function loadPosts() {
     });
 
     renderPosts(allPosts);
-
   });
 }
 
@@ -195,7 +200,9 @@ function renderPosts(posts) {
 
 expose("loadPosts", loadPosts);
 
-/* ================= SEARCH ================= */
+/* =========================================
+   SEARCH POSTS
+========================================= */
 
 const searchPosts = () => {
 
@@ -210,20 +217,19 @@ const searchPosts = () => {
 
 expose("searchPosts", searchPosts);
 
-/* ================= EDIT ================= */
+/* =========================================
+   EDIT SYSTEM
+========================================= */
 
 const fillEdit = (id, title, content) => {
-
   document.getElementById("editPostId").value = id;
   document.getElementById("editPostTitle").value = decodeURIComponent(title);
   document.getElementById("editPostContent").value = decodeURIComponent(content);
-
 };
 
 expose("fillEdit", fillEdit);
 
 const updatePost = async () => {
-
   try {
 
     const id = document.getElementById("editPostId").value;
@@ -250,7 +256,9 @@ const deletePost = async (id) => {
 
 expose("deletePost", deletePost);
 
-/* ================= ADS ================= */
+/* =========================================
+   ADS SYSTEM
+========================================= */
 
 const loadAds = () => {
 
@@ -262,9 +270,11 @@ const loadAds = () => {
 
     snap.forEach(d => {
 
+      const ad = d.data();
+
       box.innerHTML += `
         <div class="item">
-          <b>${d.data().title}</b><br>
+          <b>${ad.title}</b><br>
 
           <button class="small-btn"
             onclick="acceptAd('${d.id}')">
@@ -280,7 +290,6 @@ const loadAds = () => {
     });
 
   });
-
 };
 
 expose("loadAds", loadAds);
@@ -298,7 +307,9 @@ const rejectAd = async (id) => {
 expose("acceptAd", acceptAd);
 expose("rejectAd", rejectAd);
 
-/* ================= REJECTED ADS ================= */
+/* =========================================
+   REJECTED ADS
+========================================= */
 
 const loadRejectedAds = () => {
 
@@ -310,7 +321,9 @@ const loadRejectedAds = () => {
 
     snap.forEach(d => {
       if (d.data().status === "rejected") {
-        box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
+        box.innerHTML += `
+          <div class="item">❌ ${d.data().title}</div>
+        `;
       }
     });
 
@@ -338,7 +351,9 @@ const clearRejected = async () => {
 
 expose("clearRejected", clearRejected);
 
-/* ================= NEWS ================= */
+/* =========================================
+   NEWS SYSTEM
+========================================= */
 
 const loadNews = async () => {
 
@@ -379,7 +394,25 @@ const loadNews = async () => {
     console.error(err);
     log("News failed", "error");
   }
-
 };
 
 expose("loadNews", loadNews);
+
+/* =========================================
+   FINAL BRIDGE FIX
+========================================= */
+
+setTimeout(() => {
+
+  window.createBlog = createBlog;
+  window.generateAI = generateAI;
+  window.loadNews = loadNews;
+  window.clearRejected = clearRejected;
+  window.updatePost = updatePost;
+  window.deletePost = deletePost;
+  window.fillEdit = fillEdit;
+  window.searchPosts = searchPosts;
+
+  console.log("🌐 MCN Admin UI Bridge ACTIVE");
+
+}, 500);
