@@ -55,7 +55,8 @@
   }
 
   /* ================= MAIN SYSTEMS ================= */
-
+  await safeImport("./admin-auth.js");
+  await safeImport("./admin-monitor.js"); // MUST BE FIRST UI LOG SYSTEM
   await safeImport("./admin.js");
   await safeImport("./emergency-control.js");
 
