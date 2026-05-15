@@ -32,8 +32,8 @@ chatBox.innerHTML = `
   <div id="mcnMessages"></div>
 
   <div id="mcnInputBox">
-    <input id="mcnInput" placeholder="Type message..." />
-    <button id="mcnSend">➤</button>
+    <textarea id="mcnInput" placeholder="Type message..."></textarea>
+    <button id="mcnSend" disabled>➤</button>
   </div>
 `;
 
@@ -112,7 +112,6 @@ style.innerHTML = `
   background:#0b132b;
 }
 
-/* MESSAGE BUBBLES */
 .msg{
   padding:10px 12px;
   border-radius:14px;
@@ -146,32 +145,51 @@ style.innerHTML = `
 #mcnInputBox{
   display:flex;
   padding:10px;
-  gap:8px;
+  gap:6px;
   background:#141b2e;
-  align-items:center;
+  align-items:flex-end;
   border-top:1px solid rgba(255,255,255,0.05);
 }
 
 #mcnInput{
   flex:1;
-  padding:11px;
+  min-height:40px;
+  max-height:100px;
+  resize:none;
+  padding:10px 12px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
   outline:none;
   background:#0b132b;
   color:white;
-  font-size:13px;
+  font-size:14px;
+  line-height:1.4;
+  overflow-y:auto;
 }
 
 #mcnSend{
-  width:70px;
-  height:40px;
+  width:44px;
+  height:44px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
+  background:#2c3e57;
+  color:#aaa;
+  font-size:18px;
+  cursor:not-allowed;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:0.2s ease;
+}
+
+#mcnSend.active{
   background:linear-gradient(145deg,#5bc0be,#3aa7a5);
-  font-weight:bold;
-  cursor:pointer;
   color:#000;
+  cursor:pointer;
+}
+
+#mcnSend:active{
+  transform:scale(0.92);
 }
 `;
 
@@ -194,7 +212,6 @@ function getChatRef(uid) {
   return collection(db, "supportChats", uid, "messages");
 }
 
-/* SEND MESSAGE */
 async function sendMessage(uid, text) {
   await addDoc(getChatRef(uid), {
     text,
@@ -203,7 +220,6 @@ async function sendMessage(uid, text) {
   });
 }
 
-/* LOAD MESSAGES */
 function loadMessages(uid) {
   const q = query(getChatRef(uid), orderBy("createdAt"));
 
@@ -225,7 +241,7 @@ function loadMessages(uid) {
   });
 }
 
-/* ================= AUTH ================= */
+/* ================= AUTH + UX ================= */
 
 onAuthStateChanged(auth, (user) => {
   if (!user) return;
@@ -233,10 +249,38 @@ onAuthStateChanged(auth, (user) => {
   const input = document.getElementById("mcnInput");
   const sendBtn = document.getElementById("mcnSend");
 
-  loadMessages(user.uid);
+  function updateBtn() {
+    const hasText = input.value.trim().length > 0;
+
+    sendBtn.disabled = !hasText;
+
+    if (hasText) sendBtn.classList.add("active");
+    else sendBtn.classList.remove("active");
+  }
+
+  input.addEventListener("input", updateBtn);
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) sendBtn.click();
+    }
+  });
 
   sendBtn.onclick = async () => {
     const text = input.value.trim();
     if (!text) return;
 
-    await
+    await sendMessage(user.uid, text);
+
+    input.value = "";
+    updateBtn();
+
+    input.focus();
+
+    const box = document.getElementById("mcnMessages");
+    box.scrollTop = box.scrollHeight;
+  };
+
+  loadMessages(user.uid);
+});
