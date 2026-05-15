@@ -49,30 +49,6 @@ function log(msg, type = "ok") {
     box.scrollHeight;
 }
 
-/* ================= BOOT MONITOR ================= */
-
-function bootMonitor() {
-
-  const box = document.getElementById("monitor");
-
-  if (!box) {
-    console.error("❌ Monitor element missing in HTML");
-    return;
-  }
-
-  log("🧠 MCN Admin Monitor Active");
-  log("🔥 Firebase Connected");
-  log("📡 Realtime Systems Ready");
-  log("💬 Live Chat Ready");
-
-  // Keep alive heartbeat (fixes “blank feel”)
-  setInterval(() => {
-    log("💓 Monitor heartbeat OK");
-  }, 30000);
-}
-
-setTimeout(bootMonitor, 500);
-
 /* ================= AUTH ================= */
 
 onAuthStateChanged(auth, async(user)=>{
