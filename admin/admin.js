@@ -20,7 +20,7 @@ import {
   getCountFromServer
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= GLOBAL EXPOSE HELPER ================= */
+/* ================= GLOBAL EXPOSE ================= */
 
 const expose = (name, fn) => {
   window[name] = fn;
@@ -244,10 +244,8 @@ const updatePost = async () => {
 expose("updatePost", updatePost);
 
 const deletePost = async (id) => {
-
   await deleteDoc(doc(db, "posts", id));
   log("🗑 Post deleted", "warn");
-
 };
 
 expose("deletePost", deletePost);
@@ -264,11 +262,9 @@ const loadAds = () => {
 
     snap.forEach(d => {
 
-      const ad = d.data();
-
       box.innerHTML += `
         <div class="item">
-          <b>${ad.title}</b><br>
+          <b>${d.data().title}</b><br>
 
           <button class="small-btn"
             onclick="acceptAd('${d.id}')">
@@ -313,13 +309,9 @@ const loadRejectedAds = () => {
     box.innerHTML = "";
 
     snap.forEach(d => {
-
       if (d.data().status === "rejected") {
-        box.innerHTML += `
-          <div class="item">❌ ${d.data().title}</div>
-        `;
+        box.innerHTML += `<div class="item">❌ ${d.data().title}</div>`;
       }
-
     });
 
   });
@@ -342,7 +334,6 @@ const clearRejected = async () => {
   await batch.commit();
 
   log("🧹 Rejected ads cleared");
-
 };
 
 expose("clearRejected", clearRejected);
@@ -392,22 +383,3 @@ const loadNews = async () => {
 };
 
 expose("loadNews", loadNews);
-
-/* =========================================
-   GLOBAL EXPORT BRIDGE (CRITICAL FIX)
-========================================= */
-
-function exposeAdminFunctions() {
-
-  window.createBlog = createBlog;
-  window.generateAI = generateAI;
-  window.loadNews = loadNews;
-  window.clearRejected = clearRejected;
-  window.updatePost = updatePost;
-  window.deletePost = deletePost;
-  window.fillEdit = fillEdit;
-  window.searchPosts = searchPosts;
-
-}
-
-setTimeout(exposeAdminFunctions, 500);
