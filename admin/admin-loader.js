@@ -240,3 +240,100 @@ This is a placeholder AI response.
   }, 1000);
 
 })();
+
+/* =========================================
+   COMMAND TERMINAL FALLBACK
+========================================= */
+
+window.runCommand = async function () {
+
+  const input =
+    document.getElementById("cmdInput");
+
+  const box =
+    document.getElementById("cmdOutput");
+
+  if (!input || !box) return;
+
+  const raw =
+    input.value.trim();
+
+  if (!raw) return;
+
+  let result = "Unknown command";
+
+  try {
+
+    const parts = raw.split(" ");
+
+    const cmd =
+      parts[0].toLowerCase();
+
+    if (cmd === "/ads") {
+
+      result =
+        parts[1] === "off"
+        ? "Ads disabled"
+        : "Ads enabled";
+    }
+
+    else if (cmd === "/discover") {
+
+      result =
+        parts[1] === "off"
+        ? "Discover disabled"
+        : "Discover enabled";
+    }
+
+    else if (cmd === "/status") {
+
+      result =
+        "MCN Engine operational";
+    }
+
+    else if (cmd === "/clear") {
+
+      box.innerHTML = "";
+
+      input.value = "";
+
+      return;
+    }
+
+    const div =
+      document.createElement("div");
+
+    div.className = "item";
+
+    div.innerHTML = `
+      <b>${raw}</b><br>
+      <small>
+        ${new Date().toLocaleTimeString()}
+      </small><br>
+      <span>${result}</span>
+    `;
+
+    box.prepend(div);
+
+    if (window.logToMonitor) {
+
+      window.logToMonitor(
+        "⌨ Command executed: " + raw
+      );
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+    if (window.logToMonitor) {
+
+      window.logToMonitor(
+        "💥 Command failure",
+        "error"
+      );
+    }
+  }
+
+  input.value = "";
+};
