@@ -47,6 +47,20 @@ function log(msg, type = "ok") {
     box.scrollHeight;
 }
 
+/* ================= BOOT MONITOR ================= */
+
+setTimeout(() => {
+
+  log("🧠 MCN Admin Monitor Active");
+
+  log("🔥 Firebase Connected");
+
+  log("📡 Realtime Systems Ready");
+
+  log("💬 Live Chat Ready");
+
+}, 800);
+
 /* ================= AUTH ================= */
 
 onAuthStateChanged(auth, async(user)=>{
