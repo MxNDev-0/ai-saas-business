@@ -1,7 +1,3 @@
-/* =========================================
-   MCN ADMIN LOADER V7 STABLE (FIXED)
-========================================= */
-
 (async function () {
 
   console.log("🧠 MCN Boot V7 starting...");
@@ -22,7 +18,7 @@
   }
 
   /* =========================================
-     GLOBAL MONITOR LOGGER (FIRST — IMPORTANT)
+     GLOBAL MONITOR LOGGER
   ========================================= */
 
   window.logToMonitor = function (msg, type = "ok") {
@@ -52,6 +48,9 @@
   const monitorModule = await safeImport("./admin-monitor.js");
   const adminModule = await safeImport("./admin.js");
 
+  /* 🔥 AI ENGINE (NEW INJECTION) */
+  const aiModule = await safeImport("./ai-engine.js");
+
   await safeImport("./emergency-control.js");
 
   try {
@@ -62,18 +61,38 @@
 
   /* =========================================
      START MONITOR ENGINE
-  ========================================== */
+  ========================================= */
 
   if (monitorModule?.startMonitor) {
     monitorModule.startMonitor();
     console.log("🖥 Monitor engine started");
-  } else {
-    console.error("❌ startMonitor missing");
   }
 
   /* =========================================
-     SAFE FALLBACK FUNCTIONS (GLOBAL)
-  ========================================== */
+     GLOBAL AI HOOK (NEW)
+  ========================================= */
+
+  window.MCN_AI = aiModule || {};
+
+  window.generateAIArticleGlobal = async function (topic) {
+
+    if (window.MCN_AI?.generateAIArticle) {
+      return await window.MCN_AI.generateAIArticle(topic);
+    }
+
+    // fallback if AI engine not loaded
+    return `
+# ${topic}
+
+MCN fallback AI engine active.
+
+AI module not loaded properly.
+    `.trim();
+  };
+
+  /* =========================================
+     SAFE FALLBACK FUNCTIONS
+  ========================================= */
 
   window.generateAI = async function () {
     const topic = document.getElementById("aiTopic")?.value;
@@ -82,167 +101,43 @@
 
     logToMonitor("🤖 AI generating article...");
 
-    alert(`# ${topic}\n\nMCN AI placeholder article`);
+    const article = await window.generateAIArticleGlobal(topic);
+
+    alert(article);
 
     logToMonitor("✅ AI article generated");
   };
 
-  window.searchPosts = function () {
-    const val = document.getElementById("searchPosts")?.value?.toLowerCase() || "";
-    console.log("Searching posts:", val);
-  };
+  window.createBlog = async function () {
 
-  window.loadNews = function () {
-    const keyword = document.getElementById("newsKeyword")?.value;
-    const box = document.getElementById("newsList");
-
-    if (!box) return;
-
-    box.innerHTML = `
-      <div class="item">
-        📰 Demo news: ${keyword || "general"}
-      </div>
-    `;
-
-    logToMonitor("📰 News system loaded");
-  };
-
-  window.createBlog = function () {
     const title = document.getElementById("blogTitle")?.value;
-    logToMonitor("📝 Blog request: " + title);
-    alert("Blog system active (stub)");
-  };
 
-  window.updatePost = function () {
-    logToMonitor("✏ Update triggered");
-    alert("Update system active (stub)");
-  };
+    if (!title) return logToMonitor("Missing title", "error");
 
-  /* =========================================
-     COMMAND TERMINAL FALLBACK
-  ========================================== */
+    const content = document.getElementById("blogContent")?.value;
 
-  window.runCommand = async function () {
+    let finalContent = content;
 
-    const input = document.getElementById("cmdInput");
-    const box = document.getElementById("cmdOutput");
-
-    if (!input || !box) return;
-
-    const raw = input.value.trim();
-    if (!raw) return;
-
-    let result = "Unknown command";
-
-    try {
-      const parts = raw.split(" ");
-      const cmd = parts[0].toLowerCase();
-
-      if (cmd === "/ads") {
-        result = parts[1] === "off" ? "Ads disabled" : "Ads enabled";
-      }
-
-      else if (cmd === "/discover") {
-        result = parts[1] === "off" ? "Discover disabled" : "Discover enabled";
-      }
-
-      else if (cmd === "/status") {
-        result = "MCN Engine operational";
-      }
-
-      else if (cmd === "/clear") {
-        box.innerHTML = "";
-        input.value = "";
-        return;
-      }
-
-      const div = document.createElement("div");
-      div.className = "item";
-
-      div.innerHTML = `
-        <b>${raw}</b><br>
-        <small>${new Date().toLocaleTimeString()}</small><br>
-        <span>${result}</span>
-      `;
-
-      box.prepend(div);
-
-      logToMonitor("⌨ Command: " + raw);
-
-    } catch (err) {
-      console.error(err);
-      logToMonitor("💥 Command failed", "error");
+    if (!finalContent || finalContent.trim() === "") {
+      finalContent = await window.generateAIArticleGlobal(title);
     }
 
-    input.value = "";
-  };
+    logToMonitor("📝 Blog ready for creation");
 
-  /* =========================================
-     REJECTED ADS
-  ========================================== */
-
-  window.clearRejected = function () {
-    const box = document.getElementById("rejectedList");
-    if (box) box.innerHTML = "";
-    logToMonitor("🗑 Rejected cleared");
-  };
-
-  window.loadRejectedAds = function () {
-    const box = document.getElementById("rejectedList");
-    if (!box) return;
-
-    box.innerHTML = `<div class="item">No rejected ads</div>`;
-  };
-
-  /* =========================================
-     SUPPORT SYSTEM
-  ========================================== */
-
-  window.loadSupportInbox = function () {
-    const users = document.getElementById("supportUsers");
-    const messages = document.getElementById("supportMessages");
-
-    if (!users || !messages) return;
-
-    users.innerHTML = `<div class="item">No users</div>`;
-    messages.innerHTML = `<div class="item">Support ready</div>`;
-  };
-
-  /* =========================================
-     DOM READY SAFE BINDINGS
-  ========================================== */
-
-  window.addEventListener("DOMContentLoaded", () => {
-
-    const supportBtn = document.getElementById("sendSupportReply");
-
-    if (supportBtn) {
-      supportBtn.onclick = function () {
-        const input = document.getElementById("supportReply");
-
-        if (!input?.value.trim()) return;
-
-        logToMonitor("💬 Support reply sent");
-
-        input.value = "";
-      };
+    if (window.adminModule?.createBlog) {
+      window.adminModule.createBlog(title, finalContent);
     }
-
-    if (window.loadRejectedAds) window.loadRejectedAds();
-    if (window.loadSupportInbox) window.loadSupportInbox();
-  });
+  };
 
   /* =========================================
-     ERROR HANDLER
-  ========================================== */
+     STATUS CHECKER (DEBUG TOOL)
+  ========================================= */
 
-  window.addEventListener("error", (e) => {
-    logToMonitor("💥 " + e.message, "error");
-  });
+  console.log("📦 LOAD REPORT:", loaded);
 
   /* =========================================
      READY SIGNAL
-  ========================================== */
+  ========================================= */
 
   setTimeout(() => {
     console.log("🚀 MCN ENGINE FULLY READY");
