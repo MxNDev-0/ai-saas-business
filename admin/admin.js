@@ -416,3 +416,26 @@ setTimeout(() => {
   console.log("🌐 MCN Admin UI Bridge ACTIVE");
 
 }, 500);
+
+/* =========================================
+   GLOBAL FIX BRIDGE (CRITICAL)
+========================================= */
+
+function expose(fn, name) {
+  window[name] = fn;
+}
+
+/* expose ALL functions */
+expose(createBlog, "createBlog");
+expose(loadNews, "loadNews");
+expose(generateAI, "generateAI");
+expose(clearRejected, "clearRejected");
+expose(updatePost, "updatePost");
+expose(deletePost, "deletePost");
+expose(searchPosts, "searchPosts");
+expose(fillEdit, "fillEdit");
+
+/* dashboard controls */
+expose(setFeatured, "setFeatured");
+expose(setSponsored, "setSponsored");
+expose(toggleAd, "toggleAd");
