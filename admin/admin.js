@@ -21,6 +21,14 @@ import { watchControls, setControl } from "./admin-control.js";
 import { initAdminGuard } from "./admin-auth.js";
 
 /* =========================================
+   AI ENGINE IMPORT (LEVEL 2)
+========================================= */
+import {
+  autoGenerateBlog,
+  generateAIArticle
+} from "./admin/ai-engine.js";
+
+/* =========================================
    GLOBAL EXPOSE
 ========================================= */
 
@@ -94,7 +102,7 @@ initAdminGuard((user) => {
 });
 
 /* =========================================
-   SAFE CONTROL WRAPPER
+   SAFE CONTROL
 ========================================= */
 
 async function safeControl(key, value) {
@@ -108,31 +116,7 @@ async function safeControl(key, value) {
 }
 
 /* =========================================
-   AI BLOG ENGINE
-========================================= */
-
-async function generateAIArticle(topic) {
-
-  log("🤖 AI generating article...");
-
-  return `
-# ${topic}
-
-## Introduction
-AI generated content for ${topic}.
-
-## Insights
-- Key idea 1
-- Key idea 2
-- Key idea 3
-
-## Conclusion
-Generated successfully by MCN AI Engine.
-  `.trim();
-}
-
-/* =========================================
-   CREATE / UPDATE BLOG
+   BLOG CREATE / UPDATE (AI POWERED)
 ========================================= */
 
 window.createBlog = async function () {
@@ -152,7 +136,6 @@ window.createBlog = async function () {
 
     if (id) {
 
-      // UPDATE POST
       await updateDoc(doc(db, "posts", id), {
         title,
         content,
@@ -164,7 +147,6 @@ window.createBlog = async function () {
 
     } else {
 
-      // CREATE POST
       await addDoc(collection(db, "posts"), {
         title,
         content,
@@ -209,7 +191,7 @@ function loadPosts() {
 }
 
 /* =========================================
-   RENDER POSTS (UPDATED + POST ID + EDIT)
+   RENDER POSTS
 ========================================= */
 
 function renderPosts(posts) {
@@ -225,7 +207,6 @@ function renderPosts(posts) {
         <b>${p.title}</b><br>
 
         <small>🆔 ${p.id}</small><br>
-
         <small>${p.aiGenerated ? "🤖 AI POST" : "✍ Manual"}</small><br>
 
         <button onclick='loadIntoEditor(${JSON.stringify(p)})'>
@@ -248,7 +229,7 @@ function renderPosts(posts) {
 expose("loadPosts", loadPosts);
 
 /* =========================================
-   EDITOR LOADER
+   EDITOR
 ========================================= */
 
 window.loadIntoEditor = function (post) {
@@ -274,8 +255,13 @@ function clearEditor() {
 }
 
 /* =========================================
-   COPY POST ID
+   DELETE + COPY
 ========================================= */
+
+window.deletePost = async (id) => {
+  await deleteDoc(doc(db, "posts", id));
+  log("🗑 Deleted post");
+};
 
 window.copyPostId = function (id) {
   navigator.clipboard.writeText(id);
@@ -283,10 +269,81 @@ window.copyPostId = function (id) {
 };
 
 /* =========================================
-   DELETE POST
+   AI UI FUNCTIONS (INTEGRATED)
 ========================================= */
 
-window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
-  log("🗑 Deleted post");
+window.generateAndPreview = async function () {
+
+  const topic = document.getElementById("aiTopic")?.value;
+
+  if (!topic) return log("Enter topic", "warn");
+
+  log("🤖 Generating preview...");
+
+  const content = await generateAIArticle(topic);
+
+  alert(content);
+
+  log("✅ Preview ready");
+};
+
+window.autoPublishBlog = async function () {
+
+  const topic = document.getElementById("aiTopic")?.value;
+
+  if (!topic) return log("Missing topic", "warn");
+
+  log("🚀 Auto publishing blog...");
+
+  const post = await autoGenerateBlog(topic);
+
+  log("📝 Published: " + post.title);
+};
+
+/* =========================================
+   TRENDING TOPICS
+========================================= */
+
+window.loadTrending = function () {
+
+  const box = document.getElementById("trendingBox");
+  if (!box) return;
+
+  const trends = [
+    "AI job boom in Africa",
+    "Bitcoin surge 2026",
+    "Remote work explosion",
+    "Nigeria tech startups",
+    "Content creator monetization"
+  ];
+
+  box.innerHTML = "";
+
+  trends.forEach(t => {
+    box.innerHTML += `
+      <div class="item" onclick="selectTrend('${t}')">
+        🔥 ${t}
+      </div>
+    `;
+  });
+};
+
+window.selectTrend = function (topic) {
+  document.getElementById("aiTopic").value = topic;
+  log("🔥 Selected trend: " + topic);
+};
+
+/* =========================================
+   AI SETTINGS
+========================================= */
+
+window.applyAISettings = function () {
+
+  const provider = document.getElementById("aiProvider")?.value;
+
+  if (window.AI_CONFIG) {
+    window.AI_CONFIG.provider = provider;
+  }
+
+  log("⚙ AI provider set to: " + provider);
 };
