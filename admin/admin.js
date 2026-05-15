@@ -1,4 +1,5 @@
 import { auth, db } from "./firebase.js";
+import { startMonitor } from "./modules/admin-monitor.js";
 
 import {
   onAuthStateChanged
@@ -111,6 +112,7 @@ onAuthStateChanged(auth, async(user)=>{
     }
 
     log("✅ Admin online");
+    startMonitor();
 
     loadPosts();
     loadAds();
