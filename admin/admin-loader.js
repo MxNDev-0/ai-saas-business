@@ -1,5 +1,5 @@
 /* =========================================
-   MCN ADMIN LOADER STABLE V5
+   MCN ADMIN LOADER STABLE V5 (PATCHED)
 ========================================= */
 
 (async function () {
@@ -20,11 +20,7 @@
 
     } catch (err) {
 
-      console.error(
-        "❌ Failed loading:",
-        path,
-        err
-      );
+      console.error("❌ Failed loading:", path, err);
 
       errors.push({
         path,
@@ -35,68 +31,46 @@
     }
   }
 
-  /* =========================
-     AUTH
-  ========================= */
+  /* ================= AUTH ================= */
 
-  const authLoaded =
-    await safeImport(
-      "./admin-auth.js"
-    );
+  const authLoaded = await safeImport("./admin-auth.js");
 
   if (!authLoaded) {
-
-    renderFatal(
-      "admin-auth.js failed to load"
-    );
-
+    renderFatal("admin-auth.js failed to load");
     return;
   }
 
-  /* =========================
-     WAIT FOR AUTH
-  ========================= */
+  /* ================= WAIT AUTH ================= */
 
   let tries = 0;
 
-  while (
-    !window.__MCN_ADMIN_AUTH &&
-    tries < 50
-  ) {
-
-    await new Promise(r =>
-      setTimeout(r, 200)
-    );
-
+  while (!window.__MCN_ADMIN_AUTH && tries < 50) {
+    await new Promise(r => setTimeout(r, 200));
     tries++;
   }
 
   if (!window.__MCN_ADMIN_AUTH) {
-
-    renderFatal(
-      "Admin authentication failed"
-    );
-
+    renderFatal("Admin authentication failed");
     return;
   }
 
-  /* =========================
-     LOAD MAIN SYSTEMS
-  ========================= */
+  /* ================= MAIN SYSTEMS ================= */
 
   await safeImport("./admin.js");
+  await safeImport("./emergency-control.js");
 
-  await safeImport(
-    "./emergency-control.js"
-  );
+  /* ================= CHAT SYSTEM (NEW SAFE ADD) ================= */
 
-  console.log(
-    "✅ MCN Admin Fully Loaded"
-  );
+  try {
+    await safeImport("./admin-chat.js");
+    console.log("💬 Chat system attached");
+  } catch (e) {
+    console.warn("Chat system optional module failed");
+  }
 
-  /* =========================
-     FATAL SCREEN
-  ========================= */
+  console.log("✅ MCN Admin Fully Loaded");
+
+  /* ================= FATAL SCREEN ================= */
 
   function renderFatal(msg) {
 
@@ -120,21 +94,11 @@
           border-radius:16px;
         ">
 
-          <h1 style="
-            color:#ff6b6b;
-            margin-top:0;
-          ">
-            ⚠ Admin Boot Failed
-          </h1>
+          <h1 style="color:#ff6b6b;">⚠ Admin Boot Failed</h1>
 
           <p>${msg}</p>
 
-          <div style="
-            margin-top:20px;
-            font-size:13px;
-            color:#aaa;
-          ">
-
+          <div style="margin-top:20px;font-size:13px;color:#aaa;">
             ${
               errors.map(e => `
                 <div style="margin-bottom:8px;">
@@ -143,7 +107,6 @@
                 </div>
               `).join("")
             }
-
           </div>
 
         </div>
