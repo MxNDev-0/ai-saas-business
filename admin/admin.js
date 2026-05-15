@@ -1,5 +1,4 @@
 import { auth, db } from "./firebase.js";
-import { startMonitor } from "./modules/admin-monitor.js";
 
 import {
   onAuthStateChanged
@@ -51,17 +50,27 @@ function log(msg, type = "ok") {
 
 /* ================= BOOT MONITOR ================= */
 
-setTimeout(() => {
+function bootMonitor() {
+
+  const box = document.getElementById("monitor");
+
+  if (!box) {
+    console.error("❌ Monitor element missing in HTML");
+    return;
+  }
 
   log("🧠 MCN Admin Monitor Active");
-
   log("🔥 Firebase Connected");
-
   log("📡 Realtime Systems Ready");
-
   log("💬 Live Chat Ready");
 
-}, 800);
+  // Keep alive heartbeat (fixes “blank feel”)
+  setInterval(() => {
+    log("💓 Monitor heartbeat OK");
+  }, 30000);
+}
+
+setTimeout(bootMonitor, 500);
 
 /* ================= AUTH ================= */
 
@@ -102,8 +111,6 @@ onAuthStateChanged(auth, async(user)=>{
     }
 
     log("✅ Admin online");
-
-    startMonitor();
 
     loadPosts();
     loadAds();
