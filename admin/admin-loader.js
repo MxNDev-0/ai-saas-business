@@ -239,6 +239,18 @@ This is a placeholder AI response.
 
   }, 1000);
 
+/* =========================================
+   AUTO BOOT
+========================================= */
+
+if (window.loadRejectedAds) {
+  window.loadRejectedAds();
+}
+
+if (window.loadSupportInbox) {
+  window.loadSupportInbox();
+}
+
 })();
 
 /* =========================================
@@ -337,3 +349,92 @@ window.runCommand = async function () {
 
   input.value = "";
 };
+
+/* =========================================
+   REJECTED ADS FALLBACK
+========================================= */
+
+window.clearRejected = function () {
+
+  const box =
+    document.getElementById("rejectedList");
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  if (window.logToMonitor) {
+
+    window.logToMonitor(
+      "🗑 Rejected ads cleared"
+    );
+  }
+};
+
+window.loadRejectedAds = function () {
+
+  const box =
+    document.getElementById("rejectedList");
+
+  if (!box) return;
+
+  box.innerHTML = `
+    <div class="item">
+      No rejected ads
+    </div>
+  `;
+};
+
+/* =========================================
+   SUPPORT FALLBACK
+========================================= */
+
+window.loadSupportInbox = function () {
+
+  const users =
+    document.getElementById("supportUsers");
+
+  const messages =
+    document.getElementById("supportMessages");
+
+  if (!users || !messages) return;
+
+  users.innerHTML = `
+    <div class="item">
+      No active users
+    </div>
+  `;
+
+  messages.innerHTML = `
+    <div class="item">
+      Support system online
+    </div>
+  `;
+};
+
+const supportBtn =
+  document.getElementById(
+    "sendSupportReply"
+  );
+
+if (supportBtn) {
+
+  supportBtn.onclick = function () {
+
+    const input =
+      document.getElementById(
+        "supportReply"
+      );
+
+    if (!input.value.trim()) return;
+
+    if (window.logToMonitor) {
+
+      window.logToMonitor(
+        "💬 Support reply sent"
+      );
+    }
+
+    input.value = "";
+  };
+}
