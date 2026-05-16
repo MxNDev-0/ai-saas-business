@@ -269,10 +269,27 @@
 
   </div>
 
-  <div class="profile-btn"
-       onclick="openLogin()">
-    👤
-  </div>
+  <!-- 🔥 AI INSTALL TRIGGER -->
+<div id="aiInstallTrigger"
+     onclick="triggerSmartInstall()"
+     style="
+       background:#5bc0be;
+       color:#000;
+       padding:6px 10px;
+       border-radius:8px;
+       font-size:12px;
+       font-weight:bold;
+       cursor:pointer;
+       margin-right:10px;
+       display:none;
+     ">
+  🤖 Install AI Upgrade
+</div>
+
+<div class="profile-btn"
+     onclick="openLogin()">
+  👤
+</div>
 
 </div>
 
@@ -663,6 +680,101 @@ window.goDashboard = function () {
 
 window.contact = function () {
   location.href = "contact.html";
+};
+
+/* ================= PREDICTIVE AI INSTALL SYSTEM (V2) ================= */
+
+let aiInstallScore = 0;
+let firstInteractionTime = Date.now();
+let hasShownPredictiveBanner = false;
+
+/* CORE SCORING ENGINE */
+function updateInstallScore(amount) {
+  aiInstallScore += amount;
+  evaluatePredictiveInstall();
+}
+
+/* PREDICTIVE LOGIC */
+function evaluatePredictiveInstall() {
+
+  const timeSpent = (Date.now() - firstInteractionTime) / 1000;
+  const scrollDepth = window.scrollY;
+
+  // early engagement signals
+  if (timeSpent > 6) aiInstallScore += 1;
+  if (timeSpent > 15) aiInstallScore += 2;
+
+  if (scrollDepth > 150) aiInstallScore += 1;
+  if (scrollDepth > 400) aiInstallScore += 2;
+
+  // strong intent threshold
+  if (aiInstallScore > 5 && !hasShownPredictiveBanner) {
+    showPredictiveInstall();
+    hasShownPredictiveBanner = true;
+  }
+
+  // fallback trigger
+  if (aiInstallScore > 10) {
+    forceInstallHint();
+  }
+}
+
+/* USER BEHAVIOR TRACKING */
+document.addEventListener("click", () => updateInstallScore(1));
+
+document.addEventListener("scroll", () => updateInstallScore(0.5));
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    updateInstallScore(2);
+  }
+});
+
+/* SHOW EARLY SMART BANNER */
+function showPredictiveInstall() {
+  const banner = document.getElementById("installBanner");
+
+  if (banner) {
+    banner.style.display = "flex";
+  }
+}
+
+/* FORCE ASSISTED INSTALL PROMPT */
+function forceInstallHint() {
+
+  const btn =
+    document.getElementById("aiInstallTrigger");
+
+  if (btn) {
+    btn.style.display = "inline-block";
+    btn.innerText = "⚡ Recommended Install";
+  }
+}
+
+/* SMART INSTALL TRIGGER */
+window.triggerSmartInstall = function () {
+
+  const banner =
+    document.getElementById("installBanner");
+
+  const score = Math.random() * 100;
+
+  if (score > 20 || aiInstallScore > 7) {
+
+    if (banner) {
+      banner.style.display = "flex";
+    }
+
+  } else {
+
+    setTimeout(() => {
+
+      if (banner) {
+        banner.style.display = "flex";
+      }
+
+    }, 3000);
+  }
 };
 
 /* =========================================
