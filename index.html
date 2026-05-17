@@ -251,6 +251,96 @@
   <img src="assets/logo.png">
 </div>
 
+<!-- ================= TOP AI INSTALL BAR ================= -->
+
+<div id="topInstallBar"
+     style="
+     display:none;
+     align-items:center;
+     justify-content:space-between;
+     gap:10px;
+     padding:10px 14px;
+     background:linear-gradient(90deg,#071229,#102347,#071229);
+     border-bottom:1px solid #1fe0d0;
+     box-shadow:0 0 20px rgba(91,192,190,0.15);
+     position:sticky;
+     top:0;
+     z-index:999999;
+     ">
+
+  <div style="
+       display:flex;
+       align-items:center;
+       gap:10px;
+       flex:1;
+       min-width:0;
+       ">
+
+    <div style="
+         width:34px;
+         height:34px;
+         border-radius:10px;
+         background:#0b132b;
+         display:flex;
+         align-items:center;
+         justify-content:center;
+         font-size:18px;
+         border:1px solid #1fe0d0;
+         flex-shrink:0;
+         ">
+      🤖
+    </div>
+
+    <div style="min-width:0;">
+
+      <div style="
+           font-size:14px;
+           font-weight:bold;
+           color:#fff;
+           ">
+        Install AI Upgrade
+      </div>
+
+      <div style="
+           font-size:11px;
+           color:#9fded9;
+           ">
+        Faster access + smarter experience
+      </div>
+
+    </div>
+
+  </div>
+
+  <button onclick="triggerSmartInstall()"
+          style="
+          width:auto;
+          padding:10px 16px;
+          margin:0;
+          border:none;
+          border-radius:10px;
+          background:#5bc0be;
+          color:#000;
+          font-weight:bold;
+          font-size:13px;
+          cursor:pointer;
+          flex-shrink:0;
+          ">
+    Install
+  </button>
+
+  <div onclick="closeTopInstallBar()"
+       style="
+       color:#9fded9;
+       font-size:22px;
+       cursor:pointer;
+       padding:0 4px;
+       ">
+    ×
+  </div>
+
+</div>
+
 <!-- ================= HEADER ================= -->
 
 <div class="header">
@@ -269,22 +359,7 @@
 
   </div>
 
-  <!-- 🔥 AI INSTALL TRIGGER -->
-<div id="aiInstallTrigger"
-     onclick="triggerSmartInstall()"
-     style="
-       background:#5bc0be;
-       color:#000;
-       padding:6px 10px;
-       border-radius:8px;
-       font-size:12px;
-       font-weight:bold;
-       cursor:pointer;
-       margin-right:10px;
-       display:none;
-     ">
-  🤖 Install AI Upgrade
-</div>
+
 
 <div class="profile-btn"
      onclick="openLogin()">
@@ -388,54 +463,6 @@
 
 </div>
 
-<!-- ================= APP INSTALLER ================= -->
-
-<div id="installBanner"
-     style="
-     position:fixed;
-     bottom:0;
-     left:0;
-     width:100%;
-     background:#1c2541;
-     padding:12px;
-     display:none;
-     justify-content:space-between;
-     align-items:center;
-     z-index:99999;
-     border-top:1px solid #333;
-     ">
-
-  <span style="font-size:13px;color:#ddd;">
-    📲 Install MCN Engine for faster access
-  </span>
-
-  <div>
-    <button onclick="installApp()"
-            style="
-            background:#5bc0be;
-            border:none;
-            padding:8px 12px;
-            border-radius:8px;
-            cursor:pointer;
-            ">
-      Install
-    </button>
-
-    <button onclick="closeInstallBanner()"
-            style="
-            background:transparent;
-            border:1px solid #5bc0be;
-            color:#5bc0be;
-            padding:8px 12px;
-            border-radius:8px;
-            margin-left:6px;
-            cursor:pointer;
-            ">
-      Later
-    </button>
-  </div>
-
-</div>
 
 <!-- ================= FOOTER ================= -->
 
