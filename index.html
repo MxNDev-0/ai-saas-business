@@ -251,95 +251,6 @@
   <img src="assets/logo.png">
 </div>
 
-<!-- ================= TOP AI INSTALL BAR ================= -->
-
-<div id="topInstallBar"
-     style="
-     display:none;
-     align-items:center;
-     justify-content:space-between;
-     gap:10px;
-     padding:10px 14px;
-     background:linear-gradient(90deg,#071229,#102347,#071229);
-     border-bottom:1px solid #1fe0d0;
-     box-shadow:0 0 20px rgba(91,192,190,0.15);
-     position:sticky;
-     top:0;
-     z-index:999999;
-     ">
-
-  <div style="
-       display:flex;
-       align-items:center;
-       gap:10px;
-       flex:1;
-       min-width:0;
-       ">
-
-    <div style="
-         width:34px;
-         height:34px;
-         border-radius:10px;
-         background:#0b132b;
-         display:flex;
-         align-items:center;
-         justify-content:center;
-         font-size:18px;
-         border:1px solid #1fe0d0;
-         flex-shrink:0;
-         ">
-      🤖
-    </div>
-
-    <div style="min-width:0;">
-
-      <div style="
-           font-size:14px;
-           font-weight:bold;
-           color:#fff;
-           ">
-        Install AI Upgrade
-      </div>
-
-      <div style="
-           font-size:11px;
-           color:#9fded9;
-           ">
-        Faster access + smarter experience
-      </div>
-
-    </div>
-
-  </div>
-
-  <button onclick="triggerSmartInstall()"
-          style="
-          width:auto;
-          padding:10px 16px;
-          margin:0;
-          border:none;
-          border-radius:10px;
-          background:#5bc0be;
-          color:#000;
-          font-weight:bold;
-          font-size:13px;
-          cursor:pointer;
-          flex-shrink:0;
-          ">
-    Install
-  </button>
-
-  <div onclick="closeTopInstallBar()"
-       style="
-       color:#9fded9;
-       font-size:22px;
-       cursor:pointer;
-       padding:0 4px;
-       ">
-    ×
-  </div>
-
-</div>
 
 <!-- ================= HEADER ================= -->
 
@@ -709,152 +620,111 @@ window.contact = function () {
   location.href = "contact.html";
 };
 
-/* ================= PREDICTIVE AI INSTALL SYSTEM (V2) ================= */
-
-let aiInstallScore = 0;
-let firstInteractionTime = Date.now();
-let hasShownPredictiveBanner = false;
-
-/* CORE SCORING ENGINE */
-function updateInstallScore(amount) {
-  aiInstallScore += amount;
-  evaluatePredictiveInstall();
-}
-
-/* PREDICTIVE LOGIC */
-function evaluatePredictiveInstall() {
-
-  const timeSpent = (Date.now() - firstInteractionTime) / 1000;
-  const scrollDepth = window.scrollY;
-
-  // early engagement signals
-  if (timeSpent > 6) aiInstallScore += 1;
-  if (timeSpent > 15) aiInstallScore += 2;
-
-  if (scrollDepth > 150) aiInstallScore += 1;
-  if (scrollDepth > 400) aiInstallScore += 2;
-
-  // strong intent threshold
-  if (aiInstallScore > 5 && !hasShownPredictiveBanner) {
-    showPredictiveInstall();
-    hasShownPredictiveBanner = true;
-  }
-
-  // fallback trigger
-  if (aiInstallScore > 10) {
-    forceInstallHint();
-  }
-}
-
-/* USER BEHAVIOR TRACKING */
-document.addEventListener("click", () => updateInstallScore(1));
-
-document.addEventListener("scroll", () => updateInstallScore(0.5));
-
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    updateInstallScore(2);
-  }
-});
-
-/* SHOW EARLY SMART BANNER */
-function showPredictiveInstall() {
-  const banner = document.getElementById("installBanner");
-
-  if (banner) {
-    banner.style.display = "flex";
-  }
-}
-
-/* FORCE ASSISTED INSTALL PROMPT */
-function forceInstallHint() {
-
-  const btn =
-    document.getElementById("aiInstallTrigger");
-
-  if (btn) {
-    btn.style.display = "inline-block";
-    btn.innerText = "⚡ Recommended Install";
-  }
-}
-
-/* SMART INSTALL TRIGGER */
-window.triggerSmartInstall = function () {
-
-  const banner =
-    document.getElementById("installBanner");
-
-  const score = Math.random() * 100;
-
-  if (score > 20 || aiInstallScore > 7) {
-
-    if (banner) {
-      banner.style.display = "flex";
-    }
-
-  } else {
-
-    setTimeout(() => {
-
-      if (banner) {
-        banner.style.display = "flex";
-      }
-
-    }, 3000);
-  }
-};
-
 /* =========================================
-   📲 APP INSTALLER SYSTEM (PWA UPGRADE)
+   📲 SMART TOP INSTALL SYSTEM (FIXED)
 ========================================= */
 
 let deferredPrompt = null;
 
-/* DETECT INSTALL PROMPT */
+/* INSTALL BAR ELEMENT */
+const topInstallBar =
+  document.getElementById("topInstallBar");
+
+/* DETECT INSTALLABILITY */
 window.addEventListener("beforeinstallprompt", (e) => {
+
   e.preventDefault();
+
   deferredPrompt = e;
 
-  const banner = document.getElementById("installBanner");
-
-  if (banner) {
-    banner.style.display = "flex";
+  /* DON'T SHOW IF ALREADY CLOSED */
+  if (localStorage.getItem("mcnInstallClosed")) {
+    return;
   }
+
+  /* DON'T SHOW IF APP INSTALLED */
+  if (window.matchMedia("(display-mode: standalone)").matches) {
+    return;
+  }
+
+  /* SHOW TOP BAR */
+  setTimeout(() => {
+
+    if (topInstallBar) {
+      topInstallBar.style.display = "flex";
+    }
+
+  }, 2500);
 
   console.log("📲 Install prompt ready");
 });
 
-/* INSTALL APP */
-window.installApp = async function () {
+/* INSTALL BUTTON */
+window.triggerSmartInstall = async function () {
+
   if (!deferredPrompt) {
-    alert("Install not available on this device/browser.");
+
+    alert(
+      "Install option is not available on this browser yet."
+    );
+
     return;
   }
 
   deferredPrompt.prompt();
 
-  const choice = await deferredPrompt.userChoice;
+  const choice =
+    await deferredPrompt.userChoice;
 
   if (choice.outcome === "accepted") {
-    console.log("✅ User installed MCN Engine");
+
+    console.log("✅ MCN Engine installed");
+
+    if (topInstallBar) {
+      topInstallBar.style.display = "none";
+    }
+
   } else {
-    console.log("❌ User dismissed install");
+
+    console.log("❌ Install dismissed");
   }
 
   deferredPrompt = null;
-
-  closeInstallBanner();
 };
 
-/* CLOSE BANNER */
-window.closeInstallBanner = function () {
-  const banner = document.getElementById("installBanner");
-  if (banner) banner.style.display = "none";
+/* CLOSE INSTALL BAR */
+window.closeTopInstallBar = function () {
+
+  localStorage.setItem(
+    "mcnInstallClosed",
+    "true"
+  );
+
+  if (topInstallBar) {
+    topInstallBar.style.display = "none";
+  }
 };
 
-/* ALREADY INSTALLED CHECK */
-if (window.matchMedia("(display-mode: standalone)").matches) {
-  console.log("📲 App already installed (standalone mode)");
+/* APP INSTALLED */
+window.addEventListener("appinstalled", () => {
+
+  console.log("📲 App installed successfully");
+
+  if (topInstallBar) {
+    topInstallBar.style.display = "none";
+  }
+});
+
+/* ALREADY INSTALLED */
+if (
+  window.matchMedia("(display-mode: standalone)").matches
+) {
+
+  if (topInstallBar) {
+    topInstallBar.style.display = "none";
+  }
+
+  console.log("📲 Already running as installed app");
 }
 
 </script>
