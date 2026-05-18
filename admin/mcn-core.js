@@ -1,29 +1,20 @@
 /* =========================================
-🧠 MCN KERNEL v3.1 — UNIFIED DEPENDENCY SYSTEM
-Single Source of Truth (NO DUPLICATION SAFE)
+🧠 MCN KERNEL v3.1 — EVENT CONNECTED CORE
 ========================================= */
+
+import "./mcn-event-bus.js";
+
+const BUS = window.MCN_EVENT_BUS;
 
 window.MCN_KERNEL = window.MCN_KERNEL || {
   version: "v3.1",
-
   modules: {},
-
-  graph: {
-    dependencies: {},
-    dependents: {}
-  },
-
-  status: {
-    mode: "stable",
-    lastFault: null
-  }
+  graph: { dependencies: {}, dependents: {} },
+  status: { mode: "stable", lastFault: null }
 };
-
-/* ================= SHARED SYSTEM STATE ================= */
 
 window.MCN_SYSTEM = window.MCN_SYSTEM || {
   health: 100,
-
   stats: {
     posts: 0,
     users: 0,
@@ -31,7 +22,6 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
     errorCount: 0,
     lastEvent: null
   },
-
   flags: {
     emergency: false,
     degraded: false,
@@ -39,50 +29,54 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
   }
 };
 
-window.MCN_AI = window.MCN_AI || {
-  mode: "stable",
-  risk: 0
-};
-
+window.MCN_AI = window.MCN_AI || { mode: "stable", risk: 0 };
 window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
 
-/* ================= MODULE REGISTRY ================= */
+/* ================= MODULE RUNNER ================= */
 
-export function registerModule(name, fn, deps = []) {
-  window.MCN_KERNEL.modules[name] = {
-    fn,
-    status: "idle",
-    lastRun: 0,
-    errors: 0,
-    deps
-  };
+function runModule(name) {
+  const mod = window.MCN_KERNEL.modules[name];
+  if (!mod) return;
 
-  window.MCN_KERNEL.graph.dependencies[name] = deps;
+  try {
+    mod.fn();
+    mod.status = "active";
+
+    BUS.emit("module:success", { name });
+
+  } catch (e) {
+    mod.status = "failed";
+    mod.errors++;
+
+    window.MCN_SYSTEM.stats.errorCount++;
+
+    window.MCN_KERNEL.status.lastFault = {
+      module: name,
+      error: e.message,
+      time: Date.now()
+    };
+
+    BUS.emit("module:error", { name, error: e.message });
+  }
 }
 
-/* ================= HEALTH ENGINE ================= */
+/* ================= SYSTEM ENGINE ================= */
 
 function updateHealth() {
   const s = window.MCN_SYSTEM;
 
   let health = 100;
-
   if (s.flags.emergency) health -= 40;
   if (s.stats.errorCount > 5) health -= s.stats.errorCount * 5;
 
   s.health = Math.max(0, health);
   s.flags.degraded = s.health < 60;
-
-  return s.health;
 }
-
-/* ================= AI ENGINE ================= */
 
 function evaluateAI() {
   const s = window.MCN_SYSTEM;
 
   let risk = 0;
-
   if (s.health < 60) risk += 40;
   if (s.stats.errorCount > 5) risk += 30;
   if (s.flags.emergency) risk += 50;
@@ -95,41 +89,21 @@ function evaluateAI() {
   window.MCN_AI.risk = risk;
 }
 
-/* ================= SAFE RUNNER ================= */
-
-function runModule(name) {
-  const mod = window.MCN_KERNEL.modules[name];
-  if (!mod) return;
-
-  try {
-    mod.fn();
-    mod.status = "active";
-    mod.lastRun = Date.now();
-  } catch (e) {
-    mod.status = "failed";
-    mod.errors++;
-
-    window.MCN_SYSTEM.stats.errorCount++;
-
-    window.MCN_KERNEL.status.lastFault = {
-      module: name,
-      error: e.message,
-      time: Date.now()
-    };
-  }
-}
-
-/* ================= CYCLE ================= */
+/* ================= EVENT-DRIVEN CYCLE ================= */
 
 function kernelCycle() {
+
   Object.keys(window.MCN_KERNEL.modules).forEach(runModule);
 
   updateHealth();
   evaluateAI();
-}
 
-/* ================= LOOP ================= */
+  BUS.emit("kernel:tick", {
+    health: window.MCN_SYSTEM.health,
+    risk: window.MCN_AI.risk
+  });
+}
 
 setInterval(kernelCycle, 3000);
 
-console.log("🧠 MCN KERNEL v3.1 ONLINE");
+console.log("🧠 MCN KERNEL EVENT-DRIVEN ONLINE");
