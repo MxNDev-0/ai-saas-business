@@ -1,16 +1,19 @@
 /* =========================================
-   🧠 MCN OS KERNEL v2
-   Modular Kernel + Registry + Snapshots + Fault Isolation
+   🧠 MCN KERNEL v3 — DEPENDENCY GRAPH SYSTEM
+   True Modular Kernel + Dependency Resolver + Fault Containment
 ========================================= */
 
 /* ================= KERNEL STATE ================= */
 
 window.MCN_KERNEL = {
-  version: "v2",
-  bootTime: Date.now(),
+  version: "v3",
 
   modules: {},
-  snapshots: [],
+
+  graph: {
+    dependencies: {},   // module -> [deps]
+    dependents: {}      // module -> [dependents]
+  },
 
   status: {
     mode: "stable",
@@ -34,29 +37,64 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
   }
 };
 
-window.MCN_AI = window.MCN_AI || {
-  mode: "stable",
-  risk: 0,
-  insights: []
-};
+/* ================= MODULE REGISTRATION ================= */
 
-window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
-
-/* ================= MODULE REGISTRY ================= */
-
-function registerModule(name, moduleFn) {
+function registerModule(name, fn, deps = []) {
 
   window.MCN_KERNEL.modules[name] = {
-    fn: moduleFn,
-    status: "active",
+    fn,
+    status: "idle",
     lastRun: 0,
-    errors: 0
+    errors: 0,
+    deps
   };
+
+  window.MCN_KERNEL.graph.dependencies[name] = deps;
+
+  deps.forEach(dep => {
+    if (!window.MCN_KERNEL.graph.dependents[dep]) {
+      window.MCN_KERNEL.graph.dependents[dep] = [];
+    }
+    window.MCN_KERNEL.graph.dependents[dep].push(name);
+  });
 }
 
-/* ================= SAFE EXECUTOR ================= */
+/* ================= TOPOLOGICAL SORT ================= */
 
-function safeRun(name) {
+function resolveExecutionOrder() {
+
+  const graph = window.MCN_KERNEL.graph.dependencies;
+  const visited = {};
+  const stack = [];
+  const temp = {};
+
+  function visit(node) {
+
+    if (temp[node]) {
+      console.warn("⚠ Circular dependency detected:", node);
+      return;
+    }
+
+    if (visited[node]) return;
+
+    temp[node] = true;
+
+    (graph[node] || []).forEach(dep => visit(dep));
+
+    visited[node] = true;
+    temp[node] = false;
+
+    stack.push(node);
+  }
+
+  Object.keys(graph).forEach(visit);
+
+  return stack;
+}
+
+/* ================= SAFE MODULE RUNNER ================= */
+
+function runModule(name) {
 
   const mod = window.MCN_KERNEL.modules[name];
 
@@ -69,8 +107,8 @@ function safeRun(name) {
 
   } catch (err) {
 
-    mod.errors++;
     mod.status = "failed";
+    mod.errors++;
 
     window.MCN_SYSTEM.stats.errorCount++;
 
@@ -80,7 +118,7 @@ function safeRun(name) {
       time: Date.now()
     };
 
-    console.warn("🧠 KERNEL FAULT:", name, err.message);
+    console.warn("🧠 MODULE FAILURE:", name, err.message);
 
     isolateModule(name);
   }
@@ -90,79 +128,24 @@ function safeRun(name) {
 
 function isolateModule(name) {
 
-  const mod = window.MCN_KERNEL.modules[name];
+  const dependents = window.MCN_KERNEL.graph.dependents[name] || [];
 
-  if (!mod) return;
+  window.MCN_KERNEL.modules[name].status = "isolated";
 
-  mod.status = "isolated";
-
-  console.warn("⚠ MODULE ISOLATED:", name);
-
-  scheduleRollback(name);
-}
-
-/* ================= SNAPSHOT SYSTEM ================= */
-
-function createSnapshot() {
-
-  const snap = {
-    time: Date.now(),
-    system: JSON.parse(JSON.stringify(window.MCN_SYSTEM)),
-    ai: JSON.parse(JSON.stringify(window.MCN_AI))
-  };
-
-  window.MCN_KERNEL.snapshots.push(snap);
-
-  if (window.MCN_KERNEL.snapshots.length > 10) {
-    window.MCN_KERNEL.snapshots.shift();
-  }
-}
-
-/* ================= ROLLBACK SYSTEM ================= */
-
-function rollbackLast() {
-
-  const snap = window.MCN_KERNEL.snapshots.pop();
-
-  if (!snap) return;
-
-  window.MCN_SYSTEM = snap.system;
-  window.MCN_AI = snap.ai;
-
-  console.warn("🔁 SYSTEM ROLLBACK EXECUTED");
-}
-
-/* ================= AUTO ROLLBACK SCHEDULER ================= */
-
-function scheduleRollback(name) {
-
-  const mod = window.MCN_KERNEL.modules[name];
-
-  if (!mod) return;
-
-  setTimeout(() => {
-
-    if (mod.status === "isolated") {
-      console.warn("🔁 Attempting module recovery:", name);
-      mod.status = "active";
+  // isolate dependent modules too (cascade protection)
+  dependents.forEach(dep => {
+    if (window.MCN_KERNEL.modules[dep]) {
+      window.MCN_KERNEL.modules[dep].status = "degraded";
     }
+  });
 
-  }, 5000);
+  console.warn("⚠ ISOLATION CASCADE:", name, dependents);
 }
 
-/* ================= CORE ENGINE ================= */
+/* ================= SYSTEM HEALTH ================= */
 
-function kernelCycle() {
+function evaluateHealth() {
 
-  /* create safety snapshot */
-  createSnapshot();
-
-  /* run all modules safely */
-  for (let name in window.MCN_KERNEL.modules) {
-    safeRun(name);
-  }
-
-  /* system health recalculation */
   const s = window.MCN_SYSTEM;
 
   let health = 100;
@@ -172,30 +155,74 @@ function kernelCycle() {
 
   s.health = Math.max(0, health);
   s.flags.degraded = s.health < 60;
+}
 
-  /* AI state */
+/* ================= SIMPLE AI LAYER ================= */
+
+function evaluateAI() {
+
+  const s = window.MCN_SYSTEM;
+
+  let risk = 0;
+
+  if (s.health < 60) risk += 40;
+  if (s.stats.errorCount > 5) risk += 30;
+  if (s.flags.emergency) risk += 50;
+
+  window.MCN_AI = {
+    mode:
+      risk > 70 ? "critical" :
+      risk > 40 ? "warning" :
+      "stable",
+
+    risk
+  };
+}
+
+/* ================= KERNEL EXECUTION CYCLE ================= */
+
+function kernelCycle() {
+
+  const order = resolveExecutionOrder();
+
+  // run dependencies first
+  order.forEach(runModule);
+
+  // system evaluation
+  evaluateHealth();
+  evaluateAI();
+}
+
+/* ================= AUTOPILOT ================= */
+
+function autopilot() {
+
+  const s = window.MCN_SYSTEM;
   const ai = window.MCN_AI;
 
-  ai.risk = s.stats.errorCount * 10;
+  if (!s.flags.autopilot) return;
 
-  ai.mode =
-    ai.risk > 70 ? "critical" :
-    ai.risk > 40 ? "warning" :
-    "stable";
-
-  ai.insights = [];
-
-  if (s.stats.errorCount > 5) {
-    ai.insights.push("High error density detected");
+  if (ai.mode === "critical") {
+    s.flags.degraded = true;
+    s.stats.errorCount += 1;
   }
 
-  if (s.health < 60) {
-    ai.insights.push("System degradation detected");
+  if (ai.mode === "warning") {
+    if (s.stats.supportChats > 80) {
+      s.stats.supportChats -= 1;
+    }
+  }
+
+  if (ai.mode === "stable" && s.health < 100) {
+    s.health += 0.2;
   }
 }
 
-/* ================= KERNEL LOOP ================= */
+/* ================= MAIN CLOCK ================= */
 
-setInterval(kernelCycle, 3000);
+setInterval(() => {
+  kernelCycle();
+  autopilot();
+}, 3000);
 
-console.log("🧠 MCN OS KERNEL v2 ONLINE");
+console.log("🧠 MCN KERNEL v3 DEPENDENCY GRAPH ONLINE");
