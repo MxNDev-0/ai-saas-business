@@ -1,7 +1,6 @@
-/* =========================================  
-   🚀 MCN ADMIN BOOT (FIRESTORE ROLE SYSTEM)
-   Event Kernel + Monitor + Healing + Live Layer  
-   + STATE ENGINE CONNECTOR FIX (FINAL)  
+/* =========================================
+   🚀 MCN BOOT STABILITY LAYER v1
+   HARD SEQUENCED + FAILSAFE + SAFE RENDER
 ========================================= */
 
 import { initAdminGuard } from "./admin-auth.js";
@@ -17,13 +16,18 @@ import "../mcn-event-bus.js";
 import { startMCNHealing } from "../mcn-self-heal.js";
 import { startMCNLive } from "../mcn-live-boot.js";
 
-/* ================= GLOBAL FLAGS ================= */
+/* ================= GLOBAL LOCK ================= */
+
+window.MCN_BOOT = {
+  state: "idle",
+  locked: false,
+  retries: 0
+};
 
 window.MCN_READY = false;
 window.MCN_ADMIN = null;
-window.MCN_BOOTED = false;
 
-/* ================= SAFE SYSTEM INIT ================= */
+/* ================= SYSTEM INIT ================= */
 
 function ensureSystemState() {
 
@@ -43,17 +47,41 @@ function ensureSystemState() {
     }
   };
 
-  window.MCN_AI = window.MCN_AI || {
-    mode: "stable",
-    risk: 0
-  };
-
+  window.MCN_AI = window.MCN_AI || { mode: "stable", risk: 0 };
   window.MCN_CONTROLS = window.MCN_CONTROLS || {};
+  window.MCN_BUS = window.MCN_BUS || { emit: () => {}, on: () => {} };
+}
 
-  window.MCN_BUS = window.MCN_BUS || {
-    emit: () => {},
-    on: () => {}
-  };
+/* ================= SAFE DOM READY ================= */
+
+function waitForDOM() {
+  return new Promise(resolve => {
+    if (document.readyState !== "loading") return resolve();
+    document.addEventListener("DOMContentLoaded", resolve);
+  });
+}
+
+/* ================= MODULE STARTER ================= */
+
+async function startModules(user) {
+
+  ensureSystemState();
+
+  startControls();
+  startMCNHealing();
+  startMonitor();
+  startMCNLive();
+
+  await waitForDOM();
+
+  startAdminEngine();
+
+  window.MCN_BUS.emit?.("system:boot", {
+    user: user.uid,
+    time: Date.now()
+  });
+
+  console.log("🧠 MCN FULL SYSTEM ACTIVE");
 }
 
 /* ================= CONTROL BRIDGE ================= */
@@ -62,95 +90,88 @@ function startControls() {
 
   watchControls((data = {}) => {
 
-    if (!window.MCN_CONTROLS) return;
+    window.MCN_CONTROLS = {
+      featuredPostId: data.featuredPostId ?? null,
+      sponsoredPostId: data.sponsoredPostId ?? null,
+      adsEnabled: data.adsEnabled ?? true,
+      discoverEnabled: data.discoverEnabled ?? true
+    };
 
-    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
-    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
-    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
-    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
-
-    console.log("🎛 Controls updated:", window.MCN_CONTROLS);
+    console.log("🎛 Controls synced");
   });
 }
 
-/* ================= BOOT SYSTEM ================= */
+/* ================= HARD BOOT LOCK ================= */
+
+function lockBoot() {
+  window.MCN_BOOT.locked = true;
+}
+
+/* ================= BOOT ================= */
 
 function boot() {
 
-  if (window.MCN_BOOTED) return; // 🔥 PREVENT DOUBLE BOOT
-  window.MCN_BOOTED = true;
+  if (window.MCN_BOOT.locked) return;
+  lockBoot();
 
   initAdminGuard(async (user) => {
 
     try {
+
+      window.MCN_BOOT.state = "auth-check";
 
       if (!user) {
         console.error("❌ No user session");
         return;
       }
 
-      /* ================= FIRESTORE ROLE CHECK ================= */
+      window.MCN_BOOT.state = "role-check";
+
       const snap = await getDoc(doc(db, "users", user.uid));
 
       if (!snap.exists() || snap.data()?.role !== "admin") {
-        console.error("❌ ACCESS DENIED: Not admin role");
+        console.error("❌ ACCESS DENIED");
+
+        window.MCN_READY = false;
+        window.MCN_ADMIN = null;
+
+        window.MCN_BOOT.state = "denied";
         return;
       }
 
-      console.log("✅ ADMIN VERIFIED (FIRESTORE ROLE)");
+      console.log("✅ ADMIN VERIFIED");
 
-      /* ================= SYSTEM INIT ================= */
-      ensureSystemState();
+      window.MCN_BOOT.state = "booting";
 
       window.MCN_ADMIN = user;
       window.MCN_READY = true;
 
-      console.log("🚀 MCN ADMIN ONLINE");
+      await startModules(user);
 
-      /* ================= START CORE SYSTEMS ================= */
+      window.MCN_BOOT.state = "ready";
 
-      startControls();
-      startMCNHealing();
-      startMonitor();
-      startMCNLive();
-
-      /* ================= STATE ENGINE CONNECT ================= */
-
-      try {
-        startAdminEngine();
-        console.log("🧠 STATE ENGINE CONNECTED");
-      } catch (e) {
-        console.error("STATE ENGINE ERROR:", e);
-      }
-
-      /* ================= SAFE EVENT SIGNAL ================= */
-
-      window.MCN_BUS.emit?.("system:boot", {
-        user: user.uid,
-        time: Date.now()
-      });
-
-      console.log("🧠 MCN FULL SYSTEM ACTIVE");
+      console.log("🚀 MCN BOOT COMPLETE");
 
     } catch (err) {
 
-      console.error("❌ MCN BOOT ERROR:", err);
+      window.MCN_BOOT.state = "error";
+
+      console.error("❌ BOOT FAILURE:", err);
 
       const monitor = document.getElementById("monitor");
 
       if (monitor) {
         monitor.innerHTML = `
           <div style="color:red;">
-            🧠 MCN SAFE MODE ACTIVATED<br><br>
-            Boot Error:<br>
-            ${err.message}
+            🧠 MCN BOOT FAILED<br><br>
+            State: ${window.MCN_BOOT.state}<br>
+            Error: ${err.message}
           </div>
         `;
       }
     }
 
   });
-
 }
 
 boot();
