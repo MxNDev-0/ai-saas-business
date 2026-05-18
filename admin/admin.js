@@ -114,13 +114,17 @@ function boot() {
       console.error("❌ MCN BOOT ERROR:", err);
 
       /* 🔥 EMERGENCY FALLBACK */
-      document.getElementById("monitor").innerHTML = `
-        <div style="color:red;">
-          🧠 MCN SAFE MODE ACTIVATED<br><br>
-          Boot Error Detected:<br>
-          ${err.message}
-        </div>
-      `;
+      const monitor = document.getElementById("monitor");
+
+      if (monitor) {
+        monitor.innerHTML = `
+          <div style="color:red;">
+            🧠 MCN SAFE MODE ACTIVATED<br><br>
+            Boot Error Detected:<br>
+            ${err.message}
+          </div>
+        `;
+      }
     }
 
   });
