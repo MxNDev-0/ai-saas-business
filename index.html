@@ -251,6 +251,95 @@
   <img src="assets/logo.png">
 </div>
 
+<!-- ================= TOP INSTALL BAR ================= -->
+
+<div id="topInstallBar"
+     style="
+     display:none;
+     align-items:center;
+     justify-content:space-between;
+     gap:10px;
+     padding:10px 14px;
+     background:#071229;
+     border-bottom:1px solid #1fe0d0;
+     position:sticky;
+     top:0;
+     z-index:999999;
+     ">
+
+  <div style="
+       display:flex;
+       align-items:center;
+       gap:10px;
+       ">
+
+    <div style="
+         width:34px;
+         height:34px;
+         border-radius:10px;
+         background:#0b132b;
+         display:flex;
+         align-items:center;
+         justify-content:center;
+         border:1px solid #1fe0d0;
+         ">
+      📲
+    </div>
+
+    <div>
+
+      <div style="
+           font-size:14px;
+           font-weight:bold;
+           color:white;
+           ">
+        Install MCN Engine
+      </div>
+
+      <div style="
+           font-size:11px;
+           color:#9fded9;
+           ">
+        Faster access experience
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="
+       display:flex;
+       align-items:center;
+       gap:8px;
+       ">
+
+    <button onclick="triggerSmartInstall()"
+            style="
+            width:auto;
+            margin:0;
+            padding:8px 14px;
+            border:none;
+            border-radius:8px;
+            background:#5bc0be;
+            color:black;
+            font-weight:bold;
+            cursor:pointer;
+            ">
+      Install
+    </button>
+
+    <div onclick="closeTopInstallBar()"
+         style="
+         color:#9fded9;
+         font-size:22px;
+         cursor:pointer;
+         ">
+      ×
+    </div>
+
+  </div>
+
+</div>
 
 <!-- ================= HEADER ================= -->
 
@@ -754,7 +843,7 @@ if (
 <style>
 #chatBubble{
   position:fixed;
-  bottom:20px;
+  bottom:95px;
   right:20px;
   width:55px;
   height:55px;
@@ -772,7 +861,7 @@ if (
 
 #chatPanel{
   position:fixed;
-  bottom:90px;
+  bottom:160px;
   right:20px;
   width:300px;
   height:400px;
