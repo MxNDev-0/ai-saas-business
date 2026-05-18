@@ -1,67 +1,23 @@
-import { auth, db } from "./firebase.js";
+/* =========================================
+   🚀 MCN ADMIN CORE (DEDUPLICATED)
+   Single Orchestrator, No Repetition
+========================================= */
 
-import {
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { db } from "../firebase.js";
 
-import {
-  doc,
-  getDoc,
-  addDoc,
-  collection,
-  onSnapshot,
-  deleteDoc,
-  updateDoc,
-  query,
-  orderBy,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-import { watchControls, setControl } from "./admin-control.js";
 import { initAdminGuard } from "./admin-auth.js";
+import { watchControls } from "./admin-control.js";
+
+import { initMonitor } from "../modules/monitor.js";
+import { initBlog } from "../modules/blog.js";
+import { initSupport } from "../modules/support.js";
 
 /* =========================================
-   AI ENGINE IMPORT (LEVEL 2)
-========================================= */
-import {
-  autoGenerateBlog,
-  generateAIArticle
-} from "./admin/ai-engine.js";
-
-/* =========================================
-   GLOBAL EXPOSE
+   GLOBAL STATE
 ========================================= */
 
-const expose = (name, fn) => {
-  window[name] = fn;
-};
-
-/* =========================================
-   LOG SYSTEM
-========================================= */
-
-function log(msg, type = "ok") {
-
-  const box = document.getElementById("monitor");
-  if (!box) return;
-
-  const div = document.createElement("div");
-
-  div.style.color =
-    type === "error" ? "red" :
-    type === "warn" ? "orange" :
-    "#00ff88";
-
-  div.textContent =
-    `[${new Date().toLocaleTimeString()}] ${msg}`;
-
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-/* =========================================
-   CONTROL STATE
-========================================= */
+window.MCN_READY = false;
+window.MCN_ADMIN = null;
 
 window.MCN_CONTROLS = {
   featuredPostId: null,
@@ -71,575 +27,93 @@ window.MCN_CONTROLS = {
 };
 
 /* =========================================
-   CONTROL WATCHER
+   SAFE LOG
 ========================================= */
 
-watchControls((data = {}) => {
+function log(msg) {
+  const box = document.getElementById("monitor");
 
-  window.MCN_CONTROLS = {
-    featuredPostId: data.featuredPostId ?? null,
-    sponsoredPostId: data.sponsoredPostId ?? null,
-    adsEnabled: data.adsEnabled ?? true,
-    discoverEnabled: data.discoverEnabled ?? true
-  };
+  if (!box) return console.log("[MCN]", msg);
 
-  log("📡 Control system synced");
-});
+  const div = document.createElement("div");
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  div.style.color = "#00ff88";
 
-/* =========================================
-   ADMIN AUTH
-========================================= */
-
-initAdminGuard((user) => {
-
-  log("✅ Secure admin verified");
-
-/* =========================================
-🖥 REALTIME SYSTEM STATUS MONITOR
-========================================= */
-
-import {
-  doc,
-  collection,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-import { db } from "./firebase.js";
-
-/* OPTIONAL: assumes you already have a log() function */
-function bootRealtimeMonitor() {
-
-  /* POSTS */
-  onSnapshot(
-    collection(db, "posts"),
-    (snap) => {
-      log(`📝 Posts Online: ${snap.size}`);
-    }
-  );
-
-  /* SUPPORT CHATS */
-  onSnapshot(
-    collection(db, "supportChats"),
-    (snap) => {
-      log(`💬 Active Support Users: ${snap.size}`);
-    }
-  );
-
-  /* EMERGENCY MODE */
-  onSnapshot(
-    doc(db, "system", "emergency"),
-    (snap) => {
-      const data = snap.data();
-
-      log(
-        data?.enabled
-          ? "🚨 Emergency Mode ACTIVE"
-          : "✅ Emergency Mode OFF"
-      );
-    }
-  );
-
-  /* CONTROL SYSTEM */
-  onSnapshot(
-    doc(db, "system", "controls"),
-    (snap) => {
-      const data = snap.data();
-
-      log(`⚙ Ads: ${data?.adsEnabled ? "ON" : "OFF"}`);
-
-      log(
-        `📰 Discover Feed: ${
-          data?.discoverEnabled ? "ON" : "OFF"
-        }`
-      );
-    }
-  );
-
-  log("🖥 Realtime monitor booted");
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
 }
 
-bootRealtimeMonitor();
-
-  window.MCN_READY = true;
-  window.MCN_ADMIN = user;
-
-  loadPosts();
-  loadAds();
-});
-
 /* =========================================
-   SAFE CONTROL
+   MODULE STARTER (NO TRY/CATCH DUPLICATION)
 ========================================= */
 
-async function safeControl(key, value) {
+function startModule(name, fn) {
   try {
-    await setControl(key, value);
-    log(`⚙ ${key} updated`);
-  } catch (err) {
-    console.error(err);
-    log("Control update failed", "error");
+    fn();
+  } catch (e) {
+    console.error(`${name} failed:`, e);
   }
 }
 
 /* =========================================
-   BLOG CREATE / UPDATE (AI POWERED)
+   START SYSTEMS
 ========================================= */
 
-window.createBlog = async function () {
+function startSystems(user) {
 
-  const id = document.getElementById("editPostId")?.value;
-  const title = document.getElementById("blogTitle")?.value;
-  let content = document.getElementById("blogContent")?.value;
-  const image = document.getElementById("blogImage")?.value;
+  startModule("Monitor", () => initMonitor(db));
+  startModule("Blog", () => initBlog(db, user));
+  startModule("Support", () => initSupport(db, user));
 
-  if (!title) return log("Missing title", "warn");
-
-  if (!content) {
-    content = await generateAIArticle(title);
-  }
-
-  try {
-
-    if (id) {
-
-      await updateDoc(doc(db, "posts", id), {
-        title,
-        content,
-        image,
-        updatedAt: serverTimestamp()
-      });
-
-      log("✏ Post updated");
-
-    } else {
-
-      await addDoc(collection(db, "posts"), {
-        title,
-        content,
-        image,
-        createdAt: serverTimestamp(),
-        author: window.MCN_ADMIN?.uid || "admin",
-        aiGenerated: !document.getElementById("blogContent")?.value
-      });
-
-      log("📝 Post created");
-    }
-
-  } catch (err) {
-    console.error(err);
-    log("Blog save failed", "error");
-  }
-
-  clearEditor();
-};
+  log("🧩 Modules started");
+}
 
 /* =========================================
-   LOAD POSTS
+   CONTROL SYNC
 ========================================= */
 
-let allPosts = [];
+function startControls() {
 
-function loadPosts() {
+  watchControls((data = {}) => {
 
-  const box = document.getElementById("postsList");
+    window.MCN_CONTROLS = {
+      featuredPostId: data.featuredPostId ?? null,
+      sponsoredPostId: data.sponsoredPostId ?? null,
+      adsEnabled: data.adsEnabled ?? true,
+      discoverEnabled: data.discoverEnabled ?? true
+    };
 
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-
-  onSnapshot(q, (snap) => {
-
-    allPosts = [];
-    box.innerHTML = "";
-
-    snap.forEach(d => allPosts.push({ id: d.id, ...d.data() }));
-
-    renderPosts(allPosts);
+    log("⚙ Controls synced");
   });
 }
 
 /* =========================================
-   RENDER POSTS
+   BOOT ADMIN
 ========================================= */
 
-function renderPosts(posts) {
+function boot() {
 
-  const box = document.getElementById("postsList");
-  box.innerHTML = "";
+  initAdminGuard((user) => {
 
-  posts.forEach(p => {
+    if (!user) {
+      console.error("❌ Auth failed");
+      return;
+    }
 
-    box.innerHTML += `
-      <div class="item">
+    window.MCN_ADMIN = user;
+    window.MCN_READY = true;
 
-        <b>${p.title}</b><br>
+    log("✅ Admin verified");
 
-        <small>🆔 ${p.id}</small><br>
-        <small>${p.aiGenerated ? "🤖 AI POST" : "✍ Manual"}</small><br>
+    startControls();
+    startSystems(user);
 
-        <button onclick='loadIntoEditor(${JSON.stringify(p)})'>
-          Edit
-        </button>
-
-        <button onclick="deletePost('${p.id}')">
-          Delete
-        </button>
-
-        <button onclick="copyPostId('${p.id}')">
-          Copy ID
-        </button>
-
-      </div>
-    `;
+    log("🚀 MCN Admin Active");
   });
 }
 
-expose("loadPosts", loadPosts);
-
 /* =========================================
-   EDITOR
+   INIT
 ========================================= */
 
-window.loadIntoEditor = function (post) {
-
-  document.getElementById("editPostId").value = post.id || "";
-  document.getElementById("blogTitle").value = post.title || "";
-  document.getElementById("blogContent").value = post.content || "";
-  document.getElementById("blogImage").value = post.image || "";
-
-  log("✏ Loaded into editor");
-};
-
-/* =========================================
-   CLEAR EDITOR
-========================================= */
-
-function clearEditor() {
-
-  document.getElementById("editPostId").value = "";
-  document.getElementById("blogTitle").value = "";
-  document.getElementById("blogContent").value = "";
-  document.getElementById("blogImage").value = "";
-}
-
-/* =========================================
-   DELETE + COPY
-========================================= */
-
-window.deletePost = async (id) => {
-  await deleteDoc(doc(db, "posts", id));
-  log("🗑 Deleted post");
-};
-
-window.copyPostId = function (id) {
-  navigator.clipboard.writeText(id);
-  log("🆔 Post ID copied");
-};
-
-/* =========================================
-   AI UI FUNCTIONS (INTEGRATED)
-========================================= */
-
-window.generateAndPreview = async function () {
-
-  const topic = document.getElementById("aiTopic")?.value;
-
-  if (!topic) return log("Enter topic", "warn");
-
-  log("🤖 Generating preview...");
-
-  const content = await generateAIArticle(topic);
-
-  alert(content);
-
-  log("✅ Preview ready");
-};
-
-window.autoPublishBlog = async function () {
-
-  const topic = document.getElementById("aiTopic")?.value;
-
-  if (!topic) return log("Missing topic", "warn");
-
-  log("🚀 Auto publishing blog...");
-
-  const post = await autoGenerateBlog(topic);
-
-  log("📝 Published: " + post.title);
-};
-
-/* =========================================
-   TRENDING TOPICS
-========================================= */
-
-window.loadTrending = function () {
-
-  const box = document.getElementById("trendingBox");
-  if (!box) return;
-
-  const trends = [
-    "AI job boom in Africa",
-    "Bitcoin surge 2026",
-    "Remote work explosion",
-    "Nigeria tech startups",
-    "Content creator monetization"
-  ];
-
-  box.innerHTML = "";
-
-  trends.forEach(t => {
-    box.innerHTML += `
-      <div class="item" onclick="selectTrend('${t}')">
-        🔥 ${t}
-      </div>
-    `;
-  });
-};
-
-window.selectTrend = function (topic) {
-  document.getElementById("aiTopic").value = topic;
-  log("🔥 Selected trend: " + topic);
-};
-
-/* =========================================
-   AI SETTINGS
-========================================= */
-
-window.applyAISettings = function () {
-
-  const provider = document.getElementById("aiProvider")?.value;
-
-  if (window.AI_CONFIG) {
-    window.AI_CONFIG.provider = provider;
-  }
-
-  log("⚙ AI provider set to: " + provider);
-};
-
-/* =========================================
-   💬 LIVE SUPPORT ADMIN SYSTEM
-========================================= */
-
-let activeSupportUser = null;
-let unsubscribeSupportMessages = null;
-
-/* LOAD SUPPORT USERS */
-function loadSupportUsers() {
-
-  const usersBox =
-    document.getElementById("supportUsers");
-
-  if (!usersBox) return;
-
-  onSnapshot(
-    collection(db, "supportChats"),
-    (snap) => {
-
-      usersBox.innerHTML = "";
-
-      if (snap.empty) {
-
-        usersBox.innerHTML = `
-          <div class="item">
-            No active support chats
-          </div>
-        `;
-
-        return;
-      }
-
-      snap.forEach((docSnap) => {
-
-        const uid = docSnap.id;
-
-        usersBox.innerHTML += `
-          <div class="item">
-
-            <b>👤 ${uid.slice(0, 10)}...</b>
-
-            <br>
-
-            <button
-              class="small-btn"
-              onclick="openSupportChat('${uid}')">
-
-              Open Chat
-
-            </button>
-
-          </div>
-        `;
-      });
-    }
-  );
-}
-
-/* OPEN CHAT */
-window.openSupportChat = function (uid) {
-
-  activeSupportUser = uid;
-
-  const msgBox =
-    document.getElementById("supportMessages");
-
-  if (!msgBox) return;
-
-  msgBox.innerHTML = `
-    <div class="item">
-      Loading conversation...
-    </div>
-  `;
-
-  /* REMOVE OLD LISTENER */
-  if (unsubscribeSupportMessages) {
-    unsubscribeSupportMessages();
-  }
-
-  const q =
-    query(
-      collection(
-        db,
-        "supportChats",
-        uid,
-        "messages"
-      ),
-      orderBy("createdAt")
-    );
-
-  unsubscribeSupportMessages =
-    onSnapshot(q, (snap) => {
-
-      msgBox.innerHTML = "";
-
-      if (snap.empty) {
-
-        msgBox.innerHTML = `
-          <div class="item">
-            No messages yet
-          </div>
-        `;
-
-        return;
-      }
-
-      snap.forEach((docSnap) => {
-
-        const m = docSnap.data();
-
-        const isAdmin =
-          m.sender === "admin";
-
-        msgBox.innerHTML += `
-
-          <div
-            class="item"
-            style="
-              background:${isAdmin ? '#123d36' : '#16213e'};
-              border-left:4px solid ${isAdmin ? '#5bc0be' : '#666'};
-            ">
-
-            <b>
-              ${isAdmin ? '🛡 Admin' : '👤 User'}
-            </b>
-
-            <br><br>
-
-            ${m.text || ""}
-
-          </div>
-
-        `;
-      });
-
-      msgBox.scrollTop =
-        msgBox.scrollHeight;
-    });
-
-  log("💬 Opened support chat");
-};
-
-/* SEND ADMIN REPLY */
-async function sendSupportReply() {
-
-  if (!activeSupportUser) {
-
-    log("Select a support user first", "warn");
-    return;
-  }
-
-  const input =
-    document.getElementById("supportReply");
-
-  if (!input) return;
-
-  const text =
-    input.value.trim();
-
-  if (!text) return;
-
-  try {
-
-    await addDoc(
-      collection(
-        db,
-        "supportChats",
-        activeSupportUser,
-        "messages"
-      ),
-      {
-        text,
-        sender: "admin",
-        createdAt: serverTimestamp()
-      }
-    );
-
-    input.value = "";
-
-    log("📨 Support reply sent");
-
-  } catch (err) {
-
-    console.error(err);
-
-    log(
-      "Failed to send support reply",
-      "error"
-    );
-  }
-}
-
-/* BUTTON */
-const sendBtn =
-  document.getElementById(
-    "sendSupportReply"
-  );
-
-if (sendBtn) {
-
-  sendBtn.addEventListener(
-    "click",
-    sendSupportReply
-  );
-}
-
-/* ENTER KEY */
-const supportReplyInput =
-  document.getElementById(
-    "supportReply"
-  );
-
-if (supportReplyInput) {
-
-  supportReplyInput.addEventListener(
-    "keypress",
-    (e) => {
-
-      if (e.key === "Enter") {
-        sendSupportReply();
-      }
-    }
-  );
-}
-
-/* START SUPPORT SYSTEM */
-loadSupportUsers();
-
-log("💬 Live Support Admin Ready");
+boot();
