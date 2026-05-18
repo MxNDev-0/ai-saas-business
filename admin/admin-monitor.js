@@ -6,13 +6,54 @@ export function startMonitor() {
   if (window.__MCN_MONITOR_ACTIVE) return;
   window.__MCN_MONITOR_ACTIVE = true;
 
-  const BUS = window.MCN_EVENT_BUS;
+  /* ================= EVENT BUS SAFE HOOK ================= */
 
-  BUS.on("*", (event) => {
-    window.__MCN_LAST_EVENT = event;
-  });
+  const BUS = window.MCN_EVENT_BUS || window.MCN_BUS;
 
-  function render() {
+  if (BUS?.on) {
+    BUS.on("*", (event) => {
+      window.__MCN_LAST_EVENT = event;
+    });
+  }
+
+  /* ================= RENDER MODE CONTROLLER ================= */
+
+  function getRenderMode() {
+    return window.MCN_RENDER_MODE || "normal";
+  }
+
+  /* ================= SAFE RENDER (FALLBACK MODE) ================= */
+
+  function renderSafe() {
+
+    const s = window.MCN_SYSTEM || {};
+    const ai = window.MCN_AI || {};
+
+    box.innerHTML = `
+      <div><b>🧠 MCN SAFE MODE ACTIVE</b></div>
+      <hr>
+
+      <div>System is running in recovery mode</div>
+
+      <div>⚡ Health: ${s.health ?? 100}</div>
+      <div>📝 Posts: ${s.stats?.posts ?? 0}</div>
+      <div>💬 Support: ${s.stats?.supportChats ?? 0}</div>
+      <div>🚨 Emergency: ${s.flags?.emergency ? "ON" : "OFF"}</div>
+
+      <hr>
+
+      <div>🤖 AI Mode: ${ai.mode ?? "stable"}</div>
+      <div>⚠ Risk: ${ai.risk ?? 0}</div>
+
+      <hr>
+
+      <div>🔄 Waiting for system recovery...</div>
+    `;
+  }
+
+  /* ================= NORMAL RENDER ================= */
+
+  function renderNormal() {
 
     const s = window.MCN_SYSTEM || {};
     const ai = window.MCN_AI || {};
@@ -65,7 +106,34 @@ export function startMonitor() {
     `;
   }
 
+  /* ================= MAIN RENDER CONTROLLER ================= */
+
+  function render() {
+
+    const mode = getRenderMode();
+
+    try {
+
+      if (mode === "safe") {
+        renderSafe();
+        return;
+      }
+
+      renderNormal();
+
+    } catch (err) {
+
+      console.warn("🧠 MCN MONITOR RENDER ERROR → switching to SAFE MODE");
+
+      window.MCN_RENDER_MODE = "safe";
+
+      renderSafe();
+    }
+  }
+
+  /* ================= LIVE LOOP ================= */
+
   setInterval(render, 1000);
 
-  console.log("🖥 MCN MONITOR EVENT CONNECTED");
+  console.log("🖥 MCN MONITOR EVENT CONNECTED (RENDER CONTROLLER ACTIVE)");
 }
