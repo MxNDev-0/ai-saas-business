@@ -339,6 +339,236 @@ window.selectTrend = function (topic) {
 
 window.applyAISettings = function () {
 
+/* =========================================
+   💬 LIVE SUPPORT ADMIN SYSTEM
+========================================= */
+
+let activeSupportUser = null;
+let unsubscribeSupportMessages = null;
+
+/* LOAD SUPPORT USERS */
+function loadSupportUsers() {
+
+  const usersBox =
+    document.getElementById("supportUsers");
+
+  if (!usersBox) return;
+
+  onSnapshot(
+    collection(db, "supportChats"),
+    (snap) => {
+
+      usersBox.innerHTML = "";
+
+      if (snap.empty) {
+
+        usersBox.innerHTML = `
+          <div class="item">
+            No active support chats
+          </div>
+        `;
+
+        return;
+      }
+
+      snap.forEach((docSnap) => {
+
+        const uid = docSnap.id;
+
+        usersBox.innerHTML += `
+          <div class="item">
+
+            <b>👤 ${uid.slice(0, 10)}...</b>
+
+            <br>
+
+            <button
+              class="small-btn"
+              onclick="openSupportChat('${uid}')">
+
+              Open Chat
+
+            </button>
+
+          </div>
+        `;
+      });
+    }
+  );
+}
+
+/* OPEN CHAT */
+window.openSupportChat = function (uid) {
+
+  activeSupportUser = uid;
+
+  const msgBox =
+    document.getElementById("supportMessages");
+
+  if (!msgBox) return;
+
+  msgBox.innerHTML = `
+    <div class="item">
+      Loading conversation...
+    </div>
+  `;
+
+  /* REMOVE OLD LISTENER */
+  if (unsubscribeSupportMessages) {
+    unsubscribeSupportMessages();
+  }
+
+  const q =
+    query(
+      collection(
+        db,
+        "supportChats",
+        uid,
+        "messages"
+      ),
+      orderBy("createdAt")
+    );
+
+  unsubscribeSupportMessages =
+    onSnapshot(q, (snap) => {
+
+      msgBox.innerHTML = "";
+
+      if (snap.empty) {
+
+        msgBox.innerHTML = `
+          <div class="item">
+            No messages yet
+          </div>
+        `;
+
+        return;
+      }
+
+      snap.forEach((docSnap) => {
+
+        const m = docSnap.data();
+
+        const isAdmin =
+          m.sender === "admin";
+
+        msgBox.innerHTML += `
+
+          <div
+            class="item"
+            style="
+              background:${isAdmin ? '#123d36' : '#16213e'};
+              border-left:4px solid ${isAdmin ? '#5bc0be' : '#666'};
+            ">
+
+            <b>
+              ${isAdmin ? '🛡 Admin' : '👤 User'}
+            </b>
+
+            <br><br>
+
+            ${m.text || ""}
+
+          </div>
+
+        `;
+      });
+
+      msgBox.scrollTop =
+        msgBox.scrollHeight;
+    });
+
+  log("💬 Opened support chat");
+};
+
+/* SEND ADMIN REPLY */
+async function sendSupportReply() {
+
+  if (!activeSupportUser) {
+
+    log("Select a support user first", "warn");
+    return;
+  }
+
+  const input =
+    document.getElementById("supportReply");
+
+  if (!input) return;
+
+  const text =
+    input.value.trim();
+
+  if (!text) return;
+
+  try {
+
+    await addDoc(
+      collection(
+        db,
+        "supportChats",
+        activeSupportUser,
+        "messages"
+      ),
+      {
+        text,
+        sender: "admin",
+        createdAt: serverTimestamp()
+      }
+    );
+
+    input.value = "";
+
+    log("📨 Support reply sent");
+
+  } catch (err) {
+
+    console.error(err);
+
+    log(
+      "Failed to send support reply",
+      "error"
+    );
+  }
+}
+
+/* BUTTON */
+const sendBtn =
+  document.getElementById(
+    "sendSupportReply"
+  );
+
+if (sendBtn) {
+
+  sendBtn.addEventListener(
+    "click",
+    sendSupportReply
+  );
+}
+
+/* ENTER KEY */
+const supportReplyInput =
+  document.getElementById(
+    "supportReply"
+  );
+
+if (supportReplyInput) {
+
+  supportReplyInput.addEventListener(
+    "keypress",
+    (e) => {
+
+      if (e.key === "Enter") {
+        sendSupportReply();
+      }
+    }
+  );
+}
+
+/* START SUPPORT SYSTEM */
+loadSupportUsers();
+
+log("💬 Live Support Admin Ready");
+
   const provider = document.getElementById("aiProvider")?.value;
 
   if (window.AI_CONFIG) {
