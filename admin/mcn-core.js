@@ -1,18 +1,16 @@
 /* =========================================
-   🧠 MCN KERNEL v3 — DEPENDENCY GRAPH SYSTEM
-   True Modular Kernel + Dependency Resolver + Fault Containment
+🧠 MCN KERNEL v3.1 — UNIFIED DEPENDENCY SYSTEM
+Single Source of Truth (NO DUPLICATION SAFE)
 ========================================= */
 
-/* ================= KERNEL STATE ================= */
-
-window.MCN_KERNEL = {
-  version: "v3",
+window.MCN_KERNEL = window.MCN_KERNEL || {
+  version: "v3.1",
 
   modules: {},
 
   graph: {
-    dependencies: {},   // module -> [deps]
-    dependents: {}      // module -> [dependents]
+    dependencies: {},
+    dependents: {}
   },
 
   status: {
@@ -21,8 +19,11 @@ window.MCN_KERNEL = {
   }
 };
 
+/* ================= SHARED SYSTEM STATE ================= */
+
 window.MCN_SYSTEM = window.MCN_SYSTEM || {
   health: 100,
+
   stats: {
     posts: 0,
     users: 0,
@@ -30,6 +31,7 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
     errorCount: 0,
     lastEvent: null
   },
+
   flags: {
     emergency: false,
     degraded: false,
@@ -37,10 +39,16 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
   }
 };
 
-/* ================= MODULE REGISTRATION ================= */
+window.MCN_AI = window.MCN_AI || {
+  mode: "stable",
+  risk: 0
+};
 
-function registerModule(name, fn, deps = []) {
+window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
 
+/* ================= MODULE REGISTRY ================= */
+
+export function registerModule(name, fn, deps = []) {
   window.MCN_KERNEL.modules[name] = {
     fn,
     status: "idle",
@@ -50,102 +58,11 @@ function registerModule(name, fn, deps = []) {
   };
 
   window.MCN_KERNEL.graph.dependencies[name] = deps;
-
-  deps.forEach(dep => {
-    if (!window.MCN_KERNEL.graph.dependents[dep]) {
-      window.MCN_KERNEL.graph.dependents[dep] = [];
-    }
-    window.MCN_KERNEL.graph.dependents[dep].push(name);
-  });
 }
 
-/* ================= TOPOLOGICAL SORT ================= */
+/* ================= HEALTH ENGINE ================= */
 
-function resolveExecutionOrder() {
-
-  const graph = window.MCN_KERNEL.graph.dependencies;
-  const visited = {};
-  const stack = [];
-  const temp = {};
-
-  function visit(node) {
-
-    if (temp[node]) {
-      console.warn("⚠ Circular dependency detected:", node);
-      return;
-    }
-
-    if (visited[node]) return;
-
-    temp[node] = true;
-
-    (graph[node] || []).forEach(dep => visit(dep));
-
-    visited[node] = true;
-    temp[node] = false;
-
-    stack.push(node);
-  }
-
-  Object.keys(graph).forEach(visit);
-
-  return stack;
-}
-
-/* ================= SAFE MODULE RUNNER ================= */
-
-function runModule(name) {
-
-  const mod = window.MCN_KERNEL.modules[name];
-
-  if (!mod) return;
-
-  try {
-    mod.fn();
-    mod.status = "active";
-    mod.lastRun = Date.now();
-
-  } catch (err) {
-
-    mod.status = "failed";
-    mod.errors++;
-
-    window.MCN_SYSTEM.stats.errorCount++;
-
-    window.MCN_KERNEL.status.lastFault = {
-      module: name,
-      message: err.message,
-      time: Date.now()
-    };
-
-    console.warn("🧠 MODULE FAILURE:", name, err.message);
-
-    isolateModule(name);
-  }
-}
-
-/* ================= MODULE ISOLATION ================= */
-
-function isolateModule(name) {
-
-  const dependents = window.MCN_KERNEL.graph.dependents[name] || [];
-
-  window.MCN_KERNEL.modules[name].status = "isolated";
-
-  // isolate dependent modules too (cascade protection)
-  dependents.forEach(dep => {
-    if (window.MCN_KERNEL.modules[dep]) {
-      window.MCN_KERNEL.modules[dep].status = "degraded";
-    }
-  });
-
-  console.warn("⚠ ISOLATION CASCADE:", name, dependents);
-}
-
-/* ================= SYSTEM HEALTH ================= */
-
-function evaluateHealth() {
-
+function updateHealth() {
   const s = window.MCN_SYSTEM;
 
   let health = 100;
@@ -155,12 +72,13 @@ function evaluateHealth() {
 
   s.health = Math.max(0, health);
   s.flags.degraded = s.health < 60;
+
+  return s.health;
 }
 
-/* ================= SIMPLE AI LAYER ================= */
+/* ================= AI ENGINE ================= */
 
 function evaluateAI() {
-
   const s = window.MCN_SYSTEM;
 
   let risk = 0;
@@ -169,60 +87,49 @@ function evaluateAI() {
   if (s.stats.errorCount > 5) risk += 30;
   if (s.flags.emergency) risk += 50;
 
-  window.MCN_AI = {
-    mode:
-      risk > 70 ? "critical" :
-      risk > 40 ? "warning" :
-      "stable",
+  window.MCN_AI.mode =
+    risk > 70 ? "critical" :
+    risk > 40 ? "warning" :
+    "stable";
 
-    risk
-  };
+  window.MCN_AI.risk = risk;
 }
 
-/* ================= KERNEL EXECUTION CYCLE ================= */
+/* ================= SAFE RUNNER ================= */
+
+function runModule(name) {
+  const mod = window.MCN_KERNEL.modules[name];
+  if (!mod) return;
+
+  try {
+    mod.fn();
+    mod.status = "active";
+    mod.lastRun = Date.now();
+  } catch (e) {
+    mod.status = "failed";
+    mod.errors++;
+
+    window.MCN_SYSTEM.stats.errorCount++;
+
+    window.MCN_KERNEL.status.lastFault = {
+      module: name,
+      error: e.message,
+      time: Date.now()
+    };
+  }
+}
+
+/* ================= CYCLE ================= */
 
 function kernelCycle() {
+  Object.keys(window.MCN_KERNEL.modules).forEach(runModule);
 
-  const order = resolveExecutionOrder();
-
-  // run dependencies first
-  order.forEach(runModule);
-
-  // system evaluation
-  evaluateHealth();
+  updateHealth();
   evaluateAI();
 }
 
-/* ================= AUTOPILOT ================= */
+/* ================= LOOP ================= */
 
-function autopilot() {
+setInterval(kernelCycle, 3000);
 
-  const s = window.MCN_SYSTEM;
-  const ai = window.MCN_AI;
-
-  if (!s.flags.autopilot) return;
-
-  if (ai.mode === "critical") {
-    s.flags.degraded = true;
-    s.stats.errorCount += 1;
-  }
-
-  if (ai.mode === "warning") {
-    if (s.stats.supportChats > 80) {
-      s.stats.supportChats -= 1;
-    }
-  }
-
-  if (ai.mode === "stable" && s.health < 100) {
-    s.health += 0.2;
-  }
-}
-
-/* ================= MAIN CLOCK ================= */
-
-setInterval(() => {
-  kernelCycle();
-  autopilot();
-}, 3000);
-
-console.log("🧠 MCN KERNEL v3 DEPENDENCY GRAPH ONLINE");
+console.log("🧠 MCN KERNEL v3.1 ONLINE");
