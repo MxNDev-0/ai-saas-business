@@ -339,6 +339,15 @@ window.selectTrend = function (topic) {
 
 window.applyAISettings = function () {
 
+  const provider = document.getElementById("aiProvider")?.value;
+
+  if (window.AI_CONFIG) {
+    window.AI_CONFIG.provider = provider;
+  }
+
+  log("⚙ AI provider set to: " + provider);
+};
+
 /* =========================================
    💬 LIVE SUPPORT ADMIN SYSTEM
 ========================================= */
@@ -568,12 +577,3 @@ if (supportReplyInput) {
 loadSupportUsers();
 
 log("💬 Live Support Admin Ready");
-
-  const provider = document.getElementById("aiProvider")?.value;
-
-  if (window.AI_CONFIG) {
-    window.AI_CONFIG.provider = provider;
-  }
-
-  log("⚙ AI provider set to: " + provider);
-};
