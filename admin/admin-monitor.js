@@ -1,14 +1,16 @@
 export function startMonitor() {
 
   const box = document.getElementById("monitor");
-
-  if (!box) {
-    console.error("❌ Monitor missing");
-    return;
-  }
+  if (!box) return;
 
   if (window.__MCN_MONITOR_ACTIVE) return;
   window.__MCN_MONITOR_ACTIVE = true;
+
+  const BUS = window.MCN_EVENT_BUS;
+
+  BUS.on("*", (event) => {
+    window.__MCN_LAST_EVENT = event;
+  });
 
   function render() {
 
@@ -17,8 +19,8 @@ export function startMonitor() {
     const fn = window.MCN_FUNCTIONS?.registry || {};
     const pred = window.MCN_PREDICTION || {};
 
-    const broken = Object.keys(fn).filter(k => fn[k].status === "failed");
-    const unused = Object.keys(fn).filter(k => fn[k].called === 0);
+    const broken = Object.keys(fn).filter(k => fn[k]?.status === "failed");
+    const unused = Object.keys(fn).filter(k => fn[k]?.called === 0);
 
     box.innerHTML = `
       <div><b>🧠 MCN CONTROL FACE</b></div>
@@ -44,14 +46,13 @@ export function startMonitor() {
       <hr>
 
       <div><b>📡 LAST EVENT</b></div>
-      <div>${s.stats?.lastEvent ?? "none"}</div>
+      <div>${window.__MCN_LAST_EVENT ?? s.stats?.lastEvent ?? "none"}</div>
 
       <hr>
 
       <div><b>🔮 FAILURE PREDICTION AI</b></div>
 
       <div>Risk Score: ${pred.riskScore ?? 0}</div>
-
       <div>System: ${pred.zones?.system ?? 0}</div>
       <div>Support: ${pred.zones?.support ?? 0}</div>
       <div>Content: ${pred.zones?.content ?? 0}</div>
@@ -59,14 +60,12 @@ export function startMonitor() {
 
       <div><b>Forecast:</b></div>
       <ul>
-        ${(pred.forecast || [])
-          .map(f => `<li>${f}</li>`)
-          .join("")}
+        ${(pred.forecast || []).map(f => `<li>${f}</li>`).join("")}
       </ul>
     `;
   }
 
   setInterval(render, 1000);
 
-  console.log("🖥 MCN MONITOR ONLINE");
+  console.log("🖥 MCN MONITOR EVENT CONNECTED");
 }
