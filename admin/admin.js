@@ -1,6 +1,6 @@
 /* =========================================
-   🚀 MCN BOOT STABILITY LAYER v1
-   HARD SEQUENCED + FAILSAFE + SAFE RENDER
+   🚀 MCN BOOT STABILITY LAYER v2 (FIXED)
+   HARD SEQUENCED + SAFE ENGINE + UI SYNC
 ========================================= */
 
 import { initAdminGuard } from "./admin-auth.js";
@@ -18,16 +18,15 @@ import { startMCNLive } from "../mcn-live-boot.js";
 
 /* ================= GLOBAL LOCK ================= */
 
-window.MCN_BOOT = {
+window.MCN_BOOT = window.MCN_BOOT || {
   state: "idle",
-  locked: false,
-  retries: 0
+  locked: false
 };
 
 window.MCN_READY = false;
 window.MCN_ADMIN = null;
 
-/* ================= SYSTEM INIT ================= */
+/* ================= SAFE SYSTEM INIT ================= */
 
 function ensureSystemState() {
 
@@ -52,16 +51,21 @@ function ensureSystemState() {
   window.MCN_BUS = window.MCN_BUS || { emit: () => {}, on: () => {} };
 }
 
-/* ================= SAFE DOM READY ================= */
+/* ================= CONTROL BRIDGE ================= */
 
-function waitForDOM() {
-  return new Promise(resolve => {
-    if (document.readyState !== "loading") return resolve();
-    document.addEventListener("DOMContentLoaded", resolve);
+function startControls() {
+
+  watchControls((data = {}) => {
+
+    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
+    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
+    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
+    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
+
   });
 }
 
-/* ================= MODULE STARTER ================= */
+/* ================= MODULE START SEQUENCER ================= */
 
 async function startModules(user) {
 
@@ -72,9 +76,17 @@ async function startModules(user) {
   startMonitor();
   startMCNLive();
 
-  await waitForDOM();
+  /* WAIT FOR DOM BEFORE ENGINE */
+  await new Promise(r => {
+    if (document.readyState !== "loading") return r();
+    document.addEventListener("DOMContentLoaded", r);
+  });
 
-  startAdminEngine();
+  /* PREVENT DOUBLE ENGINE LOAD */
+  if (!window.__MCN_ENGINE_STARTED__) {
+    window.__MCN_ENGINE_STARTED__ = true;
+    startAdminEngine();
+  }
 
   window.MCN_BUS.emit?.("system:boot", {
     user: user.uid,
@@ -84,35 +96,12 @@ async function startModules(user) {
   console.log("🧠 MCN FULL SYSTEM ACTIVE");
 }
 
-/* ================= CONTROL BRIDGE ================= */
-
-function startControls() {
-
-  watchControls((data = {}) => {
-
-    window.MCN_CONTROLS = {
-      featuredPostId: data.featuredPostId ?? null,
-      sponsoredPostId: data.sponsoredPostId ?? null,
-      adsEnabled: data.adsEnabled ?? true,
-      discoverEnabled: data.discoverEnabled ?? true
-    };
-
-    console.log("🎛 Controls synced");
-  });
-}
-
-/* ================= HARD BOOT LOCK ================= */
-
-function lockBoot() {
-  window.MCN_BOOT.locked = true;
-}
-
 /* ================= BOOT ================= */
 
 function boot() {
 
   if (window.MCN_BOOT.locked) return;
-  lockBoot();
+  window.MCN_BOOT.locked = true;
 
   initAdminGuard(async (user) => {
 
@@ -121,7 +110,7 @@ function boot() {
       window.MCN_BOOT.state = "auth-check";
 
       if (!user) {
-        console.error("❌ No user session");
+        console.error("❌ No session");
         return;
       }
 
