@@ -1,6 +1,6 @@
 /* =========================================
-   🧠 MCN ADMIN STATE ENGINE v2 (FIXED)
-   LIVE POSTS + INLINE EDIT + SUPPORT FIX
+   🚀 MCN ADMIN PRO MODE ENGINE v3
+   FULL CONTROL SYSTEM (STABLE)
 ========================================= */
 
 import { db } from "../firebase.js";
@@ -10,8 +10,10 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  orderBy,
-  query
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ================= GLOBAL STATE ================= */
@@ -19,41 +21,32 @@ import {
 window.MCN_STATE = {
   posts: [],
   chats: {},
+  ads: [],
   selectedUser: null
 };
 
-/* ================= SAFE HELPERS ================= */
+/* ================= HELPERS ================= */
 
-function el(id) {
-  return document.getElementById(id);
-}
+const el = (id) => document.getElementById(id);
 
-/* ================= POSTS LIVE ENGINE ================= */
+/* ================= POSTS ================= */
 
 function initPosts() {
 
   const qRef = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
-  onSnapshot(qRef, (snap) => {
+  onSnapshot(qRef, snap => {
 
     const posts = [];
 
-    snap.forEach(d => {
-      posts.push({ id: d.id, ...d.data() });
-    });
+    snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
 
     window.MCN_STATE.posts = posts;
 
     renderPosts();
-
-    if (window.MCN_SYSTEM) {
-      window.MCN_SYSTEM.stats.posts = posts.length;
-      window.MCN_SYSTEM.stats.lastEvent = "posts:live";
-    }
+    renderDashboard();
   });
 }
-
-/* ================= RENDER POSTS (LIVE + INLINE EDIT) ================= */
 
 function renderPosts() {
 
@@ -63,73 +56,54 @@ function renderPosts() {
   if (box) box.innerHTML = "";
   if (dash) dash.innerHTML = "";
 
-  window.MCN_STATE.posts.forEach(post => {
+  window.MCN_STATE.posts.forEach(p => {
 
     const html = `
-      <div class="item">
-        <input id="t-${post.id}" value="${post.title}" style="width:100%;margin-bottom:5px;">
-        <textarea id="c-${post.id}" style="width:100%;height:80px;">${post.content || ""}</textarea>
+      <div class="dashItem">
+        <input id="t-${p.id}" value="${p.title}" />
+        <textarea id="c-${p.id}">${p.content || ""}</textarea>
 
-        <button onclick="MCN.savePost('${post.id}')">Save</button>
-        <button onclick="MCN.deletePost('${post.id}')" class="danger">Delete</button>
+        <button onclick="MCN.savePost('${p.id}')">Save</button>
+        <button onclick="MCN.deletePost('${p.id}')" class="danger">Delete</button>
       </div>
     `;
 
     if (box) box.innerHTML += html;
-    if (dash) dash.innerHTML += `<div class="dashItem">${post.title}</div>`;
+    if (dash) dash.innerHTML += `<div class="dashItem">${p.title}</div>`;
   });
 }
-
-/* ================= SAVE INLINE EDIT ================= */
 
 async function savePost(id) {
 
-  const title = el(`t-${id}`)?.value;
-  const content = el(`c-${id}`)?.value;
-
-  if (!title) return alert("Missing title");
-
   await updateDoc(doc(db, "posts", id), {
-    title,
-    content
+    title: el(`t-${id}`).value,
+    content: el(`c-${id}`).value
   });
 
-  console.log("✅ Post updated:", id);
+  console.log("✅ Post updated");
 }
-
-/* ================= DELETE ================= */
 
 async function deletePost(id) {
-
-  if (!confirm("Delete post?")) return;
-
   await deleteDoc(doc(db, "posts", id));
-
-  console.log("🗑 Deleted:", id);
+  console.log("🗑 Post deleted");
 }
 
-/* ================= SUPPORT ENGINE FIX ================= */
+/* ================= SUPPORT CHAT ================= */
 
 function initSupport() {
 
   const ref = collection(db, "supportChats");
 
-  onSnapshot(ref, (snap) => {
+  onSnapshot(ref, snap => {
 
     const users = [];
 
     snap.forEach(d => users.push(d.id));
 
     renderUsers(users);
-
-    if (window.MCN_SYSTEM) {
-      window.MCN_SYSTEM.stats.supportChats = users.length;
-      window.MCN_SYSTEM.stats.lastEvent = "support:live";
-    }
+    renderDashboard();
   });
 }
-
-/* ================= USERS ================= */
 
 function renderUsers(users) {
 
@@ -139,21 +113,19 @@ function renderUsers(users) {
   if (box) box.innerHTML = "";
   if (dash) dash.innerHTML = "";
 
-  users.forEach(uid => {
+  users.forEach(u => {
 
     const html = `
-      <div class="item">
-        👤 ${uid}
-        <button onclick="MCN.openChat('${uid}')">Open</button>
+      <div class="dashItem">
+        👤 ${u}
+        <button onclick="MCN.openChat('${u}')">Open</button>
       </div>
     `;
 
     if (box) box.innerHTML += html;
-    if (dash) dash.innerHTML += `<div class="dashItem">${uid}</div>`;
+    if (dash) dash.innerHTML += `<div class="dashItem">${u}</div>`;
   });
 }
-
-/* ================= CHAT OPEN ================= */
 
 function openChat(uid) {
 
@@ -161,41 +133,128 @@ function openChat(uid) {
 
   const ref = collection(db, "supportChats", uid, "messages");
 
-  onSnapshot(ref, (snap) => {
+  onSnapshot(ref, snap => {
 
     const msgs = [];
 
     snap.forEach(d => msgs.push(d.data()));
 
-    renderMessages(msgs);
+    renderMessages(msgs, uid);
   });
 }
 
-/* ================= RENDER MESSAGES ================= */
-
-function renderMessages(msgs) {
+function renderMessages(msgs, uid) {
 
   const box = el("supportMessages");
-  const dash = el("dashSystem");
 
   if (box) box.innerHTML = "";
 
   msgs.forEach(m => {
 
     const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-      <b>${m.sender}</b><br>
-      ${m.text}
-    `;
-
-    if (box) box.appendChild(div);
+    div.className = "dashItem";
+    div.innerHTML = `<b>${m.sender}</b><br>${m.text}`;
+    box.appendChild(div);
   });
 
-  if (dash) {
-    dash.innerHTML = `<div class="dashItem">Live chats active: ${msgs.length}</div>`;
-  }
+  // attach quick reply
+  const input = el("supportReply");
+  const btn = el("sendSupportReply");
+
+  btn.onclick = async () => {
+
+    if (!input.value) return;
+
+    await addDoc(collection(db, "supportChats", uid, "messages"), {
+      text: input.value,
+      sender: "admin",
+      createdAt: serverTimestamp()
+    });
+
+    input.value = "";
+  };
+}
+
+/* ================= ADS (PRO MODE) ================= */
+
+function initAds() {
+
+  const ref = collection(db, "adRequests");
+
+  onSnapshot(ref, snap => {
+
+    const ads = [];
+
+    snap.forEach(d => ads.push({ id: d.id, ...d.data() }));
+
+    window.MCN_STATE.ads = ads;
+
+    renderAds();
+    renderDashboard();
+  });
+}
+
+function renderAds() {
+
+  const box = el("upgradeList");
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  window.MCN_STATE.ads.forEach(ad => {
+
+    const html = `
+      <div class="dashItem">
+        <b>${ad.title || "Ad Request"}</b><br>
+        Status: ${ad.status || "pending"}<br>
+
+        <button onclick="MCN.approveAd('${ad.id}')">Approve</button>
+        <button onclick="MCN.rejectAd('${ad.id}')">Reject</button>
+      </div>
+    `;
+
+    box.innerHTML += html;
+  });
+}
+
+async function approveAd(id) {
+
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "approved"
+  });
+
+  console.log("✅ Ad approved");
+}
+
+async function rejectAd(id) {
+
+  await updateDoc(doc(db, "adRequests", id), {
+    status: "rejected"
+  });
+
+  console.log("❌ Ad rejected");
+}
+
+/* ================= DASHBOARD V2 ================= */
+
+function renderDashboard() {
+
+  const d1 = el("dashSystem");
+  const d2 = el("dashPosts");
+  const d3 = el("dashAdsPending");
+  const d4 = el("dashChats");
+
+  if (d1) d1.innerHTML = `
+    <div class="dashItem">Posts: ${window.MCN_STATE.posts.length}</div>
+    <div class="dashItem">Ads: ${window.MCN_STATE.ads.length}</div>
+  `;
+
+  if (d3) d3.innerHTML = window.MCN_STATE.ads
+    .filter(a => a.status === "pending")
+    .map(a => `<div class="dashItem">${a.title || "Ad"}</div>`)
+    .join("");
+
 }
 
 /* ================= PUBLIC API ================= */
@@ -203,7 +262,9 @@ function renderMessages(msgs) {
 window.MCN = {
   savePost,
   deletePost,
-  openChat
+  openChat,
+  approveAd,
+  rejectAd
 };
 
 /* ================= BOOT ================= */
@@ -211,6 +272,7 @@ window.MCN = {
 export function startAdminEngine() {
   initPosts();
   initSupport();
+  initAds();
 
-  console.log("🧠 MCN STATE ENGINE v2 ONLINE");
+  console.log("🚀 MCN PRO MODE ONLINE");
 }
