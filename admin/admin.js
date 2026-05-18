@@ -5,14 +5,13 @@
 
 import { initAdminGuard } from "./admin-auth.js";
 import { watchControls } from "./admin-control.js";
-
 import { startMonitor } from "./admin-monitor.js";
 
-/* =========================================
-   BOOT MCN CORE
-========================================= */
-
+/* ================= MCN CORE ================= */
 import "../mcn-core.js";
+
+/* ================= MCN LIVE LAYER ================= */
+import { startMCNLive } from "../mcn-live-boot.js";
 
 /* =========================================
    GLOBAL FLAGS
@@ -31,10 +30,17 @@ function startControls() {
 
     if (!window.MCN_CONTROLS) return;
 
-    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
-    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
-    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
-    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
+    window.MCN_CONTROLS.featuredPostId =
+      data.featuredPostId ?? null;
+
+    window.MCN_CONTROLS.sponsoredPostId =
+      data.sponsoredPostId ?? null;
+
+    window.MCN_CONTROLS.adsEnabled =
+      data.adsEnabled ?? true;
+
+    window.MCN_CONTROLS.discoverEnabled =
+      data.discoverEnabled ?? true;
 
   });
 }
@@ -58,7 +64,16 @@ function boot() {
     console.log("✅ MCN Admin Ready");
 
     startControls();
+
     startMonitor();
+
+    /* =========================================
+       🚀 MCN COMES ALIVE HERE
+    ========================================= */
+
+    startMCNLive();
+
+    console.log("🧠 MCN LIVE ENGINE ATTACHED");
 
   });
 }
