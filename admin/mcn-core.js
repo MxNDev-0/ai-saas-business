@@ -1,6 +1,6 @@
 /* =========================================
-   🧠 MCN CORE BRAIN (FINAL UNIFIED VERSION)
-   Single Source of Truth + Autopilot + AI + Audit
+   🧠 MCN SINGLE-CLOCK AUTONOMOUS BRAIN
+   Unified System + AI + Healing + Prediction
 ========================================= */
 
 /* ================= GLOBAL STATE ================= */
@@ -13,9 +13,7 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
     users: 0,
     supportChats: 0,
     lastEvent: null,
-    errorCount: 0,
-    brokenFunctions: 0,
-    unusedFunctions: 0
+    errorCount: 0
   },
 
   flags: {
@@ -32,7 +30,15 @@ window.MCN_AI = window.MCN_AI || {
   lastDecision: null
 };
 
-window.MCN_CONTROLS = window.MCN_CONTROLS || {};
+window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
+
+window.MCN_PREDICTION = window.MCN_PREDICTION || {
+  riskScore: 0,
+  zones: {},
+  forecast: []
+};
+
+window.MCN_HEALTH_LOG = [];
 
 /* ================= EVENT BUS ================= */
 
@@ -45,44 +51,33 @@ window.MCN_BUS = window.MCN_BUS || {
   },
 
   emit(event, data) {
-
     window.MCN_SYSTEM.stats.lastEvent = event;
 
     const list = this.listeners[event] || [];
     list.forEach(fn => fn(data));
-
-    evaluateSystem();
-    runAutopilot();
   }
 };
 
-/* ================= HEALTH ENGINE ================= */
+/* ================= CORE ENGINE ================= */
 
-function updateHealth() {
-
-  const s = window.MCN_SYSTEM;
-
-  let score = 100;
-
-  if (s.flags.emergency) score -= 40;
-  if (s.stats.supportChats > 100) score -= 20;
-  if (s.stats.posts === 0) score -= 15;
-  if (s.stats.errorCount > 0) score -= s.stats.errorCount * 5;
-
-  if (score < 0) score = 0;
-
-  s.health = score;
-  s.flags.degraded = score < 60;
-
-  return score;
-}
-
-/* ================= AI ENGINE ================= */
-
-function evaluateAI() {
+function evaluateSystem() {
 
   const s = window.MCN_SYSTEM;
   const ai = window.MCN_AI;
+
+  /* ================= HEALTH ================= */
+
+  let health = 100;
+
+  if (s.flags.emergency) health -= 40;
+  if (s.stats.supportChats > 100) health -= 20;
+  if (s.stats.posts === 0) health -= 15;
+  if (s.stats.errorCount > 0) health -= s.stats.errorCount * 5;
+
+  s.health = Math.max(0, health);
+  s.flags.degraded = s.health < 60;
+
+  /* ================= AI ================= */
 
   let risk = 0;
   let insights = [];
@@ -94,12 +89,12 @@ function evaluateAI() {
 
   if (s.stats.supportChats > 100) {
     risk += 30;
-    insights.push("High support load");
+    insights.push("Support overload");
   }
 
   if (s.flags.emergency) {
     risk += 40;
-    insights.push("Emergency state active");
+    insights.push("Emergency active");
   }
 
   if (s.health < 60) {
@@ -121,7 +116,69 @@ function evaluateAI() {
     risk
   };
 
-  return ai;
+  /* ================= FUNCTION AUDIT ================= */
+
+  const reg = window.MCN_FUNCTIONS.registry;
+  let broken = 0;
+  let unused = 0;
+
+  for (let k in reg) {
+    if (reg[k].status === "failed") broken++;
+    if (reg[k].called === 0) unused++;
+  }
+
+  s.stats.errorCount = Math.min(50, s.stats.errorCount);
+  s.stats.brokenFunctions = broken;
+  s.stats.unusedFunctions = unused;
+
+  /* ================= PREDICTION ENGINE ================= */
+
+  const zones = {
+    system: s.health < 60 ? 40 : 10,
+    support: s.stats.supportChats > 100 ? 40 : 10,
+    content: s.stats.posts === 0 ? 30 : 10,
+    functions: broken > 3 ? 40 : 10
+  };
+
+  const riskScore =
+    zones.system +
+    zones.support +
+    zones.content +
+    zones.functions;
+
+  window.MCN_PREDICTION.riskScore = riskScore;
+  window.MCN_PREDICTION.zones = zones;
+
+  window.MCN_PREDICTION.forecast = [];
+
+  if (riskScore > 120) {
+    window.MCN_PREDICTION.forecast.push("⚠ High system instability risk");
+  }
+
+  if (broken > 3) {
+    window.MCN_PREDICTION.forecast.push("⚠ Function failure cluster forming");
+  }
+
+  if (s.stats.supportChats > 100) {
+    window.MCN_PREDICTION.forecast.push("⚠ Support overload forming");
+  }
+
+  if (window.MCN_PREDICTION.forecast.length === 0) {
+    window.MCN_PREDICTION.forecast.push("🟢 System stable");
+  }
+
+  /* ================= LOG HISTORY ================= */
+
+  window.MCN_HEALTH_LOG.push({
+    time: Date.now(),
+    health: s.health,
+    risk: ai.risk,
+    prediction: riskScore
+  });
+
+  if (window.MCN_HEALTH_LOG.length > 50) {
+    window.MCN_HEALTH_LOG.shift();
+  }
 }
 
 /* ================= AUTOPILOT ================= */
@@ -136,351 +193,45 @@ function runAutopilot() {
   if (ai.mode === "critical") {
     s.flags.degraded = true;
     s.stats.errorCount += 1;
-    return;
   }
 
   if (ai.mode === "warning") {
     if (s.stats.supportChats > 80) {
       s.stats.supportChats -= 1;
     }
-    return;
   }
 
-  if (ai.mode === "stable") {
-    if (s.health < 100) {
-      s.health += 0.3;
-    }
+  if (ai.mode === "stable" && s.health < 100) {
+    s.health += 0.2;
   }
 }
 
-/* ================= SYSTEM EVALUATION ================= */
+/* ================= SELF HEALING ================= */
 
-function evaluateSystem() {
-  updateHealth();
-  evaluateAI();
-}
-
-/* ================= FUNCTION AUDITOR ================= */
-
-window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
-
-function auditSystem() {
-
-  const reg = window.MCN_FUNCTIONS.registry;
-
-  const broken = [];
-  const unused = [];
-
-  for (let k in reg) {
-    if (reg[k].status === "failed") broken.push(k);
-    if (reg[k].called === 0) unused.push(k);
-  }
-
-  window.MCN_SYSTEM.stats.brokenFunctions = broken.length;
-  window.MCN_SYSTEM.stats.unusedFunctions = unused.length;
-
-  return { broken, unused };
-}
-
-/* ================= LOOP ENGINE ================= */
-
-setInterval(() => {
-  evaluateSystem();
-  runAutopilot();
-  auditSystem();
-}, 3000);
-
-console.log("🧠 MCN CORE ONLINE (FINAL)");
-
-/* =========================================
-   🧠 MCN SELF-HEALING DEBUGGER (FULL MODULE)
-   Runtime Fault Detection + Recovery + Watchdog
-========================================= */
-
-/* ================= GLOBAL DEBUG STATE ================= */
-
-window.MCN_HEALTH = {
-  errors: [],
-  recoveries: [],
-  lastFix: null,
-  lastIssues: []
-};
-
-/* ================= ERROR CAPTURE SYSTEM ================= */
-
-window.MCN_CAPTURE_ERROR = function (source, error) {
-
-  const entry = {
-    source: source || "unknown",
-    message: error?.message || "unknown error",
-    stack: error?.stack || null,
-    time: Date.now()
-  };
-
-  window.MCN_HEALTH.errors.push(entry);
-
-  if (window.MCN_SYSTEM) {
-    window.MCN_SYSTEM.stats.errorCount =
-      (window.MCN_SYSTEM.stats.errorCount || 0) + 1;
-  }
-
-  console.warn("🧠 MCN ERROR CAPTURED:", entry);
-
-  triggerRecovery(entry);
-};
-
-/* ================= RECOVERY ENGINE ================= */
-
-function triggerRecovery(error) {
+function selfHealing() {
 
   const s = window.MCN_SYSTEM;
-  if (!s) return;
 
-  let action = "none";
-
-  /* 🔴 SUPPORT OVERLOAD RECOVERY */
-  if (error.source === "support" && s.stats.supportChats > 100) {
-    s.stats.supportChats = Math.floor(s.stats.supportChats * 0.8);
-    action = "throttled_support";
-  }
-
-  /* 🚨 EMERGENCY STABILIZATION */
-  if (s.flags?.emergency) {
-    s.flags.degraded = true;
-    s.health = Math.min(100, (s.health || 100) + 5);
-    action = "emergency_stabilize";
-  }
-
-  /* 🟡 HIGH ERROR RECOVERY */
-  if (s.stats.errorCount > 10) {
-    s.health = Math.min(100, (s.health || 100) + 3);
-    action = "error_recovery_boost";
-  }
-
-  /* 🟢 DEFAULT SOFT RECOVERY */
-  if (action === "none") {
-    s.health = Math.min(100, (s.health || 100) + 2);
-    action = "soft_recovery";
-  }
-
-  const fix = {
-    error,
-    action,
-    time: Date.now()
-  };
-
-  window.MCN_HEALTH.recoveries.push(fix);
-  window.MCN_HEALTH.lastFix = fix;
-
-  console.warn("🧠 MCN RECOVERY EXECUTED:", action);
-}
-
-/* ================= FUNCTION WATCHDOG ================= */
-
-function watchFunctions() {
-
-  const reg = window.MCN_FUNCTIONS?.registry || {};
-
-  for (let key in reg) {
-
-    const fn = reg[key];
-
-    if (fn.called === 0) {
-      fn.status = "idle";
-    }
-
-    if (fn.status === "failed") {
-
-      window.MCN_CAPTURE_ERROR("function:" + key, {
-        message: "Function failure detected"
-      });
-    }
-  }
-}
-
-/* ================= SYSTEM SELF DIAGNOSTIC ================= */
-
-function runSelfCheck() {
-
-  const s = window.MCN_SYSTEM;
-  if (!s) return [];
-
-  const issues = [];
-
-  if (s.stats.errorCount > 5) issues.push("high_error_rate");
-  if (s.stats.posts === 0) issues.push("no_content_flow");
-  if (s.stats.supportChats > 100) issues.push("support_overload");
-  if (s.health < 40) issues.push("low_health_system");
-
-  window.MCN_HEALTH.lastIssues = issues;
-
-  return issues;
-}
-
-/* ================= HEALTH AUTO-CORRECTION ================= */
-
-function autoStabilizer() {
-
-  const s = window.MCN_SYSTEM;
-  if (!s) return;
-
-  /* slow recovery when stable */
-  if (s.health < 100 && !s.flags?.emergency) {
-    s.health = Math.min(100, s.health + 0.2);
-  }
-
-  /* prevent runaway errors */
   if (s.stats.errorCount > 20) {
     s.stats.errorCount = 20;
   }
-}
 
-/* ================= AUTO LOOP ENGINE ================= */
-
-setInterval(() => {
-
-  watchFunctions();
-  runSelfCheck();
-  autoStabilizer();
-
-}, 4000);
-
-console.log("🧠 MCN SELF-HEALING DEBUGGER ONLINE");
-
-/* =========================================
-   🧠 MCN PREDICTIVE FAILURE AI
-   Risk Forecasting + Failure Prediction Layer
-========================================= */
-
-/* ================= PREDICTION STATE ================= */
-
-window.MCN_PREDICTION = {
-  riskScore: 0,
-  zones: {
-    system: 0,
-    support: 0,
-    content: 0,
-    functions: 0
-  },
-  forecast: [],
-  lastUpdate: null
-};
-
-/* ================= RISK ENGINE ================= */
-
-function calculateRisk() {
-
-  const s = window.MCN_SYSTEM || {};
-
-  let systemRisk = 0;
-  let supportRisk = 0;
-  let contentRisk = 0;
-  let functionRisk = 0;
-
-  /* SYSTEM RISK */
-  if (s.health < 70) systemRisk += 25;
-  if (s.health < 40) systemRisk += 40;
-  if (s.flags?.emergency) systemRisk += 50;
-
-  /* SUPPORT RISK */
-  if (s.stats.supportChats > 50) supportRisk += 20;
-  if (s.stats.supportChats > 100) supportRisk += 40;
-
-  /* CONTENT RISK */
-  if (s.stats.posts === 0) contentRisk += 30;
-  if (s.stats.posts < 3) contentRisk += 15;
-
-  /* FUNCTION RISK */
-  const reg = window.MCN_FUNCTIONS?.registry || {};
-  const total = Object.keys(reg).length || 1;
-
-  let failed = 0;
-  for (let k in reg) {
-    if (reg[k].status === "failed") failed++;
-  }
-
-  const failureRate = (failed / total) * 100;
-
-  if (failureRate > 10) functionRisk += 20;
-  if (failureRate > 25) functionRisk += 40;
-
-  /* STORE ZONES */
-  window.MCN_PREDICTION.zones = {
-    system: systemRisk,
-    support: supportRisk,
-    content: contentRisk,
-    functions: functionRisk
-  };
-
-  /* TOTAL RISK */
-  const totalRisk =
-    systemRisk +
-    supportRisk +
-    contentRisk +
-    functionRisk;
-
-  window.MCN_PREDICTION.riskScore = totalRisk;
-
-  return totalRisk;
-}
-
-/* ================= FAILURE FORECAST ================= */
-
-function generateForecast() {
-
-  const z = window.MCN_PREDICTION.zones;
-
-  const forecast = [];
-
-  if (z.system > 40) {
-    forecast.push("⚠ System instability likely");
-  }
-
-  if (z.support > 30) {
-    forecast.push("⚠ Support overload risk increasing");
-  }
-
-  if (z.content > 20) {
-    forecast.push("⚠ Content flow stagnation detected");
-  }
-
-  if (z.functions > 30) {
-    forecast.push("⚠ Function failure cluster forming");
-  }
-
-  if (forecast.length === 0) {
-    forecast.push("🟢 System stable - no predicted failures");
-  }
-
-  window.MCN_PREDICTION.forecast = forecast;
-  window.MCN_PREDICTION.lastUpdate = Date.now();
-
-  return forecast;
-}
-
-/* ================= AUTOPREDICT LOOP ================= */
-
-function runPredictionEngine() {
-
-  calculateRisk();
-  generateForecast();
-
-  const risk = window.MCN_PREDICTION.riskScore;
-
-  /* FEED INTO SELF-HEALING LAYER */
-  if (risk > 120 && window.MCN_SYSTEM) {
-    window.MCN_SYSTEM.flags.degraded = true;
-  }
-
-  if (risk > 180 && window.MCN_SYSTEM) {
-    window.MCN_SYSTEM.health = Math.max(0, window.MCN_SYSTEM.health - 5);
+  if (!s.flags.emergency && s.health < 100) {
+    s.health += 0.1;
   }
 }
 
-/* ================= AUTO LOOP ================= */
+/* ================= SINGLE CLOCK ENGINE ================= */
 
-setInterval(() => {
-  runPredictionEngine();
-}, 3000);
+function MCN_CLOCK() {
 
-console.log("🧠 MCN PREDICTIVE FAILURE AI ONLINE");
+  evaluateSystem();
+  runAutopilot();
+  selfHealing();
+}
+
+/* ================= START SINGLE CLOCK ================= */
+
+setInterval(MCN_CLOCK, 3000);
+
+console.log("🧠 MCN SINGLE-CLOCK AUTONOMOUS BRAIN ONLINE");
