@@ -1,166 +1,216 @@
 /* =========================================
-   🚀 MCN BOOT STABILITY LAYER v2 (FIXED)
-   HARD SEQUENCED + SAFE ENGINE + UI SYNC
+   🧠 MCN ADMIN STATE ENGINE v2 (FIXED)
+   LIVE POSTS + INLINE EDIT + SUPPORT FIX
 ========================================= */
 
-import { initAdminGuard } from "./admin-auth.js";
-import { watchControls } from "./admin-control.js";
-import { startMonitor } from "./admin-monitor.js";
-import { startAdminEngine } from "./admin/admin.js";
+import { db } from "../firebase.js";
+import {
+  collection,
+  onSnapshot,
+  updateDoc,
+  deleteDoc,
+  doc,
+  orderBy,
+  query
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { db } from "./firebase.js";
+/* ================= GLOBAL STATE ================= */
 
-import "../mcn-core.js";
-import "../mcn-event-bus.js";
-import { startMCNHealing } from "../mcn-self-heal.js";
-import { startMCNLive } from "../mcn-live-boot.js";
-
-/* ================= GLOBAL LOCK ================= */
-
-window.MCN_BOOT = window.MCN_BOOT || {
-  state: "idle",
-  locked: false
+window.MCN_STATE = {
+  posts: [],
+  chats: {},
+  selectedUser: null
 };
 
-window.MCN_READY = false;
-window.MCN_ADMIN = null;
+/* ================= SAFE HELPERS ================= */
 
-/* ================= SAFE SYSTEM INIT ================= */
+function el(id) {
+  return document.getElementById(id);
+}
 
-function ensureSystemState() {
+/* ================= POSTS LIVE ENGINE ================= */
 
-  window.MCN_SYSTEM = window.MCN_SYSTEM || {
-    health: 100,
-    stats: {
-      posts: 0,
-      users: 0,
-      supportChats: 0,
-      errorCount: 0,
-      lastEvent: "boot:init"
-    },
-    flags: {
-      emergency: false,
-      degraded: false,
-      autopilot: true
+function initPosts() {
+
+  const qRef = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+
+  onSnapshot(qRef, (snap) => {
+
+    const posts = [];
+
+    snap.forEach(d => {
+      posts.push({ id: d.id, ...d.data() });
+    });
+
+    window.MCN_STATE.posts = posts;
+
+    renderPosts();
+
+    if (window.MCN_SYSTEM) {
+      window.MCN_SYSTEM.stats.posts = posts.length;
+      window.MCN_SYSTEM.stats.lastEvent = "posts:live";
     }
-  };
-
-  window.MCN_AI = window.MCN_AI || { mode: "stable", risk: 0 };
-  window.MCN_CONTROLS = window.MCN_CONTROLS || {};
-  window.MCN_BUS = window.MCN_BUS || { emit: () => {}, on: () => {} };
-}
-
-/* ================= CONTROL BRIDGE ================= */
-
-function startControls() {
-
-  watchControls((data = {}) => {
-
-    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
-    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
-    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
-    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
-
   });
 }
 
-/* ================= MODULE START SEQUENCER ================= */
+/* ================= RENDER POSTS (LIVE + INLINE EDIT) ================= */
 
-async function startModules(user) {
+function renderPosts() {
 
-  ensureSystemState();
+  const box = el("postsList");
+  const dash = el("dashPosts");
 
-  startControls();
-  startMCNHealing();
-  startMonitor();
-  startMCNLive();
+  if (box) box.innerHTML = "";
+  if (dash) dash.innerHTML = "";
 
-  /* WAIT FOR DOM BEFORE ENGINE */
-  await new Promise(r => {
-    if (document.readyState !== "loading") return r();
-    document.addEventListener("DOMContentLoaded", r);
+  window.MCN_STATE.posts.forEach(post => {
+
+    const html = `
+      <div class="item">
+        <input id="t-${post.id}" value="${post.title}" style="width:100%;margin-bottom:5px;">
+        <textarea id="c-${post.id}" style="width:100%;height:80px;">${post.content || ""}</textarea>
+
+        <button onclick="MCN.savePost('${post.id}')">Save</button>
+        <button onclick="MCN.deletePost('${post.id}')" class="danger">Delete</button>
+      </div>
+    `;
+
+    if (box) box.innerHTML += html;
+    if (dash) dash.innerHTML += `<div class="dashItem">${post.title}</div>`;
+  });
+}
+
+/* ================= SAVE INLINE EDIT ================= */
+
+async function savePost(id) {
+
+  const title = el(`t-${id}`)?.value;
+  const content = el(`c-${id}`)?.value;
+
+  if (!title) return alert("Missing title");
+
+  await updateDoc(doc(db, "posts", id), {
+    title,
+    content
   });
 
-  /* PREVENT DOUBLE ENGINE LOAD */
-  if (!window.__MCN_ENGINE_STARTED__) {
-    window.__MCN_ENGINE_STARTED__ = true;
-    startAdminEngine();
+  console.log("✅ Post updated:", id);
+}
+
+/* ================= DELETE ================= */
+
+async function deletePost(id) {
+
+  if (!confirm("Delete post?")) return;
+
+  await deleteDoc(doc(db, "posts", id));
+
+  console.log("🗑 Deleted:", id);
+}
+
+/* ================= SUPPORT ENGINE FIX ================= */
+
+function initSupport() {
+
+  const ref = collection(db, "supportChats");
+
+  onSnapshot(ref, (snap) => {
+
+    const users = [];
+
+    snap.forEach(d => users.push(d.id));
+
+    renderUsers(users);
+
+    if (window.MCN_SYSTEM) {
+      window.MCN_SYSTEM.stats.supportChats = users.length;
+      window.MCN_SYSTEM.stats.lastEvent = "support:live";
+    }
+  });
+}
+
+/* ================= USERS ================= */
+
+function renderUsers(users) {
+
+  const box = el("supportUsers");
+  const dash = el("dashChats");
+
+  if (box) box.innerHTML = "";
+  if (dash) dash.innerHTML = "";
+
+  users.forEach(uid => {
+
+    const html = `
+      <div class="item">
+        👤 ${uid}
+        <button onclick="MCN.openChat('${uid}')">Open</button>
+      </div>
+    `;
+
+    if (box) box.innerHTML += html;
+    if (dash) dash.innerHTML += `<div class="dashItem">${uid}</div>`;
+  });
+}
+
+/* ================= CHAT OPEN ================= */
+
+function openChat(uid) {
+
+  window.MCN_STATE.selectedUser = uid;
+
+  const ref = collection(db, "supportChats", uid, "messages");
+
+  onSnapshot(ref, (snap) => {
+
+    const msgs = [];
+
+    snap.forEach(d => msgs.push(d.data()));
+
+    renderMessages(msgs);
+  });
+}
+
+/* ================= RENDER MESSAGES ================= */
+
+function renderMessages(msgs) {
+
+  const box = el("supportMessages");
+  const dash = el("dashSystem");
+
+  if (box) box.innerHTML = "";
+
+  msgs.forEach(m => {
+
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <b>${m.sender}</b><br>
+      ${m.text}
+    `;
+
+    if (box) box.appendChild(div);
+  });
+
+  if (dash) {
+    dash.innerHTML = `<div class="dashItem">Live chats active: ${msgs.length}</div>`;
   }
-
-  window.MCN_BUS.emit?.("system:boot", {
-    user: user.uid,
-    time: Date.now()
-  });
-
-  console.log("🧠 MCN FULL SYSTEM ACTIVE");
 }
+
+/* ================= PUBLIC API ================= */
+
+window.MCN = {
+  savePost,
+  deletePost,
+  openChat
+};
 
 /* ================= BOOT ================= */
 
-function boot() {
+export function startAdminEngine() {
+  initPosts();
+  initSupport();
 
-  if (window.MCN_BOOT.locked) return;
-  window.MCN_BOOT.locked = true;
-
-  initAdminGuard(async (user) => {
-
-    try {
-
-      window.MCN_BOOT.state = "auth-check";
-
-      if (!user) {
-        console.error("❌ No session");
-        return;
-      }
-
-      window.MCN_BOOT.state = "role-check";
-
-      const snap = await getDoc(doc(db, "users", user.uid));
-
-      if (!snap.exists() || snap.data()?.role !== "admin") {
-        console.error("❌ ACCESS DENIED");
-
-        window.MCN_READY = false;
-        window.MCN_ADMIN = null;
-
-        window.MCN_BOOT.state = "denied";
-        return;
-      }
-
-      console.log("✅ ADMIN VERIFIED");
-
-      window.MCN_BOOT.state = "booting";
-
-      window.MCN_ADMIN = user;
-      window.MCN_READY = true;
-
-      await startModules(user);
-
-      window.MCN_BOOT.state = "ready";
-
-      console.log("🚀 MCN BOOT COMPLETE");
-
-    } catch (err) {
-
-      window.MCN_BOOT.state = "error";
-
-      console.error("❌ BOOT FAILURE:", err);
-
-      const monitor = document.getElementById("monitor");
-
-      if (monitor) {
-        monitor.innerHTML = `
-          <div style="color:red;">
-            🧠 MCN BOOT FAILED<br><br>
-            State: ${window.MCN_BOOT.state}<br>
-            Error: ${err.message}
-          </div>
-        `;
-      }
-    }
-
-  });
+  console.log("🧠 MCN STATE ENGINE v2 ONLINE");
 }
-
-boot();
