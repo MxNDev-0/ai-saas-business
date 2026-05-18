@@ -1,103 +1,53 @@
-import { db } from "./firebase.js";
-import {
-  collection,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-/* =========================================
-   MCN CONTROL CENTER MONITOR v3 (BOOT EDITION)
-========================================= */
-
 export function startMonitor() {
 
   const box = document.getElementById("monitor");
 
   if (!box) {
-    console.error("❌ Monitor UI missing");
+    console.error("❌ Monitor missing");
     return;
   }
 
   if (window.__MCN_MONITOR_ACTIVE) return;
   window.__MCN_MONITOR_ACTIVE = true;
 
-  const push = (msg, type = "ok") => {
+  function render() {
 
-    const div = document.createElement("div");
-    const time = new Date().toLocaleTimeString();
+    const s = window.MCN_SYSTEM || {};
+    const ai = window.MCN_AI || {};
+    const fn = window.MCN_FUNCTIONS?.registry || {};
 
-    div.style.marginBottom = "4px";
-    div.style.fontSize = "13px";
+    const broken = Object.keys(fn).filter(k => fn[k].status === "failed");
+    const unused = Object.keys(fn).filter(k => fn[k].called === 0);
 
-    div.style.color =
-      type === "error" ? "red" :
-      type === "warn" ? "orange" :
-      type === "system" ? "#5bc0be" :
-      "#00ff88";
+    box.innerHTML = `
+      <div><b>🧠 MCN CONTROL FACE</b></div>
+      <hr>
 
-    div.textContent = `[${time}] ${msg}`;
+      <div>📝 Posts: ${s.stats?.posts ?? 0}</div>
+      <div>💬 Support: ${s.stats?.supportChats ?? 0}</div>
+      <div>⚡ Health: ${s.health ?? 100}</div>
+      <div>🚨 Emergency: ${s.flags?.emergency ? "ON" : "OFF"}</div>
 
-    box.appendChild(div);
-    box.scrollTop = box.scrollHeight;
-  };
+      <hr>
 
-  /* =========================================
-     🧠 BOOT SEQUENCE (THIS IS YOUR “SCREEN LIVES” PART)
-  ========================================= */
+      <div><b>🤖 AI STATUS</b></div>
+      <div>Mode: ${ai.mode ?? "stable"}</div>
+      <div>Risk: ${ai.risk ?? 0}</div>
 
-  const bootSteps = [
-    "Powering MCN Engine Core...",
-    "Checking Firebase connection...",
-    "Scanning database structure...",
-    "Loading authentication module...",
-    "Verifying admin permissions...",
-    "Starting post system...",
-    "Starting ad engine...",
-    "Starting support inbox...",
-    "Activating real-time listeners...",
-    "System ready ✔"
-  ];
+      <hr>
 
-  let i = 0;
+      <div><b>⚙ FUNCTION AUDIT</b></div>
+      <div>❌ Broken: ${broken.length}</div>
+      <div>⚠ Unused: ${unused.length}</div>
 
-  const bootInterval = setInterval(() => {
+      <hr>
 
-    if (i < bootSteps.length) {
-      push("🧠 " + bootSteps[i], "system");
-      i++;
-    } else {
-      clearInterval(bootInterval);
-      push("🚀 Control Center FULLY ONLINE", "system");
-    }
+      <div><b>📡 LAST EVENT</b></div>
+      <div>${s.stats?.lastEvent ?? "none"}</div>
+    `;
+  }
 
-  }, 600);
+  setInterval(render, 1000);
 
-  /* =========================================
-     LIVE FIRESTORE WATCHERS
-  ========================================= */
-
-  onSnapshot(collection(db, "system"), () => {
-    push("⚙ System event detected", "system");
-  });
-
-  onSnapshot(collection(db, "posts"), () => {
-    push("📌 Posts updated", "system");
-  });
-
-  onSnapshot(collection(db, "adRequests"), () => {
-    push("📢 Ad activity detected", "system");
-  });
-
-  /* =========================================
-     HEARTBEAT (keeps screen alive)
-  ========================================= */
-
-  setInterval(() => {
-    push("💓 System heartbeat OK", "ok");
-  }, 20000);
-
-  /* =========================================
-     FINAL READY STATE
-  ========================================= */
-
-  push("🧠 MCN Monitor Engine Initialized", "system");
+  console.log("🖥 MCN MONITOR ONLINE");
 }
