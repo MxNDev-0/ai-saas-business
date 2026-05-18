@@ -1,31 +1,23 @@
 /* =========================================
-   🚀 MCN ADMIN BOOT (CLEAN ENTRY POINT)
-   ONLY RESPONSIBILITY: START SYSTEM
+   🚀 MCN ADMIN BOOT (RECONNECTED CORE)
+   Event Kernel + Monitor + Healing + Live Layer
 ========================================= */
 
 import { initAdminGuard } from "./admin-auth.js";
 import { watchControls } from "./admin-control.js";
 import { startMonitor } from "./admin-monitor.js";
 
-/* ================= MCN CORE ================= */
 import "../mcn-core.js";
-
-/* ================= SELF-HEALING ENGINE ================= */
+import "../mcn-event-bus.js";
 import { startMCNHealing } from "../mcn-self-heal.js";
-
-/* ================= LIVE LAYER ================= */
 import { startMCNLive } from "../mcn-live-boot.js";
 
-/* =========================================
-   GLOBAL FLAGS
-========================================= */
+/* ================= GLOBAL FLAGS ================= */
 
 window.MCN_READY = false;
 window.MCN_ADMIN = null;
 
-/* =========================================
-   CONTROL SYNC (ONLY BRIDGE)
-========================================= */
+/* ================= CONTROL BRIDGE ================= */
 
 function startControls() {
 
@@ -33,24 +25,16 @@ function startControls() {
 
     if (!window.MCN_CONTROLS) return;
 
-    window.MCN_CONTROLS.featuredPostId =
-      data.featuredPostId ?? null;
-
-    window.MCN_CONTROLS.sponsoredPostId =
-      data.sponsoredPostId ?? null;
-
-    window.MCN_CONTROLS.adsEnabled =
-      data.adsEnabled ?? true;
-
-    window.MCN_CONTROLS.discoverEnabled =
-      data.discoverEnabled ?? true;
+    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
+    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
+    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
+    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
 
   });
+
 }
 
-/* =========================================
-   BOOT SYSTEM
-========================================= */
+/* ================= SYSTEM BOOT ================= */
 
 function boot() {
 
@@ -64,20 +48,28 @@ function boot() {
     window.MCN_ADMIN = user;
     window.MCN_READY = true;
 
-    console.log("✅ MCN Admin Ready");
+    console.log("✅ MCN ADMIN ONLINE");
 
-    /* =========================================
-       START ORDER (IMPORTANT)
-    ========================================= */
+    /* ================= START LAYERS ================= */
 
-    startControls();        // Firebase control sync
-    startMonitor();         // UI monitor layer
-    startMCNHealing();      // self-healing brain layer
-    startMCNLive();         // “MCN comes alive” layer
+    startControls();
+    startMCNHealing();
+    startMonitor();
+    startMCNLive();
 
-    console.log("🧠 MCN FULL STACK ONLINE");
+    /* ================= SIGNAL ================= */
+
+    if (window.MCN_BUS?.emit) {
+      window.MCN_BUS.emit("system:boot", {
+        user: user.uid,
+        time: Date.now()
+      });
+    }
+
+    console.log("🧠 MCN FULL SYSTEM ACTIVE");
 
   });
+
 }
 
 boot();
