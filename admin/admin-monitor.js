@@ -15,6 +15,7 @@ export function startMonitor() {
     const s = window.MCN_SYSTEM || {};
     const ai = window.MCN_AI || {};
     const fn = window.MCN_FUNCTIONS?.registry || {};
+    const pred = window.MCN_PREDICTION || {};
 
     const broken = Object.keys(fn).filter(k => fn[k].status === "failed");
     const unused = Object.keys(fn).filter(k => fn[k].called === 0);
@@ -44,6 +45,24 @@ export function startMonitor() {
 
       <div><b>📡 LAST EVENT</b></div>
       <div>${s.stats?.lastEvent ?? "none"}</div>
+
+      <hr>
+
+      <div><b>🔮 FAILURE PREDICTION AI</b></div>
+
+      <div>Risk Score: ${pred.riskScore ?? 0}</div>
+
+      <div>System: ${pred.zones?.system ?? 0}</div>
+      <div>Support: ${pred.zones?.support ?? 0}</div>
+      <div>Content: ${pred.zones?.content ?? 0}</div>
+      <div>Functions: ${pred.zones?.functions ?? 0}</div>
+
+      <div><b>Forecast:</b></div>
+      <ul>
+        ${(pred.forecast || [])
+          .map(f => `<li>${f}</li>`)
+          .join("")}
+      </ul>
     `;
   }
 
