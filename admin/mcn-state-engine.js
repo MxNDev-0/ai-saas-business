@@ -1,6 +1,6 @@
 /* =========================================
-   🧠 MCN STATE ENGINE v1 (UNIFIED SYSTEM CORE)
-   Fixes Monitor, Posts, Chat, Control Sync
+   🧠 MCN STATE ENGINE v1 (FULL BRIDGE LAYER)
+   Connects: Backend + Firestore + Monitor + UI
 ========================================= */
 
 import { db } from "./firebase.js";
@@ -9,36 +9,49 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+const API = "https://mxm-backend.onrender.com";
+
 window.MCN_STATE = window.MCN_STATE || {
   posts: [],
-  supportChats: {},
   ads: [],
-  system: window.MCN_SYSTEM,
-  ai: window.MCN_AI
+  support: {},
+  loading: true
 };
 
-/* ================= FIRESTORE SYNC ================= */
+/* ================= POSTS (BACKEND API) ================= */
 
-function syncPosts() {
+async function syncBackendPosts() {
+  try {
+    const res = await fetch(`${API}/blog/list`);
+    const data = await res.json();
 
-  const ref = collection(db, "posts");
+    window.MCN_STATE.posts = data || [];
 
-  onSnapshot(ref, (snap) => {
+    if (window.MCN_SYSTEM) {
+      window.MCN_SYSTEM.stats.posts = data.length;
+      window.MCN_SYSTEM.stats.lastEvent = "posts:api_sync";
+    }
 
-    const posts = [];
-
-    snap.forEach(doc => {
-      posts.push({ id: doc.id, ...doc.data() });
-    });
-
-    window.MCN_STATE.posts = posts;
-    window.MCN_SYSTEM.stats.posts = posts.length;
-    window.MCN_SYSTEM.stats.lastEvent = "posts:sync";
-
-  });
+  } catch (err) {
+    console.error("POST SYNC ERROR:", err);
+  }
 }
 
-/* ================= SUPPORT CHAT SYNC ================= */
+/* ================= ADS (BACKEND API) ================= */
+
+async function syncAds() {
+  try {
+    const res = await fetch(`${API}/ads/list`);
+    const data = await res.json();
+
+    window.MCN_STATE.ads = data || [];
+
+  } catch (err) {
+    console.error("ADS SYNC ERROR:", err);
+  }
+}
+
+/* ================= SUPPORT (FIRESTORE REALTIME) ================= */
 
 function syncSupport() {
 
@@ -52,37 +65,39 @@ function syncSupport() {
       chats[doc.id] = doc.data();
     });
 
-    window.MCN_STATE.supportChats = chats;
-    window.MCN_SYSTEM.stats.supportChats = Object.keys(chats).length;
-    window.MCN_SYSTEM.stats.lastEvent = "support:sync";
+    window.MCN_STATE.support = chats;
+
+    if (window.MCN_SYSTEM) {
+      window.MCN_SYSTEM.stats.supportChats =
+        Object.keys(chats).length;
+
+      window.MCN_SYSTEM.stats.lastEvent =
+        "support:firestore_sync";
+    }
 
   });
 }
 
-/* ================= EVENT BRIDGE ================= */
+/* ================= STATE LOOP ================= */
 
-function attachBus() {
+function loopSync() {
 
-  const BUS = window.MCN_BUS || window.MCN_EVENT_BUS;
-
-  if (!BUS?.on) return;
-
-  BUS.on("*", (event) => {
-    window.__MCN_LAST_EVENT = event;
-  });
+  syncBackendPosts();
+  syncAds();
 
 }
 
-/* ================= INIT ================= */
+/* ================= INIT ENGINE ================= */
 
 export function startMCNStateEngine() {
 
-  if (window.__MCN_STATE_ENGINE_ACTIVE) return;
-  window.__MCN_STATE_ENGINE_ACTIVE = true;
+  if (window.__MCN_STATE_ENGINE) return;
+  window.__MCN_STATE_ENGINE = true;
 
-  attachBus();
-  syncPosts();
   syncSupport();
+  loopSync();
+
+  setInterval(loopSync, 8000);
 
   console.log("🧠 MCN STATE ENGINE ONLINE");
 }
