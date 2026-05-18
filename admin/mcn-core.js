@@ -191,3 +191,158 @@ setInterval(() => {
 }, 3000);
 
 console.log("🧠 MCN CORE ONLINE (FINAL)");
+
+/* =========================================
+   🧠 MCN SELF-HEALING DEBUGGER (FULL MODULE)
+   Runtime Fault Detection + Recovery + Watchdog
+========================================= */
+
+/* ================= GLOBAL DEBUG STATE ================= */
+
+window.MCN_HEALTH = {
+  errors: [],
+  recoveries: [],
+  lastFix: null,
+  lastIssues: []
+};
+
+/* ================= ERROR CAPTURE SYSTEM ================= */
+
+window.MCN_CAPTURE_ERROR = function (source, error) {
+
+  const entry = {
+    source: source || "unknown",
+    message: error?.message || "unknown error",
+    stack: error?.stack || null,
+    time: Date.now()
+  };
+
+  window.MCN_HEALTH.errors.push(entry);
+
+  if (window.MCN_SYSTEM) {
+    window.MCN_SYSTEM.stats.errorCount =
+      (window.MCN_SYSTEM.stats.errorCount || 0) + 1;
+  }
+
+  console.warn("🧠 MCN ERROR CAPTURED:", entry);
+
+  triggerRecovery(entry);
+};
+
+/* ================= RECOVERY ENGINE ================= */
+
+function triggerRecovery(error) {
+
+  const s = window.MCN_SYSTEM;
+  if (!s) return;
+
+  let action = "none";
+
+  /* 🔴 SUPPORT OVERLOAD RECOVERY */
+  if (error.source === "support" && s.stats.supportChats > 100) {
+    s.stats.supportChats = Math.floor(s.stats.supportChats * 0.8);
+    action = "throttled_support";
+  }
+
+  /* 🚨 EMERGENCY STABILIZATION */
+  if (s.flags?.emergency) {
+    s.flags.degraded = true;
+    s.health = Math.min(100, (s.health || 100) + 5);
+    action = "emergency_stabilize";
+  }
+
+  /* 🟡 HIGH ERROR RECOVERY */
+  if (s.stats.errorCount > 10) {
+    s.health = Math.min(100, (s.health || 100) + 3);
+    action = "error_recovery_boost";
+  }
+
+  /* 🟢 DEFAULT SOFT RECOVERY */
+  if (action === "none") {
+    s.health = Math.min(100, (s.health || 100) + 2);
+    action = "soft_recovery";
+  }
+
+  const fix = {
+    error,
+    action,
+    time: Date.now()
+  };
+
+  window.MCN_HEALTH.recoveries.push(fix);
+  window.MCN_HEALTH.lastFix = fix;
+
+  console.warn("🧠 MCN RECOVERY EXECUTED:", action);
+}
+
+/* ================= FUNCTION WATCHDOG ================= */
+
+function watchFunctions() {
+
+  const reg = window.MCN_FUNCTIONS?.registry || {};
+
+  for (let key in reg) {
+
+    const fn = reg[key];
+
+    if (fn.called === 0) {
+      fn.status = "idle";
+    }
+
+    if (fn.status === "failed") {
+
+      window.MCN_CAPTURE_ERROR("function:" + key, {
+        message: "Function failure detected"
+      });
+    }
+  }
+}
+
+/* ================= SYSTEM SELF DIAGNOSTIC ================= */
+
+function runSelfCheck() {
+
+  const s = window.MCN_SYSTEM;
+  if (!s) return [];
+
+  const issues = [];
+
+  if (s.stats.errorCount > 5) issues.push("high_error_rate");
+  if (s.stats.posts === 0) issues.push("no_content_flow");
+  if (s.stats.supportChats > 100) issues.push("support_overload");
+  if (s.health < 40) issues.push("low_health_system");
+
+  window.MCN_HEALTH.lastIssues = issues;
+
+  return issues;
+}
+
+/* ================= HEALTH AUTO-CORRECTION ================= */
+
+function autoStabilizer() {
+
+  const s = window.MCN_SYSTEM;
+  if (!s) return;
+
+  /* slow recovery when stable */
+  if (s.health < 100 && !s.flags?.emergency) {
+    s.health = Math.min(100, s.health + 0.2);
+  }
+
+  /* prevent runaway errors */
+  if (s.stats.errorCount > 20) {
+    s.stats.errorCount = 20;
+  }
+}
+
+/* ================= AUTO LOOP ENGINE ================= */
+
+setInterval(() => {
+
+  watchFunctions();
+  runSelfCheck();
+  autoStabilizer();
+
+}, 4000);
+
+console.log("🧠 MCN SELF-HEALING DEBUGGER ONLINE");
