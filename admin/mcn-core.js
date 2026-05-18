@@ -1,21 +1,32 @@
 /* =========================================
-   🧠 MCN SINGLE-CLOCK AUTONOMOUS BRAIN
-   Unified System + AI + Healing + Prediction
+   🧠 MCN OS KERNEL v2
+   Modular Kernel + Registry + Snapshots + Fault Isolation
 ========================================= */
 
-/* ================= GLOBAL STATE ================= */
+/* ================= KERNEL STATE ================= */
+
+window.MCN_KERNEL = {
+  version: "v2",
+  bootTime: Date.now(),
+
+  modules: {},
+  snapshots: [],
+
+  status: {
+    mode: "stable",
+    lastFault: null
+  }
+};
 
 window.MCN_SYSTEM = window.MCN_SYSTEM || {
   health: 100,
-
   stats: {
     posts: 0,
     users: 0,
     supportChats: 0,
-    lastEvent: null,
-    errorCount: 0
+    errorCount: 0,
+    lastEvent: null
   },
-
   flags: {
     emergency: false,
     degraded: false,
@@ -26,212 +37,165 @@ window.MCN_SYSTEM = window.MCN_SYSTEM || {
 window.MCN_AI = window.MCN_AI || {
   mode: "stable",
   risk: 0,
-  insights: [],
-  lastDecision: null
+  insights: []
 };
 
 window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
 
-window.MCN_PREDICTION = window.MCN_PREDICTION || {
-  riskScore: 0,
-  zones: {},
-  forecast: []
-};
+/* ================= MODULE REGISTRY ================= */
 
-window.MCN_HEALTH_LOG = [];
+function registerModule(name, moduleFn) {
 
-/* ================= EVENT BUS ================= */
+  window.MCN_KERNEL.modules[name] = {
+    fn: moduleFn,
+    status: "active",
+    lastRun: 0,
+    errors: 0
+  };
+}
 
-window.MCN_BUS = window.MCN_BUS || {
-  listeners: {},
+/* ================= SAFE EXECUTOR ================= */
 
-  on(event, cb) {
-    if (!this.listeners[event]) this.listeners[event] = [];
-    this.listeners[event].push(cb);
-  },
+function safeRun(name) {
 
-  emit(event, data) {
-    window.MCN_SYSTEM.stats.lastEvent = event;
+  const mod = window.MCN_KERNEL.modules[name];
 
-    const list = this.listeners[event] || [];
-    list.forEach(fn => fn(data));
+  if (!mod) return;
+
+  try {
+    mod.fn();
+    mod.status = "active";
+    mod.lastRun = Date.now();
+
+  } catch (err) {
+
+    mod.errors++;
+    mod.status = "failed";
+
+    window.MCN_SYSTEM.stats.errorCount++;
+
+    window.MCN_KERNEL.status.lastFault = {
+      module: name,
+      message: err.message,
+      time: Date.now()
+    };
+
+    console.warn("🧠 KERNEL FAULT:", name, err.message);
+
+    isolateModule(name);
   }
-};
+}
+
+/* ================= MODULE ISOLATION ================= */
+
+function isolateModule(name) {
+
+  const mod = window.MCN_KERNEL.modules[name];
+
+  if (!mod) return;
+
+  mod.status = "isolated";
+
+  console.warn("⚠ MODULE ISOLATED:", name);
+
+  scheduleRollback(name);
+}
+
+/* ================= SNAPSHOT SYSTEM ================= */
+
+function createSnapshot() {
+
+  const snap = {
+    time: Date.now(),
+    system: JSON.parse(JSON.stringify(window.MCN_SYSTEM)),
+    ai: JSON.parse(JSON.stringify(window.MCN_AI))
+  };
+
+  window.MCN_KERNEL.snapshots.push(snap);
+
+  if (window.MCN_KERNEL.snapshots.length > 10) {
+    window.MCN_KERNEL.snapshots.shift();
+  }
+}
+
+/* ================= ROLLBACK SYSTEM ================= */
+
+function rollbackLast() {
+
+  const snap = window.MCN_KERNEL.snapshots.pop();
+
+  if (!snap) return;
+
+  window.MCN_SYSTEM = snap.system;
+  window.MCN_AI = snap.ai;
+
+  console.warn("🔁 SYSTEM ROLLBACK EXECUTED");
+}
+
+/* ================= AUTO ROLLBACK SCHEDULER ================= */
+
+function scheduleRollback(name) {
+
+  const mod = window.MCN_KERNEL.modules[name];
+
+  if (!mod) return;
+
+  setTimeout(() => {
+
+    if (mod.status === "isolated") {
+      console.warn("🔁 Attempting module recovery:", name);
+      mod.status = "active";
+    }
+
+  }, 5000);
+}
 
 /* ================= CORE ENGINE ================= */
 
-function evaluateSystem() {
+function kernelCycle() {
 
+  /* create safety snapshot */
+  createSnapshot();
+
+  /* run all modules safely */
+  for (let name in window.MCN_KERNEL.modules) {
+    safeRun(name);
+  }
+
+  /* system health recalculation */
   const s = window.MCN_SYSTEM;
-  const ai = window.MCN_AI;
-
-  /* ================= HEALTH ================= */
 
   let health = 100;
 
   if (s.flags.emergency) health -= 40;
-  if (s.stats.supportChats > 100) health -= 20;
-  if (s.stats.posts === 0) health -= 15;
-  if (s.stats.errorCount > 0) health -= s.stats.errorCount * 5;
+  if (s.stats.errorCount > 5) health -= s.stats.errorCount * 5;
 
   s.health = Math.max(0, health);
   s.flags.degraded = s.health < 60;
 
-  /* ================= AI ================= */
+  /* AI state */
+  const ai = window.MCN_AI;
 
-  let risk = 0;
-  let insights = [];
+  ai.risk = s.stats.errorCount * 10;
 
-  if (s.stats.posts === 0) {
-    risk += 25;
-    insights.push("No content activity");
-  }
+  ai.mode =
+    ai.risk > 70 ? "critical" :
+    ai.risk > 40 ? "warning" :
+    "stable";
 
-  if (s.stats.supportChats > 100) {
-    risk += 30;
-    insights.push("Support overload");
-  }
+  ai.insights = [];
 
-  if (s.flags.emergency) {
-    risk += 40;
-    insights.push("Emergency active");
+  if (s.stats.errorCount > 5) {
+    ai.insights.push("High error density detected");
   }
 
   if (s.health < 60) {
-    risk += 20;
-    insights.push("System degraded");
-  }
-
-  ai.risk = risk;
-  ai.insights = insights;
-
-  ai.mode =
-    risk > 70 ? "critical" :
-    risk > 40 ? "warning" :
-    "stable";
-
-  ai.lastDecision = {
-    time: Date.now(),
-    mode: ai.mode,
-    risk
-  };
-
-  /* ================= FUNCTION AUDIT ================= */
-
-  const reg = window.MCN_FUNCTIONS.registry;
-  let broken = 0;
-  let unused = 0;
-
-  for (let k in reg) {
-    if (reg[k].status === "failed") broken++;
-    if (reg[k].called === 0) unused++;
-  }
-
-  s.stats.errorCount = Math.min(50, s.stats.errorCount);
-  s.stats.brokenFunctions = broken;
-  s.stats.unusedFunctions = unused;
-
-  /* ================= PREDICTION ENGINE ================= */
-
-  const zones = {
-    system: s.health < 60 ? 40 : 10,
-    support: s.stats.supportChats > 100 ? 40 : 10,
-    content: s.stats.posts === 0 ? 30 : 10,
-    functions: broken > 3 ? 40 : 10
-  };
-
-  const riskScore =
-    zones.system +
-    zones.support +
-    zones.content +
-    zones.functions;
-
-  window.MCN_PREDICTION.riskScore = riskScore;
-  window.MCN_PREDICTION.zones = zones;
-
-  window.MCN_PREDICTION.forecast = [];
-
-  if (riskScore > 120) {
-    window.MCN_PREDICTION.forecast.push("⚠ High system instability risk");
-  }
-
-  if (broken > 3) {
-    window.MCN_PREDICTION.forecast.push("⚠ Function failure cluster forming");
-  }
-
-  if (s.stats.supportChats > 100) {
-    window.MCN_PREDICTION.forecast.push("⚠ Support overload forming");
-  }
-
-  if (window.MCN_PREDICTION.forecast.length === 0) {
-    window.MCN_PREDICTION.forecast.push("🟢 System stable");
-  }
-
-  /* ================= LOG HISTORY ================= */
-
-  window.MCN_HEALTH_LOG.push({
-    time: Date.now(),
-    health: s.health,
-    risk: ai.risk,
-    prediction: riskScore
-  });
-
-  if (window.MCN_HEALTH_LOG.length > 50) {
-    window.MCN_HEALTH_LOG.shift();
+    ai.insights.push("System degradation detected");
   }
 }
 
-/* ================= AUTOPILOT ================= */
+/* ================= KERNEL LOOP ================= */
 
-function runAutopilot() {
+setInterval(kernelCycle, 3000);
 
-  const s = window.MCN_SYSTEM;
-  const ai = window.MCN_AI;
-
-  if (!s.flags.autopilot) return;
-
-  if (ai.mode === "critical") {
-    s.flags.degraded = true;
-    s.stats.errorCount += 1;
-  }
-
-  if (ai.mode === "warning") {
-    if (s.stats.supportChats > 80) {
-      s.stats.supportChats -= 1;
-    }
-  }
-
-  if (ai.mode === "stable" && s.health < 100) {
-    s.health += 0.2;
-  }
-}
-
-/* ================= SELF HEALING ================= */
-
-function selfHealing() {
-
-  const s = window.MCN_SYSTEM;
-
-  if (s.stats.errorCount > 20) {
-    s.stats.errorCount = 20;
-  }
-
-  if (!s.flags.emergency && s.health < 100) {
-    s.health += 0.1;
-  }
-}
-
-/* ================= SINGLE CLOCK ENGINE ================= */
-
-function MCN_CLOCK() {
-
-  evaluateSystem();
-  runAutopilot();
-  selfHealing();
-}
-
-/* ================= START SINGLE CLOCK ================= */
-
-setInterval(MCN_CLOCK, 3000);
-
-console.log("🧠 MCN SINGLE-CLOCK AUTONOMOUS BRAIN ONLINE");
+console.log("🧠 MCN OS KERNEL v2 ONLINE");
