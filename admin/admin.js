@@ -94,6 +94,72 @@ initAdminGuard((user) => {
 
   log("✅ Secure admin verified");
 
+/* =========================================
+🖥 REALTIME SYSTEM STATUS MONITOR
+========================================= */
+
+import {
+  doc,
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import { db } from "./firebase.js";
+
+/* OPTIONAL: assumes you already have a log() function */
+function bootRealtimeMonitor() {
+
+  /* POSTS */
+  onSnapshot(
+    collection(db, "posts"),
+    (snap) => {
+      log(`📝 Posts Online: ${snap.size}`);
+    }
+  );
+
+  /* SUPPORT CHATS */
+  onSnapshot(
+    collection(db, "supportChats"),
+    (snap) => {
+      log(`💬 Active Support Users: ${snap.size}`);
+    }
+  );
+
+  /* EMERGENCY MODE */
+  onSnapshot(
+    doc(db, "system", "emergency"),
+    (snap) => {
+      const data = snap.data();
+
+      log(
+        data?.enabled
+          ? "🚨 Emergency Mode ACTIVE"
+          : "✅ Emergency Mode OFF"
+      );
+    }
+  );
+
+  /* CONTROL SYSTEM */
+  onSnapshot(
+    doc(db, "system", "controls"),
+    (snap) => {
+      const data = snap.data();
+
+      log(`⚙ Ads: ${data?.adsEnabled ? "ON" : "OFF"}`);
+
+      log(
+        `📰 Discover Feed: ${
+          data?.discoverEnabled ? "ON" : "OFF"
+        }`
+      );
+    }
+  );
+
+  log("🖥 Realtime monitor booted");
+}
+
+bootRealtimeMonitor();
+
   window.MCN_READY = true;
   window.MCN_ADMIN = user;
 
