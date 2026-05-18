@@ -1,113 +1,88 @@
 /* =========================================
-   🧠 MCN STATE ENGINE v2
-   SINGLE SOURCE OF TRUTH (CHAT + POSTS + ADS)
+   🧠 MCN STATE ENGINE v1 (UNIFIED SYSTEM CORE)
+   Fixes Monitor, Posts, Chat, Control Sync
 ========================================= */
 
+import { db } from "./firebase.js";
+import {
+  collection,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 window.MCN_STATE = window.MCN_STATE || {
-
-  posts: {},
-  postList: [],
-
-  chat: {
-    inbox: {}
-  },
-
-  ads: {
-    requests: {},
-    approved: {},
-    rejected: {}
-  },
-
-  approvals: {
-    pendingPayments: {}
-  }
+  posts: [],
+  supportChats: {},
+  ads: [],
+  system: window.MCN_SYSTEM,
+  ai: window.MCN_AI
 };
 
-/* ================= EVENT UPDATE HOOK ================= */
+/* ================= FIRESTORE SYNC ================= */
 
-function notify(event) {
-  if (window.MCN_BUS?.emit) {
-    window.MCN_BUS.emit(event, {
-      time: Date.now()
+function syncPosts() {
+
+  const ref = collection(db, "posts");
+
+  onSnapshot(ref, (snap) => {
+
+    const posts = [];
+
+    snap.forEach(doc => {
+      posts.push({ id: doc.id, ...doc.data() });
     });
-  }
+
+    window.MCN_STATE.posts = posts;
+    window.MCN_SYSTEM.stats.posts = posts.length;
+    window.MCN_SYSTEM.stats.lastEvent = "posts:sync";
+
+  });
 }
 
-/* ================= STATE HELPERS ================= */
+/* ================= SUPPORT CHAT SYNC ================= */
 
-window.MCN_STATE_ENGINE = {
+function syncSupport() {
 
-  addPost(post) {
-    window.MCN_STATE.posts[post.id] = post;
-    window.MCN_STATE.postList.push(post.id);
-    notify("post:create");
-  },
+  const ref = collection(db, "supportChats");
 
-  updatePost(id, data) {
-    const p = window.MCN_STATE.posts[id];
-    if (!p) return;
+  onSnapshot(ref, (snap) => {
 
-    Object.assign(p, data);
-    p.edited = true;
+    const chats = {};
 
-    notify("post:update");
-  },
-
-  deletePost(id) {
-    delete window.MCN_STATE.posts[id];
-    window.MCN_STATE.postList =
-      window.MCN_STATE.postList.filter(p => p !== id);
-
-    notify("post:delete");
-  },
-
-  sendMessage(userId, message) {
-    if (!window.MCN_STATE.chat.inbox[userId]) {
-      window.MCN_STATE.chat.inbox[userId] = [];
-    }
-
-    window.MCN_STATE.chat.inbox[userId].push({
-      message,
-      time: Date.now()
+    snap.forEach(doc => {
+      chats[doc.id] = doc.data();
     });
 
-    notify("chat:message");
-  },
+    window.MCN_STATE.supportChats = chats;
+    window.MCN_SYSTEM.stats.supportChats = Object.keys(chats).length;
+    window.MCN_SYSTEM.stats.lastEvent = "support:sync";
 
-  requestAd(ad) {
-    window.MCN_STATE.ads.requests[ad.id] = ad;
-    notify("ad:request");
-  },
+  });
+}
 
-  approveAd(adId) {
-    const ad = window.MCN_STATE.ads.requests[adId];
-    if (!ad) return;
+/* ================= EVENT BRIDGE ================= */
 
-    window.MCN_STATE.ads.approved[adId] = ad;
-    delete window.MCN_STATE.ads.requests[adId];
+function attachBus() {
 
-    notify("ad:approved");
-  },
+  const BUS = window.MCN_BUS || window.MCN_EVENT_BUS;
 
-  rejectAd(adId) {
-    const ad = window.MCN_STATE.ads.requests[adId];
-    if (!ad) return;
+  if (!BUS?.on) return;
 
-    window.MCN_STATE.ads.rejected[adId] = ad;
-    delete window.MCN_STATE.ads.requests[adId];
+  BUS.on("*", (event) => {
+    window.__MCN_LAST_EVENT = event;
+  });
 
-    notify("ad:rejected");
-  },
+}
 
-  lockPayment(adId) {
-    window.MCN_STATE.approvals.pendingPayments[adId] = true;
-    notify("payment:locked");
-  },
+/* ================= INIT ================= */
 
-  unlockPayment(adId) {
-    delete window.MCN_STATE.approvals.pendingPayments[adId];
-    notify("payment:unlocked");
-  }
-};
+export function startMCNStateEngine() {
 
-console.log("🧠 MCN STATE ENGINE v2 ONLINE");
+  if (window.__MCN_STATE_ENGINE_ACTIVE) return;
+  window.__MCN_STATE_ENGINE_ACTIVE = true;
+
+  attachBus();
+  syncPosts();
+  syncSupport();
+
+  console.log("🧠 MCN STATE ENGINE ONLINE");
+}
