@@ -1,7 +1,9 @@
 /* =========================================
-   🧠 MCN UNIFIED CORE (BRAIN SYSTEM)
-   Single Source of Truth
+   🧠 MCN AUTONOMOUS CORE (SAFE AUTOPILOT)
+   Phase 5 — Controlled Self-Management
 ========================================= */
+
+/* ================= SYSTEM STATE ================= */
 
 window.MCN_SYSTEM = {
   health: 100,
@@ -10,12 +12,14 @@ window.MCN_SYSTEM = {
     posts: 0,
     users: 0,
     supportChats: 0,
-    lastEvent: null
+    lastEvent: null,
+    errorCount: 0
   },
 
   flags: {
     emergency: false,
-    degraded: false
+    degraded: false,
+    autopilot: true
   }
 };
 
@@ -25,6 +29,8 @@ window.MCN_AI = {
   insights: [],
   lastDecision: null
 };
+
+/* ================= EVENT BUS ================= */
 
 window.MCN_BUS = {
   listeners: {},
@@ -42,12 +48,11 @@ window.MCN_BUS = {
     list.forEach(fn => fn(data));
 
     evaluateSystem();
+    runAutopilot(); // 🔥 AUTONOMY TRIGGER
   }
 };
 
-/* =========================================
-   HEALTH ENGINE
-========================================= */
+/* ================= HEALTH ENGINE ================= */
 
 function updateHealth() {
 
@@ -58,19 +63,17 @@ function updateHealth() {
   if (s.flags.emergency) score -= 40;
   if (s.stats.supportChats > 100) score -= 20;
   if (s.stats.posts === 0) score -= 15;
+  if (s.stats.errorCount > 0) score -= s.stats.errorCount * 5;
 
   if (score < 0) score = 0;
 
   s.health = score;
-
   s.flags.degraded = score < 60;
 
   return score;
 }
 
-/* =========================================
-   AI ENGINE (MERGED PHASE 4)
-========================================= */
+/* ================= AI ENGINE ================= */
 
 function evaluateAI() {
 
@@ -117,22 +120,73 @@ function evaluateAI() {
   return ai;
 }
 
-/* =========================================
-   MASTER EVALUATION LOOP
-========================================= */
+/* ================= AUTONOMOUS ENGINE ================= */
+
+function runAutopilot() {
+
+  const s = window.MCN_SYSTEM;
+  const ai = window.MCN_AI;
+
+  if (!s.flags.autopilot) return;
+
+  /* =========================================
+     ⚠ CRITICAL MODE ACTIONS
+  ========================================= */
+
+  if (ai.mode === "critical") {
+
+    console.warn("🚨 AUTOPILOT: Critical state detected");
+
+    // soft emergency activation
+    s.flags.degraded = true;
+
+    // reduce system stress indicator
+    s.stats.errorCount += 1;
+
+    return;
+  }
+
+  /* =========================================
+     ⚠ WARNING MODE ACTIONS
+  ========================================= */
+
+  if (ai.mode === "warning") {
+
+    console.warn("⚠ AUTOPILOT: Warning state");
+
+    // stabilize system gradually
+    if (s.stats.supportChats > 80) {
+      s.stats.supportChats -= 1; // simulate throttling
+    }
+
+    return;
+  }
+
+  /* =========================================
+     🟢 STABLE MODE ACTIONS
+  ========================================= */
+
+  if (ai.mode === "stable") {
+
+    // passive optimization
+    if (s.health < 100) {
+      s.health += 0.5; // slow recovery
+    }
+  }
+}
+
+/* ================= SYSTEM EVALUATION ================= */
 
 function evaluateSystem() {
-
   updateHealth();
   evaluateAI();
 }
 
-/* =========================================
-   AUTO LOOP
-========================================= */
+/* ================= AUTO LOOP ================= */
 
 setInterval(() => {
   evaluateSystem();
+  runAutopilot();
 }, 3000);
 
-console.log("🧠 MCN Unified Core Online");
+console.log("🧠 MCN Autonomous Core ONLINE");
