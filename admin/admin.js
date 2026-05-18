@@ -10,7 +10,10 @@ import { startMonitor } from "./admin-monitor.js";
 /* ================= MCN CORE ================= */
 import "../mcn-core.js";
 
-/* ================= MCN LIVE LAYER ================= */
+/* ================= SELF-HEALING ENGINE ================= */
+import { startMCNHealing } from "../mcn-self-heal.js";
+
+/* ================= LIVE LAYER ================= */
 import { startMCNLive } from "../mcn-live-boot.js";
 
 /* =========================================
@@ -63,17 +66,16 @@ function boot() {
 
     console.log("✅ MCN Admin Ready");
 
-    startControls();
-
-    startMonitor();
-
     /* =========================================
-       🚀 MCN COMES ALIVE HERE
+       START ORDER (IMPORTANT)
     ========================================= */
 
-    startMCNLive();
+    startControls();        // Firebase control sync
+    startMonitor();         // UI monitor layer
+    startMCNHealing();      // self-healing brain layer
+    startMCNLive();         // “MCN comes alive” layer
 
-    console.log("🧠 MCN LIVE ENGINE ATTACHED");
+    console.log("🧠 MCN FULL STACK ONLINE");
 
   });
 }
