@@ -1,23 +1,33 @@
 /* =========================================
-   MCN EMERGENCY CONTROL
+🚨 MCN GLOBAL EMERGENCY CONTROL
 ========================================= */
+
+import {
+  doc,
+  setDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+import { db } from "./firebase.js";
 
 let emergencyMode = false;
 
+/* =========================================
+BOOT BUTTON
+========================================= */
+
 function bootEmergencyControl() {
 
-  if (document.getElementById("mcnEmergencyFab"))
-    return;
+  if (document.getElementById("mcnEmergencyFab")) return;
 
   const fab = document.createElement("button");
 
   fab.id = "mcnEmergencyFab";
-
   fab.innerHTML = "🚨";
 
   fab.style.cssText = `
     position:fixed;
-    bottom:20px;
+    bottom:90px;
     right:20px;
     width:60px;
     height:60px;
@@ -31,23 +41,58 @@ function bootEmergencyControl() {
     box-shadow:0 0 20px rgba(0,0,0,.4);
   `;
 
-  fab.onclick = () => {
-
+  fab.onclick = async () => {
     emergencyMode = !emergencyMode;
 
-    alert(
-      emergencyMode
-      ? "🚨 Emergency Mode Activated"
-      : "✅ Emergency Mode Disabled"
-    );
+    try {
+      await setDoc(
+        doc(db, "system", "emergency"),
+        {
+          enabled: emergencyMode,
+          updatedAt: Date.now()
+        },
+        { merge: true }
+      );
 
-    console.log(
-      "Emergency:",
-      emergencyMode
-    );
+      alert(
+        emergencyMode
+          ? "🚨 Emergency Mode Activated"
+          : "✅ Emergency Mode Disabled"
+      );
+
+      console.log("Emergency:", emergencyMode);
+
+    } catch (err) {
+      console.error(err);
+      alert("Emergency sync failed");
+    }
   };
 
   document.body.appendChild(fab);
 }
 
+/* =========================================
+REALTIME STATE WATCHER
+========================================= */
+
+function watchEmergencyState() {
+
+  onSnapshot(
+    doc(db, "system", "emergency"),
+    (snap) => {
+
+      const data = snap.data();
+
+      emergencyMode = data?.enabled || false;
+
+      console.log("🚨 Emergency Synced:", emergencyMode);
+
+      /* OPTIONAL UI EFFECT */
+      document.body.style.filter =
+        emergencyMode ? "grayscale(.2)" : "none";
+    }
+  );
+}
+
 bootEmergencyControl();
+watchEmergencyState();
