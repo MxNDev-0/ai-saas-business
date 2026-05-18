@@ -346,3 +346,141 @@ setInterval(() => {
 }, 4000);
 
 console.log("🧠 MCN SELF-HEALING DEBUGGER ONLINE");
+
+/* =========================================
+   🧠 MCN PREDICTIVE FAILURE AI
+   Risk Forecasting + Failure Prediction Layer
+========================================= */
+
+/* ================= PREDICTION STATE ================= */
+
+window.MCN_PREDICTION = {
+  riskScore: 0,
+  zones: {
+    system: 0,
+    support: 0,
+    content: 0,
+    functions: 0
+  },
+  forecast: [],
+  lastUpdate: null
+};
+
+/* ================= RISK ENGINE ================= */
+
+function calculateRisk() {
+
+  const s = window.MCN_SYSTEM || {};
+
+  let systemRisk = 0;
+  let supportRisk = 0;
+  let contentRisk = 0;
+  let functionRisk = 0;
+
+  /* SYSTEM RISK */
+  if (s.health < 70) systemRisk += 25;
+  if (s.health < 40) systemRisk += 40;
+  if (s.flags?.emergency) systemRisk += 50;
+
+  /* SUPPORT RISK */
+  if (s.stats.supportChats > 50) supportRisk += 20;
+  if (s.stats.supportChats > 100) supportRisk += 40;
+
+  /* CONTENT RISK */
+  if (s.stats.posts === 0) contentRisk += 30;
+  if (s.stats.posts < 3) contentRisk += 15;
+
+  /* FUNCTION RISK */
+  const reg = window.MCN_FUNCTIONS?.registry || {};
+  const total = Object.keys(reg).length || 1;
+
+  let failed = 0;
+  for (let k in reg) {
+    if (reg[k].status === "failed") failed++;
+  }
+
+  const failureRate = (failed / total) * 100;
+
+  if (failureRate > 10) functionRisk += 20;
+  if (failureRate > 25) functionRisk += 40;
+
+  /* STORE ZONES */
+  window.MCN_PREDICTION.zones = {
+    system: systemRisk,
+    support: supportRisk,
+    content: contentRisk,
+    functions: functionRisk
+  };
+
+  /* TOTAL RISK */
+  const totalRisk =
+    systemRisk +
+    supportRisk +
+    contentRisk +
+    functionRisk;
+
+  window.MCN_PREDICTION.riskScore = totalRisk;
+
+  return totalRisk;
+}
+
+/* ================= FAILURE FORECAST ================= */
+
+function generateForecast() {
+
+  const z = window.MCN_PREDICTION.zones;
+
+  const forecast = [];
+
+  if (z.system > 40) {
+    forecast.push("⚠ System instability likely");
+  }
+
+  if (z.support > 30) {
+    forecast.push("⚠ Support overload risk increasing");
+  }
+
+  if (z.content > 20) {
+    forecast.push("⚠ Content flow stagnation detected");
+  }
+
+  if (z.functions > 30) {
+    forecast.push("⚠ Function failure cluster forming");
+  }
+
+  if (forecast.length === 0) {
+    forecast.push("🟢 System stable - no predicted failures");
+  }
+
+  window.MCN_PREDICTION.forecast = forecast;
+  window.MCN_PREDICTION.lastUpdate = Date.now();
+
+  return forecast;
+}
+
+/* ================= AUTOPREDICT LOOP ================= */
+
+function runPredictionEngine() {
+
+  calculateRisk();
+  generateForecast();
+
+  const risk = window.MCN_PREDICTION.riskScore;
+
+  /* FEED INTO SELF-HEALING LAYER */
+  if (risk > 120 && window.MCN_SYSTEM) {
+    window.MCN_SYSTEM.flags.degraded = true;
+  }
+
+  if (risk > 180 && window.MCN_SYSTEM) {
+    window.MCN_SYSTEM.health = Math.max(0, window.MCN_SYSTEM.health - 5);
+  }
+}
+
+/* ================= AUTO LOOP ================= */
+
+setInterval(() => {
+  runPredictionEngine();
+}, 3000);
+
+console.log("🧠 MCN PREDICTIVE FAILURE AI ONLINE");
