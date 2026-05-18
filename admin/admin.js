@@ -1,248 +1,149 @@
-/* =========================================
-   🧠 MCN ADMIN STATE ENGINE v1
-   Posts + Support + Controls + Diagnostics
-   SINGLE SOURCE OF TRUTH LAYER
+/* =========================================  
+   🚀 MCN ADMIN BOOT (RECONNECTED + SAFE MODE)  
+   Event Kernel + Monitor + Healing + Live Layer  
+   + STATE ENGINE CONNECTOR FIX  
 ========================================= */
 
-import { db } from "../firebase.js";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  updateDoc,
-  deleteDoc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initAdminGuard } from "./admin-auth.js";
+import { watchControls } from "./admin-control.js";
+import { startMonitor } from "./admin-monitor.js";
+import { startAdminEngine } from "./admin/admin.js";
 
-/* ================= GLOBAL STATE ================= */
+import "../mcn-core.js";
+import "../mcn-event-bus.js";
+import { startMCNHealing } from "../mcn-self-heal.js";
+import { startMCNLive } from "../mcn-live-boot.js";
 
-window.MCN_STATE = {
-  posts: [],
-  users: [],
-  chats: {},
-  selectedPost: null,
-  selectedUser: null,
-  systemHealth: 100
-};
+/* ================= GLOBAL FLAGS ================= */
 
-/* ================= DOM REFERENCES ================= */
+window.MCN_READY = false;
+window.MCN_ADMIN = null;
 
-const postsList = () => document.getElementById("postsList");
-const supportUsers = () => document.getElementById("supportUsers");
-const supportMessages = () => document.getElementById("supportMessages");
+/* ================= SAFE SYSTEM INIT ================= */
 
-const editId = () => document.getElementById("editPostId");
-const editTitle = () => document.getElementById("editPostTitle");
-const editContent = () => document.getElementById("editPostContent");
+function ensureSystemState() {
 
-/* =========================================
-   🧠 POSTS ENGINE (REALTIME)
-========================================= */
+  window.MCN_SYSTEM = window.MCN_SYSTEM || {
+    health: 100,
+    stats: {
+      posts: 0,
+      users: 0,
+      supportChats: 0,
+      errorCount: 0,
+      lastEvent: "boot:init"
+    },
+    flags: {
+      emergency: false,
+      degraded: false,
+      autopilot: true
+    }
+  };
 
-function initPosts() {
+  window.MCN_AI = window.MCN_AI || {
+    mode: "stable",
+    risk: 0
+  };
 
-  const ref = collection(db, "posts");
+  window.MCN_CONTROLS = window.MCN_CONTROLS || {};
 
-  onSnapshot(ref, (snap) => {
-
-    const list = [];
-
-    snap.forEach(d => {
-      list.push({ id: d.id, ...d.data() });
-    });
-
-    window.MCN_STATE.posts = list;
-
-    renderPosts();
-
-    window.MCN_SYSTEM.stats.posts = list.length;
-    window.MCN_SYSTEM.stats.lastEvent = "posts:sync";
-
-  });
+  window.MCN_BUS = window.MCN_BUS || {
+    emit: () => {},
+    on: () => {}
+  };
 }
 
-/* ================= RENDER POSTS ================= */
+/* ================= CONTROL BRIDGE ================= */
 
-function renderPosts() {
+function startControls() {
 
-  const box = postsList();
-  if (!box) return;
+  watchControls((data = {}) => {
 
-  box.innerHTML = "";
+    if (!window.MCN_CONTROLS) return;
 
-  window.MCN_STATE.posts.forEach(post => {
+    window.MCN_CONTROLS.featuredPostId = data.featuredPostId ?? null;
+    window.MCN_CONTROLS.sponsoredPostId = data.sponsoredPostId ?? null;
+    window.MCN_CONTROLS.adsEnabled = data.adsEnabled ?? true;
+    window.MCN_CONTROLS.discoverEnabled = data.discoverEnabled ?? true;
 
-    const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-      <b>${post.title}</b>
-      <br>
-      <small>${(post.content || "").slice(0, 60)}...</small>
-      <br>
-      <button class="small-btn" onclick="MCN.selectPost('${post.id}')">Edit</button>
-      <button class="small-btn danger" onclick="MCN.deletePost('${post.id}')">Delete</button>
-    `;
-
-    box.appendChild(div);
-  });
-}
-
-/* ================= SELECT POST ================= */
-
-function selectPost(id) {
-
-  const post = window.MCN_STATE.posts.find(p => p.id === id);
-  if (!post) return;
-
-  window.MCN_STATE.selectedPost = post;
-
-  if (editId()) editId().value = post.id;
-  if (editTitle()) editTitle().value = post.title;
-  if (editContent()) editContent().value = post.content;
-
-}
-
-/* ================= UPDATE POST ================= */
-
-async function updatePost() {
-
-  const id = editId()?.value;
-  if (!id) return alert("No post selected");
-
-  await updateDoc(doc(db, "posts", id), {
-    title: editTitle().value,
-    content: editContent().value
+    /* Live sync log */
+    console.log("🎛 Controls updated", window.MCN_CONTROLS);
   });
 
-  alert("Post updated");
 }
 
-/* ================= DELETE POST ================= */
+/* ================= DOM READY SAFETY ================= */
 
-async function deletePost(id) {
-
-  if (!confirm("Delete this post?")) return;
-
-  await deleteDoc(doc(db, "posts", id));
-
-  alert("Post deleted");
+function onReady(fn) {
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(fn, 0);
+  } else {
+    document.addEventListener("DOMContentLoaded", fn);
+  }
 }
 
-/* =========================================
-   💬 SUPPORT ENGINE (REALTIME)
-========================================= */
+/* ================= BOOT SYSTEM ================= */
 
-function initSupport() {
+function boot() {
 
-  const ref = collection(db, "supportChats");
+  initAdminGuard(async (user) => {
 
-  onSnapshot(ref, (snap) => {
+    if (!user) {
+      console.error("❌ Admin auth failed");
+      return;
+    }
 
-    const users = [];
+    ensureSystemState();
 
-    snap.forEach(d => {
-      users.push(d.id);
-    });
+    window.MCN_ADMIN = user;
+    window.MCN_READY = true;
 
-    window.MCN_STATE.users = users;
+    console.log("✅ MCN ADMIN ONLINE");
 
-    renderUsers();
+    try {
 
-    window.MCN_SYSTEM.stats.supportChats = users.length;
-    window.MCN_SYSTEM.stats.lastEvent = "support:sync";
+      startControls();
+      startMCNHealing();
+      startMonitor();
+      startMCNLive();
+
+      /* ================= STATE ENGINE CONNECT ================= */
+      onReady(() => {
+        try {
+          startAdminEngine();
+          console.log("🧠 STATE ENGINE CONNECTED");
+        } catch (e) {
+          console.error("STATE ENGINE ERROR:", e);
+        }
+      });
+
+      /* ================= SAFE EVENT SIGNAL ================= */
+
+      window.MCN_BUS.emit?.("system:boot", {
+        user: user.uid,
+        time: Date.now()
+      });
+
+      console.log("🧠 MCN FULL SYSTEM ACTIVE");
+
+    } catch (err) {
+
+      console.error("❌ MCN BOOT ERROR:", err);
+
+      const monitor = document.getElementById("monitor");
+
+      if (monitor) {
+        monitor.innerHTML = `
+          <div style="color:red;">
+            🧠 MCN SAFE MODE ACTIVATED<br><br>
+            Boot Error Detected:<br>
+            ${err.message}
+          </div>
+        `;
+      }
+    }
 
   });
 
 }
 
-/* ================= SUPPORT USERS ================= */
-
-function renderUsers() {
-
-  const box = supportUsers();
-  if (!box) return;
-
-  box.innerHTML = "";
-
-  window.MCN_STATE.users.forEach(uid => {
-
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      👤 ${uid}
-      <button class="small-btn" onclick="MCN.openChat('${uid}')">Open</button>
-    `;
-
-    box.appendChild(div);
-  });
-}
-
-/* ================= OPEN CHAT ================= */
-
-function openChat(uid) {
-
-  window.MCN_STATE.selectedUser = uid;
-
-  const ref = collection(db, "supportChats", uid, "messages");
-
-  onSnapshot(ref, (snap) => {
-
-    const messages = [];
-
-    snap.forEach(d => messages.push(d.data()));
-
-    window.MCN_STATE.chats[uid] = messages;
-
-    renderMessages(uid);
-
-  });
-}
-
-/* ================= RENDER MESSAGES ================= */
-
-function renderMessages(uid) {
-
-  const box = supportMessages();
-  if (!box) return;
-
-  const msgs = window.MCN_STATE.chats[uid] || [];
-
-  box.innerHTML = "";
-
-  msgs.forEach(m => {
-
-    const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-      <b>${m.sender}</b><br>
-      ${m.text}
-    `;
-
-    box.appendChild(div);
-  });
-
-}
-
-/* =========================================
-   🧠 GLOBAL API (EXPOSE TO BOOT)
-========================================= */
-
-window.MCN = {
-  selectPost,
-  updatePost,
-  deletePost,
-  openChat
-};
-
-/* =========================================
-   🚀 INIT ENGINE
-========================================= */
-
-export function startAdminEngine() {
-  initPosts();
-  initSupport();
-
-  console.log("🧠 MCN STATE ENGINE ONLINE");
-}
+boot();
