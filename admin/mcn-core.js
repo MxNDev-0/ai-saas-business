@@ -1,10 +1,8 @@
+import { emit } from "./mcn-event-bus.js";
+
 /* =========================================
-🧠 MCN KERNEL v3.1 — EVENT CONNECTED CORE
+🧠 MCN KERNEL v3.1 (CONNECTED VERSION)
 ========================================= */
-
-import "./mcn-event-bus.js";
-
-const BUS = window.MCN_EVENT_BUS;
 
 window.MCN_KERNEL = window.MCN_KERNEL || {
   version: "v3.1",
@@ -15,36 +13,30 @@ window.MCN_KERNEL = window.MCN_KERNEL || {
 
 window.MCN_SYSTEM = window.MCN_SYSTEM || {
   health: 100,
-  stats: {
-    posts: 0,
-    users: 0,
-    supportChats: 0,
-    errorCount: 0,
-    lastEvent: null
-  },
-  flags: {
-    emergency: false,
-    degraded: false,
-    autopilot: true
-  }
+  stats: { posts: 0, users: 0, supportChats: 0, errorCount: 0, lastEvent: null },
+  flags: { emergency: false, degraded: false, autopilot: true }
 };
 
 window.MCN_AI = window.MCN_AI || { mode: "stable", risk: 0 };
+
 window.MCN_FUNCTIONS = window.MCN_FUNCTIONS || { registry: {} };
 
 /* ================= MODULE RUNNER ================= */
 
 function runModule(name) {
+
   const mod = window.MCN_KERNEL.modules[name];
   if (!mod) return;
 
   try {
     mod.fn();
     mod.status = "active";
+    mod.lastRun = Date.now();
 
-    BUS.emit("module:success", { name });
+    emit("module:run", name);
 
   } catch (e) {
+
     mod.status = "failed";
     mod.errors++;
 
@@ -56,16 +48,20 @@ function runModule(name) {
       time: Date.now()
     };
 
-    BUS.emit("module:error", { name, error: e.message });
+    emit("module:failed", {
+      module: name,
+      error: e.message
+    });
   }
 }
 
-/* ================= SYSTEM ENGINE ================= */
+/* ================= HEALTH ================= */
 
 function updateHealth() {
   const s = window.MCN_SYSTEM;
 
   let health = 100;
+
   if (s.flags.emergency) health -= 40;
   if (s.stats.errorCount > 5) health -= s.stats.errorCount * 5;
 
@@ -73,10 +69,14 @@ function updateHealth() {
   s.flags.degraded = s.health < 60;
 }
 
+/* ================= AI ================= */
+
 function evaluateAI() {
+
   const s = window.MCN_SYSTEM;
 
   let risk = 0;
+
   if (s.health < 60) risk += 40;
   if (s.stats.errorCount > 5) risk += 30;
   if (s.flags.emergency) risk += 50;
@@ -89,7 +89,7 @@ function evaluateAI() {
   window.MCN_AI.risk = risk;
 }
 
-/* ================= EVENT-DRIVEN CYCLE ================= */
+/* ================= CYCLE ================= */
 
 function kernelCycle() {
 
@@ -98,12 +98,11 @@ function kernelCycle() {
   updateHealth();
   evaluateAI();
 
-  BUS.emit("kernel:tick", {
-    health: window.MCN_SYSTEM.health,
-    risk: window.MCN_AI.risk
+  emit("kernel:cycle", {
+    modules: Object.keys(window.MCN_KERNEL.modules).length
   });
 }
 
 setInterval(kernelCycle, 3000);
 
-console.log("🧠 MCN KERNEL EVENT-DRIVEN ONLINE");
+console.log("🧠 MCN KERNEL CONNECTED");
