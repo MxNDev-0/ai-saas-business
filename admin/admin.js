@@ -1,6 +1,7 @@
-/* =========================================
-   🚀 MCN ADMIN BOOT (RECONNECTED CORE)
-   Event Kernel + Monitor + Healing + Live Layer
+/* =========================================  
+   🚀 MCN ADMIN BOOT (RECONNECTED + SAFE MODE)  
+   Event Kernel + Monitor + Healing + Live Layer  
+   + FAILSAFE PROTECTION LAYER  
 ========================================= */
 
 import { initAdminGuard } from "./admin-auth.js";
@@ -16,6 +17,40 @@ import { startMCNLive } from "../mcn-live-boot.js";
 
 window.MCN_READY = false;
 window.MCN_ADMIN = null;
+
+/* ================= FAILSAFE SYSTEM INIT ================= */
+/* 🔥 THIS FIXES YOUR BLANK SCREEN */
+
+function ensureSystemState() {
+
+  window.MCN_SYSTEM = window.MCN_SYSTEM || {
+    health: 100,
+    stats: {
+      posts: 0,
+      users: 0,
+      supportChats: 0,
+      errorCount: 0,
+      lastEvent: "boot:init"
+    },
+    flags: {
+      emergency: false,
+      degraded: false,
+      autopilot: true
+    }
+  };
+
+  window.MCN_AI = window.MCN_AI || {
+    mode: "stable",
+    risk: 0
+  };
+
+  window.MCN_CONTROLS = window.MCN_CONTROLS || {};
+
+  window.MCN_BUS = window.MCN_BUS || {
+    emit: () => {},
+    on: () => {}
+  };
+}
 
 /* ================= CONTROL BRIDGE ================= */
 
@@ -34,7 +69,7 @@ function startControls() {
 
 }
 
-/* ================= SYSTEM BOOT ================= */
+/* ================= BOOT SYSTEM ================= */
 
 function boot() {
 
@@ -45,28 +80,48 @@ function boot() {
       return;
     }
 
+    /* 🔥 CRITICAL: FORCE SYSTEM INIT BEFORE ANY MODULE */
+    ensureSystemState();
+
     window.MCN_ADMIN = user;
     window.MCN_READY = true;
 
     console.log("✅ MCN ADMIN ONLINE");
 
-    /* ================= START LAYERS ================= */
+    /* ================= START ORDER (IMPORTANT) ================= */
 
-    startControls();
-    startMCNHealing();
-    startMonitor();
-    startMCNLive();
+    try {
 
-    /* ================= SIGNAL ================= */
+      startControls();
 
-    if (window.MCN_BUS?.emit) {
-      window.MCN_BUS.emit("system:boot", {
+      startMCNHealing();
+
+      startMonitor();
+
+      startMCNLive();
+
+      /* ================= SAFE EVENT SIGNAL ================= */
+
+      window.MCN_BUS.emit?.("system:boot", {
         user: user.uid,
         time: Date.now()
       });
-    }
 
-    console.log("🧠 MCN FULL SYSTEM ACTIVE");
+      console.log("🧠 MCN FULL SYSTEM ACTIVE");
+
+    } catch (err) {
+
+      console.error("❌ MCN BOOT ERROR:", err);
+
+      /* 🔥 EMERGENCY FALLBACK */
+      document.getElementById("monitor").innerHTML = `
+        <div style="color:red;">
+          🧠 MCN SAFE MODE ACTIVATED<br><br>
+          Boot Error Detected:<br>
+          ${err.message}
+        </div>
+      `;
+    }
 
   });
 
