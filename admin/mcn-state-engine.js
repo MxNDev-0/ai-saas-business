@@ -1,133 +1,113 @@
 /* =========================================
-   🧠 MCN STATE ENGINE v1
-   Single Source of Truth + Controlled Mutations
+   🧠 MCN STATE ENGINE v2
+   SINGLE SOURCE OF TRUTH (CHAT + POSTS + ADS)
 ========================================= */
 
-/* ================= STATE CORE ================= */
-
 window.MCN_STATE = window.MCN_STATE || {
-  system: {
-    health: 100,
-    stats: {
-      posts: 0,
-      users: 0,
-      supportChats: 0,
-      errorCount: 0,
-      lastEvent: "boot"
-    },
-    flags: {
-      emergency: false,
-      degraded: false,
-      autopilot: true
-    }
+
+  posts: {},
+  postList: [],
+
+  chat: {
+    inbox: {}
   },
 
-  ai: {
-    mode: "stable",
-    risk: 0
+  ads: {
+    requests: {},
+    approved: {},
+    rejected: {}
   },
 
-  prediction: {
-    riskScore: 0,
-    zones: {
-      system: 0,
-      support: 0,
-      content: 0,
-      functions: 0
-    },
-    forecast: []
+  approvals: {
+    pendingPayments: {}
   }
 };
 
-/* ================= SAFE GETTERS ================= */
+/* ================= EVENT UPDATE HOOK ================= */
 
-export function getState() {
-  return window.MCN_STATE;
-}
-
-export function getSystem() {
-  return window.MCN_STATE.system;
-}
-
-export function getAI() {
-  return window.MCN_STATE.ai;
-}
-
-export function getPrediction() {
-  return window.MCN_STATE.prediction;
-}
-
-/* ================= CONTROLLED UPDATES ================= */
-
-export function updateSystem(partial = {}) {
-
-  const s = window.MCN_STATE.system;
-
-  window.MCN_STATE.system = {
-    ...s,
-    ...partial,
-    stats: {
-      ...s.stats,
-      ...(partial.stats || {})
-    },
-    flags: {
-      ...s.flags,
-      ...(partial.flags || {})
-    }
-  };
-
-  emitState("system:update", window.MCN_STATE.system);
-}
-
-export function updateAI(partial = {}) {
-
-  window.MCN_STATE.ai = {
-    ...window.MCN_STATE.ai,
-    ...partial
-  };
-
-  emitState("ai:update", window.MCN_STATE.ai);
-}
-
-export function updatePrediction(partial = {}) {
-
-  window.MCN_STATE.prediction = {
-    ...window.MCN_STATE.prediction,
-    ...partial,
-    zones: {
-      ...window.MCN_STATE.prediction.zones,
-      ...(partial.zones || {})
-    }
-  };
-
-  emitState("prediction:update", window.MCN_STATE.prediction);
-}
-
-/* ================= SAFE EVENT EMITTER ================= */
-
-function emitState(event, data) {
-
-  const bus = window.MCN_BUS || window.MCN_EVENT_BUS;
-
-  if (bus?.emit) {
-    bus.emit(event, data);
+function notify(event) {
+  if (window.MCN_BUS?.emit) {
+    window.MCN_BUS.emit(event, {
+      time: Date.now()
+    });
   }
-
-  // always keep legacy compatibility alive
-  window.MCN_SYSTEM = window.MCN_STATE.system;
-  window.MCN_AI = window.MCN_STATE.ai;
-  window.MCN_PREDICTION = window.MCN_STATE.prediction;
 }
 
-/* ================= AUTO SYNC BRIDGE ================= */
+/* ================= STATE HELPERS ================= */
 
-setInterval(() => {
+window.MCN_STATE_ENGINE = {
 
-  // force sync old systems (prevents blank monitor issue)
-  window.MCN_SYSTEM = window.MCN_STATE.system;
-  window.MCN_AI = window.MCN_STATE.ai;
-  window.MCN_PREDICTION = window.MCN_STATE.prediction;
+  addPost(post) {
+    window.MCN_STATE.posts[post.id] = post;
+    window.MCN_STATE.postList.push(post.id);
+    notify("post:create");
+  },
 
-}, 1000);
+  updatePost(id, data) {
+    const p = window.MCN_STATE.posts[id];
+    if (!p) return;
 
-console.log("🧠 MCN STATE ENGINE v1 ONLINE");
+    Object.assign(p, data);
+    p.edited = true;
+
+    notify("post:update");
+  },
+
+  deletePost(id) {
+    delete window.MCN_STATE.posts[id];
+    window.MCN_STATE.postList =
+      window.MCN_STATE.postList.filter(p => p !== id);
+
+    notify("post:delete");
+  },
+
+  sendMessage(userId, message) {
+    if (!window.MCN_STATE.chat.inbox[userId]) {
+      window.MCN_STATE.chat.inbox[userId] = [];
+    }
+
+    window.MCN_STATE.chat.inbox[userId].push({
+      message,
+      time: Date.now()
+    });
+
+    notify("chat:message");
+  },
+
+  requestAd(ad) {
+    window.MCN_STATE.ads.requests[ad.id] = ad;
+    notify("ad:request");
+  },
+
+  approveAd(adId) {
+    const ad = window.MCN_STATE.ads.requests[adId];
+    if (!ad) return;
+
+    window.MCN_STATE.ads.approved[adId] = ad;
+    delete window.MCN_STATE.ads.requests[adId];
+
+    notify("ad:approved");
+  },
+
+  rejectAd(adId) {
+    const ad = window.MCN_STATE.ads.requests[adId];
+    if (!ad) return;
+
+    window.MCN_STATE.ads.rejected[adId] = ad;
+    delete window.MCN_STATE.ads.requests[adId];
+
+    notify("ad:rejected");
+  },
+
+  lockPayment(adId) {
+    window.MCN_STATE.approvals.pendingPayments[adId] = true;
+    notify("payment:locked");
+  },
+
+  unlockPayment(adId) {
+    delete window.MCN_STATE.approvals.pendingPayments[adId];
+    notify("payment:unlocked");
+  }
+};
+
+console.log("🧠 MCN STATE ENGINE v2 ONLINE");
