@@ -10,6 +10,9 @@ window.onerror = function(msg, src, line, col, err) {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+
+  console.log("DOM check only");
+
   document.body.innerHTML += "<h3 style='color:lime'>DOM IS WORKING</h3>";
 
   const box = document.getElementById("monitor");
