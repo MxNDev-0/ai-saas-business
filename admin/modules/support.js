@@ -1,4 +1,5 @@
 import { db } from "../firebase.js";
+
 import {
   collection,
   onSnapshot,
@@ -6,58 +7,83 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { get } from "../core/dom.js";
-import { MCN_STATE } from "../core/state.js";
+const el = (id) => document.getElementById(id);
 
 export async function initSupport() {
+
   const ref = collection(db, "supportChats");
 
   onSnapshot(ref, snap => {
-    const users = snap.docs.map(d => d.id);
+
+    const users = [];
+
+    snap.forEach(d => users.push(d.id));
+
     renderUsers(users);
   });
 }
 
 function renderUsers(users) {
-  const box = get("supportUsers");
+
+  const box = el("supportUsers");
+
   if (!box) return;
 
   box.innerHTML = "";
 
-  users.forEach(u => {
+  users.forEach(uid => {
+
     box.innerHTML += `
       <div class="item">
-        👤 ${u}
-        <button onclick="MCN.openChat('${u}')">Open</button>
+
+        👤 ${uid}
+
+        <button onclick="MCN.openChat('${uid}')">
+          Open
+        </button>
+
       </div>
     `;
   });
 }
 
 export function openChat(uid) {
-  MCN_STATE.selectedUser = uid;
 
-  const ref = collection(db, "supportChats", uid, "messages");
+  const ref = collection(
+    db,
+    "supportChats",
+    uid,
+    "messages"
+  );
 
   onSnapshot(ref, snap => {
-    const box = get("supportMessages");
+
+    const box = el("supportMessages");
+
     if (!box) return;
 
     box.innerHTML = "";
 
     snap.forEach(d => {
+
       const m = d.data();
 
       box.innerHTML += `
         <div class="item">
-          <b>${m.sender}</b><br>${m.text}
+          <b>${m.sender}</b><br>
+          ${m.text}
         </div>
       `;
     });
   });
 
-  document.getElementById("sendSupportReply").onclick = async () => {
-    const input = document.getElementById("supportReply");
+  const btn = el("sendSupportReply");
+
+  if (!btn) return;
+
+  btn.onclick = async () => {
+
+    const input = el("supportReply");
 
     if (!input.value) return;
 
