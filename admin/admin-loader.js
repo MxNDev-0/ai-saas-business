@@ -1,9 +1,27 @@
-import { startAdminEngine } from "./admin.js";
+import { initPosts } from "./modules/posts.js";
 
 window.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 SINGLE BOOT START");
+  console.log("🚀 MCN SINGLE CORE BOOT START");
 
-  await startAdminEngine();
+  const monitor = document.getElementById("monitor");
 
-  console.log("✅ ENGINE READY");
+  function log(msg) {
+    console.log(msg);
+    if (monitor) {
+      monitor.innerHTML += `<div>${msg}</div>`;
+    }
+  }
+
+  try {
+    log("🧠 Starting engine...");
+
+    await initPosts();
+
+    log("✅ Posts loaded");
+
+    log("🚀 ADMIN READY");
+  } catch (e) {
+    console.error(e);
+    log("❌ BOOT ERROR: " + e.message);
+  }
 });
