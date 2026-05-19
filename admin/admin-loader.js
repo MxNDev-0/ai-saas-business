@@ -77,4 +77,4 @@ async function boot() {
 }
 
 /* START */
-boot();
+boot(); 
