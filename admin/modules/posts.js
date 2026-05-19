@@ -99,3 +99,8 @@ export async function deletePost(id) {
 
   console.log("🗑 Post deleted");
 }
+
+window.MCN = window.MCN || {};
+
+window.MCN.savePost = savePost;
+window.MCN.deletePost = deletePost;
