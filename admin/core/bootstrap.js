@@ -1,15 +1,29 @@
-export function bootstrapMCN() {
+import { initPosts } from "../modules/posts.js";
+import { initAds } from "../modules/ads.js";
+import { initSupport } from "../modules/support.js";
+
+export async function bootstrapMCN() {
 
   console.log("🚀 Bootstrap starting...");
 
-  try { initPosts(); }
-  catch(e){ console.error("Posts failed", e); }
+  const modules = [
+    { name: "Posts", fn: initPosts },
+    { name: "Ads", fn: initAds },
+    { name: "Support", fn: initSupport }
+  ];
 
-  try { initAds(); }
-  catch(e){ console.error("Ads failed", e); }
-
-  try { initSupport(); }
-  catch(e){ console.error("Support failed", e); }
+  for (const m of modules) {
+    try {
+      if (typeof m.fn === "function") {
+        await m.fn();
+        console.log("✅ " + m.name + " loaded");
+      } else {
+        console.warn("⚠ Missing module:", m.name);
+      }
+    } catch (e) {
+      console.error("❌ " + m.name + " failed:", e);
+    }
+  }
 
   console.log("✅ Bootstrap complete");
 }
