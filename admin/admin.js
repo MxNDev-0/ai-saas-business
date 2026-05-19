@@ -22,11 +22,20 @@ window.MCN = {
   openChat
 };
 
-export function startAdminEngine() {
+export async function startAdminEngine() {
 
   console.log("🚀 Starting MCN modular engine...");
 
   bootstrapMCN();
+
+  // 🔥 IMPORTANT: explicitly start modules
+  const posts = await import("./modules/posts.js");
+  const ads = await import("./modules/ads.js");
+  const support = await import("./modules/support.js");
+
+  posts.initPosts?.();
+  ads.initAds?.();
+  support.initSupport?.();
 
   console.log("✅ MCN modular engine ready");
 }
