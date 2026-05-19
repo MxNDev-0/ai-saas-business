@@ -4,26 +4,31 @@ import { initSupport } from "../modules/support.js";
 
 export async function bootstrapMCN() {
 
-  console.log("🚀 Bootstrap starting...");
+  console.log("🚀 Bootstrap SAFE MODE starting...");
 
-  const modules = [
-    { name: "Posts", fn: initPosts },
-    { name: "Ads", fn: initAds },
-    { name: "Support", fn: initSupport }
+  const tasks = [
+    ["Posts", initPosts],
+    ["Ads", initAds],
+    ["Support", initSupport]
   ];
 
-  for (const m of modules) {
+  for (const [name, fn] of tasks) {
+
     try {
-      if (typeof m.fn === "function") {
-        await m.fn();
-        console.log("✅ " + m.name + " loaded");
+
+      if (typeof fn === "function") {
+        await fn();
+        console.log("✅ " + name);
       } else {
-        console.warn("⚠ Missing module:", m.name);
+        console.warn("⚠ Missing:", name);
       }
+
     } catch (e) {
-      console.error("❌ " + m.name + " failed:", e);
+      console.error("❌ Failed module:", name, e);
     }
   }
 
-  console.log("✅ Bootstrap complete");
+  window.MCN_STATE.ready = true;
+
+  console.log("✅ Bootstrap SAFE MODE complete");
 }
