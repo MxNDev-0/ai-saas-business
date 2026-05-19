@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("DOM check only");
 
-  document.body.innerHTML += "<h3 style='color:lime'>DOM IS WORKING</h3>";
+  console.log("DOM OK");
 
   const box = document.getElementById("monitor");
 
