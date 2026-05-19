@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const box = document.getElementById("monitor");
 
   if (!box) {
-    document.body.innerHTML += "<h3 style='color:orange'>MONITOR MISSING</h3>";
+    console.warn("MONITOR MISSING");
   } else {
     box.innerHTML = "MONITOR CONNECTED";
   }
