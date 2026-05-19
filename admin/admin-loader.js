@@ -1,4 +1,5 @@
 import "./state.js";
+import "./event-bus.js";
 
 import { initPosts } from "./modules/posts.js";
 
@@ -29,6 +30,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     // 🧠 STATE SYNC
     window.MCN_STATE.system.initialized = true;
     window.MCN_STATE.ui.loading = false;
+
+    // 📡 EVENT BUS
+    window.MCN_EVENT_BUS.emit("admin:ready");
 
     log("✅ Posts loaded");
 
