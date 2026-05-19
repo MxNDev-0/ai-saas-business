@@ -1,4 +1,5 @@
 import { db } from "../firebase.js";
+
 import {
   collection,
   onSnapshot,
@@ -9,52 +10,92 @@ import {
   doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { get } from "../core/dom.js";
-import { MCN_STATE } from "../core/state.js";
+const el = (id) => document.getElementById(id);
+
+let posts = [];
 
 export async function initPosts() {
-  console.log("📡 Posts module loading...");
 
-  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  console.log("📡 Posts module active");
 
-  onSnapshot(q, snap => {
-    MCN_STATE.posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const qRef = query(
+    collection(db, "posts"),
+    orderBy("createdAt", "desc")
+  );
+
+  onSnapshot(qRef, snap => {
+
+    posts = [];
+
+    snap.forEach(d => {
+      posts.push({
+        id: d.id,
+        ...d.data()
+      });
+    });
 
     renderPosts();
   });
 }
 
 function renderPosts() {
-  const box = get("postsList");
-  const dash = get("dashPosts");
 
-  if (!box || !dash) return;
+  const box = el("postsList");
+  const dash = el("dashPosts");
+
+  if (!box) return;
 
   box.innerHTML = "";
-  dash.innerHTML = "";
 
-  MCN_STATE.posts.forEach(p => {
+  if (dash) dash.innerHTML = "";
+
+  posts.forEach(p => {
+
     box.innerHTML += `
       <div class="item">
-        <b>${p.title}</b>
+        <b>${p.title || "Untitled"}</b>
+
+        <input id="t-${p.id}" value="${p.title || ""}">
+
         <textarea id="c-${p.id}">${p.content || ""}</textarea>
 
-        <button onclick="MCN.savePost('${p.id}')">Save</button>
-        <button onclick="MCN.deletePost('${p.id}')" class="danger">Delete</button>
+        <button onclick="MCN.savePost('${p.id}')">
+          Save
+        </button>
+
+        <button
+          onclick="MCN.deletePost('${p.id}')"
+          class="danger">
+
+          Delete
+
+        </button>
       </div>
     `;
 
-    dash.innerHTML += `<div class="item">${p.title}</div>`;
+    if (dash) {
+      dash.innerHTML += `
+        <div class="item">
+          ${p.title || "Untitled"}
+        </div>
+      `;
+    }
   });
 }
 
-/* PUBLIC ACTIONS */
 export async function savePost(id) {
-  const content = document.getElementById(`c-${id}`)?.value;
 
-  await updateDoc(doc(db, "posts", id), { content });
+  await updateDoc(doc(db, "posts", id), {
+    title: el(`t-${id}`).value,
+    content: el(`c-${id}`).value
+  });
+
+  console.log("✅ Post updated");
 }
 
 export async function deletePost(id) {
+
   await deleteDoc(doc(db, "posts", id));
+
+  console.log("🗑 Post deleted");
 }
