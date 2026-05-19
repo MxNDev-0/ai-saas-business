@@ -40,47 +40,32 @@ export async function initPosts() {
 
 function renderPosts() {
 
-  const box = el("postsList");
-  const dash = el("dashPosts");
+  const box = document.getElementById("postsList");
 
   if (!box) return;
 
-  box.innerHTML = "";
+  try {
 
-  if (dash) dash.innerHTML = "";
+    if (!posts.length) {
+      box.innerHTML = "<div class='item'>No posts yet</div>";
+      return;
+    }
 
-  posts.forEach(p => {
+    box.innerHTML = "";
 
-    box.innerHTML += `
-      <div class="item">
-        <b>${p.title || "Untitled"}</b>
-
-        <input id="t-${p.id}" value="${p.title || ""}">
-
-        <textarea id="c-${p.id}">${p.content || ""}</textarea>
-
-        <button onclick="MCN.savePost('${p.id}')">
-          Save
-        </button>
-
-        <button
-          onclick="MCN.deletePost('${p.id}')"
-          class="danger">
-
-          Delete
-
-        </button>
-      </div>
-    `;
-
-    if (dash) {
-      dash.innerHTML += `
+    posts.forEach(p => {
+      box.innerHTML += `
         <div class="item">
-          ${p.title || "Untitled"}
+          <b>${p.title || "Untitled"}</b>
+          <textarea>${p.content || ""}</textarea>
         </div>
       `;
-    }
-  });
+    });
+
+  } catch (e) {
+    console.error("Render crash:", e);
+    box.innerHTML = "<div style='color:red'>Render error</div>";
+  }
 }
 
 export async function savePost(id) {
