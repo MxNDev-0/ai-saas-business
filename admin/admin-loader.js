@@ -1,6 +1,7 @@
 import { initPosts } from "./modules/posts.js";
 
 window.addEventListener("DOMContentLoaded", async () => {
+
   console.log("🚀 MCN SINGLE CORE BOOT START");
 
   const monitor = document.getElementById("monitor");
@@ -13,6 +14,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
+
     log("🧠 Starting engine...");
 
     await initPosts();
@@ -20,8 +22,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     log("✅ Posts loaded");
 
     log("🚀 ADMIN READY");
+
   } catch (e) {
+
     console.error(e);
+
     log("❌ BOOT ERROR: " + e.message);
   }
 });
