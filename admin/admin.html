@@ -84,7 +84,7 @@
       background:#0b132b;
       border-radius:10px;
       padding:8px;
-      max-height:260px;
+      min-height:120px;
       overflow-y:auto;
     }
 
@@ -366,6 +366,60 @@ window.fakePing = function () {
     detail: "🧪 Test system event triggered"
   }));
 };
+</script>
+
+<script>
+
+/* SAFE FALLBACKS */
+
+window.searchPosts ||= function () {
+  console.log("searchPosts not connected yet");
+};
+
+window.loadNews ||= function () {
+  console.log("loadNews not connected yet");
+};
+
+window.clearRejected ||= function () {
+  console.log("clearRejected not connected yet");
+};
+
+window.setFeatured ||= function () {
+  console.log("setFeatured not connected yet");
+};
+
+window.setSponsored ||= function () {
+  console.log("setSponsored not connected yet");
+};
+
+window.toggleAds ||= function () {
+  console.log("toggleAds not connected yet");
+};
+
+window.toggleDiscover ||= function () {
+  console.log("toggleDiscover not connected yet");
+};
+
+window.refreshSystem ||= function () {
+  console.log("refreshSystem not connected yet");
+};
+
+window.runCommand ||= function () {
+  console.log("runCommand not connected yet");
+};
+
+window.generateAndPreview ||= function () {
+  console.log("generateAndPreview not connected yet");
+};
+
+window.updatePost ||= function () {
+  console.log("updatePost not connected yet");
+};
+
+window.deletePost ||= function () {
+  console.log("deletePost not connected yet");
+};
+
 </script>
 
 <script type="module" src="./admin-loader.js"></script>
