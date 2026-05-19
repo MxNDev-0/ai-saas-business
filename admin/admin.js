@@ -1,18 +1,10 @@
 import { bootstrapMCN } from "./core/bootstrap.js";
 
-import {
-  savePost,
-  deletePost
-} from "./modules/posts.js";
+import { savePost, deletePost, initPosts } from "./modules/posts.js";
+import { approveAd, rejectAd, initAds } from "./modules/ads.js";
+import { openChat, initSupport } from "./modules/support.js";
 
-import {
-  approveAd,
-  rejectAd
-} from "./modules/ads.js";
-
-import {
-  openChat
-} from "./modules/support.js";
+/* ================= GLOBAL API ================= */
 
 window.MCN = {
   savePost,
@@ -22,22 +14,28 @@ window.MCN = {
   openChat
 };
 
+/* ================= ENGINE START ================= */
+
 export async function startAdminEngine() {
 
-  console.log("🚀 Starting MCN modular engine...");
+  console.log("🚀 MCN ENGINE STARTING...");
 
-  bootstrapMCN();
+  try {
 
-  // 🔥 IMPORTANT: explicitly start modules
-  const posts = await import("./modules/posts.js");
-  const ads = await import("./modules/ads.js");
-  const support = await import("./modules/support.js");
+    /* 1. BOOTSTRAP CORE */
+    await bootstrapMCN();
 
-  posts.initPosts?.();
-  ads.initAds?.();
-  support.initSupport?.();
+    /* 2. INIT MODULES ONLY ONCE */
+    await initPosts?.();
+    await initAds?.();
+    await initSupport?.();
 
-  console.log("✅ MCN modular engine ready");
+    console.log("✅ MCN ENGINE READY");
+
+  } catch (err) {
+
+    console.error("❌ ENGINE FAILED:", err);
+  }
 }
 
 window.startAdminEngine = startAdminEngine;
