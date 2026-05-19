@@ -22,10 +22,13 @@ export function initPosts() {
   function render() {
     const el = box();
 
-    if (!el) return console.warn("postsList missing");
+    if (!el) {
+      console.warn("postsList missing");
+      return;
+    }
 
-    if (posts.length === 0) {
-      el.innerHTML = "<div class='item'>No posts</div>";
+    if (!posts.length) {
+      el.innerHTML = `<div class="item">No posts yet</div>`;
       return;
     }
 
