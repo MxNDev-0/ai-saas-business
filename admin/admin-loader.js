@@ -1,13 +1,11 @@
 /* =========================================
-   MCN ADMIN LOADER V9
-   CLEAN MODULAR ARCHITECTURE
+   MCN ADMIN LOADER V9 FIXED
+   HARD SAFE BOOT
 ========================================= */
 
 import { startAdminEngine } from "./admin.js";
 
-/* =========================================
-   GLOBAL MONITOR LOGGER
-========================================= */
+/* ================= MONITOR ================= */
 
 window.logToMonitor = function (msg, type = "ok") {
 
@@ -29,59 +27,58 @@ window.logToMonitor = function (msg, type = "ok") {
     `[${new Date().toLocaleTimeString()}] ${msg}`;
 
   box.appendChild(div);
-
   box.scrollTop = box.scrollHeight;
 };
 
-/* =========================================
-   GLOBAL ERROR GUARD
-========================================= */
+/* ================= GLOBAL ERROR ================= */
 
 window.addEventListener("error", (e) => {
-
   console.error("GLOBAL ERROR:", e.message);
 
-  logToMonitor(
-    "❌ ERROR: " + e.message,
-    "error"
-  );
+  if (window.logToMonitor) {
+    window.logToMonitor("❌ " + e.message, "error");
+  }
 });
 
-/* =========================================
-   SAFE BOOT
-========================================= */
+/* ================= SAFE BOOT ================= */
 
 window.addEventListener("load", async () => {
 
-  console.log("🚀 MCN SYSTEM BOOT");
-
-  logToMonitor("🧠 Initializing MCN modules...");
+  logToMonitor("🚀 MCN SAFE BOOT STARTING...");
 
   try {
 
-    /* optional systems */
-    await import("./admin-auth.js").catch(() => {});
-    await import("./admin-control.js").catch(() => {});
-    await import("./admin-monitor.js").catch(() => {});
-    await import("./admin-chat.js").catch(() => {});
-    await import("./emergency-control.js").catch(() => {});
-    await import("./admin/ai-engine.js").catch(() => {});
+    const modules = [
+      "./admin-auth.js",
+      "./admin-control.js",
+      "./admin-monitor.js",
+      "./admin-chat.js",
+      "./emergency-control.js",
+      "./admin/ai-engine.js"
+    ];
 
-    /* START MAIN ENGINE */
+    for (const m of modules) {
+      try {
+        await import(m);
+        logToMonitor("✅ Loaded " + m);
+      } catch (err) {
+        logToMonitor("⚠ Failed " + m, "warn");
+        console.warn(err);
+      }
+    }
+
+    if (typeof startAdminEngine !== "function") {
+      logToMonitor("❌ Engine not found", "error");
+      return;
+    }
+
     startAdminEngine();
 
     logToMonitor("✅ MCN ADMIN READY");
 
-    console.log("✅ MCN fully initialized");
-
   } catch (e) {
-
+    logToMonitor("❌ BOOT CRASH: " + e.message, "error");
     console.error(e);
-
-    logToMonitor(
-      "❌ Boot failure: " + e.message,
-      "error"
-    );
   }
 
 });
