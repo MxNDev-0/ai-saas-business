@@ -1,14 +1,15 @@
-import { initPosts } from "../modules/posts.js";
-import { initAds } from "../modules/ads.js";
-import { initSupport } from "../modules/support.js";
-
-export async function bootstrapMCN() {
+export function bootstrapMCN() {
 
   console.log("🚀 Bootstrap starting...");
 
-  await initPosts();
-  await initAds();
-  await initSupport();
+  try { initPosts(); }
+  catch(e){ console.error("Posts failed", e); }
+
+  try { initAds(); }
+  catch(e){ console.error("Ads failed", e); }
+
+  try { initSupport(); }
+  catch(e){ console.error("Support failed", e); }
 
   console.log("✅ Bootstrap complete");
 }
