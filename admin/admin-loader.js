@@ -1,52 +1,80 @@
-import { startAdminEngine } from "./admin.js";
+/* =========================================
+   MCN ADMIN LOADER V10 (ZERO BLANK BOOT)
+========================================= */
 
-function bootLog(msg) {
+import { startAdminEngine } from "./admin.js";
+import { bootWatchdog } from "./core/boot-watchdog.js";
+
+const watchdog = bootWatchdog("MCN ADMIN");
+
+/* =========================================
+   GLOBAL LOGGER (SAFE)
+========================================= */
+
+window.logToMonitor = function (msg, type = "ok") {
   const box = document.getElementById("monitor");
 
-  if (box) {
-    box.innerHTML += `<div>${msg}</div>`;
-  }
+  if (!box) return console.warn("[MONITOR]", msg);
 
-  console.log(msg);
-}
+  const div = document.createElement("div");
 
-/* NEVER BLANK SCREEN GUARANTEE */
-function keepAliveUI() {
-  const required = [
-    "monitor",
-    "postsList",
-    "dashPosts",
-    "upgradeList"
-  ];
+  div.style.color =
+    type === "error" ? "red" :
+    type === "warn" ? "orange" :
+    "#00ff88";
 
-  required.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
 
-    if (!el.innerHTML.trim()) {
-      el.innerHTML = `<div style="opacity:0.6">Waiting for data...</div>`;
-    }
-  });
-}
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+};
 
-window.addEventListener("error", (e) => {
-  bootLog("❌ " + e.message);
-});
+/* =========================================
+   SAFE BOOT FLOW (ORDER IS EVERYTHING)
+========================================= */
 
-window.addEventListener("load", async () => {
-
-  bootLog("🚀 SAFE SYSTEM BOOT");
-
+async function boot() {
   try {
+    console.log("🚀 MCN BOOT START");
 
+    logToMonitor("🧠 Waiting for DOM...");
+
+    // HARD GUARANTEE DOM READY
+    await new Promise(res => {
+      if (document.readyState === "complete") return res();
+      window.addEventListener("DOMContentLoaded", res);
+    });
+
+    logToMonitor("✅ DOM READY");
+
+    /* Core modules (non-blocking safe imports) */
+    await Promise.all([
+      import("./admin-auth.js").catch(() => {}),
+      import("./admin-control.js").catch(() => {}),
+      import("./admin-monitor.js").catch(() => {}),
+      import("./admin-chat.js").catch(() => {}),
+      import("./emergency-control.js").catch(() => {}),
+      import("./admin/ai-engine.js").catch(() => {})
+    ]);
+
+    logToMonitor("📦 Core modules loaded");
+
+    /* START ENGINE */
     await startAdminEngine();
 
-    bootLog("✅ ENGINE STARTED");
+    logToMonitor("🚀 ENGINE STARTED");
 
-    // keep UI alive every 2s
-    setInterval(keepAliveUI, 2000);
+    watchdog.success();
+
+    window.dispatchEvent(new Event("mcn-ready"));
+
+    console.log("✅ MCN FULLY READY");
 
   } catch (e) {
-    bootLog("❌ CRITICAL FAIL: " + e.message);
+    console.error(e);
+    logToMonitor("❌ BOOT FAILED: " + e.message, "error");
   }
-});
+}
+
+/* START */
+boot();
