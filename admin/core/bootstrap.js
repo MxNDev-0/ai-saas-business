@@ -1,34 +1,21 @@
+import { bootWatchdog } from "./core/mcn-boot-watchdog.js";
+import { safeModule } from "./core/mcn-safe-render.js";
+
 import { initPosts } from "../modules/posts.js";
 import { initAds } from "../modules/ads.js";
 import { initSupport } from "../modules/support.js";
 
 export async function bootstrapMCN() {
 
-  console.log("🚀 Bootstrap SAFE MODE starting...");
+  const boot = bootWatchdog("MCN CORE");
 
-  const tasks = [
-    ["Posts", initPosts],
-    ["Ads", initAds],
-    ["Support", initSupport]
-  ];
+  console.log("🚀 Bootstrap starting...");
 
-  for (const [name, fn] of tasks) {
+  safeModule(() => initPosts(), "posts");
+  safeModule(() => initAds(), "ads");
+  safeModule(() => initSupport(), "support");
 
-    try {
+  boot.success();
 
-      if (typeof fn === "function") {
-        await fn();
-        console.log("✅ " + name);
-      } else {
-        console.warn("⚠ Missing:", name);
-      }
-
-    } catch (e) {
-      console.error("❌ Failed module:", name, e);
-    }
-  }
-
-  window.MCN_STATE.ready = true;
-
-  console.log("✅ Bootstrap SAFE MODE complete");
+  console.log("✅ Bootstrap complete");
 }
